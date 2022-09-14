@@ -30,12 +30,12 @@ public class ProcessingService {
     log.info("Received annotation event of: {}", event);
     var annotation = convertToAnnotation(event);
     var currentAnnotationOptional = repository.getAnnotation(annotation.target(),
-        annotation.generator());
+        annotation.generator(), annotation.motivation());
     if (currentAnnotationOptional.isEmpty()) {
       return persistNewAnnotation(annotation);
     } else {
       var currentAnnotationRecord = currentAnnotationOptional.get();
-      if (currentAnnotationRecord.annotation().equals(annotation)) {
+      if (annotationAreEqual(currentAnnotationRecord.annotation(), annotation)) {
         log.info("Received annotation is equal to annotation: {}", currentAnnotationRecord.id());
         processEqualAnnotation(currentAnnotationRecord);
         return null;
@@ -45,6 +45,12 @@ public class ProcessingService {
         return updateExistingAnnotation(currentAnnotationRecord, annotation);
       }
     }
+  }
+
+  private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
+    return currentAnnotation.body().equals(annotation.body()) &&
+        currentAnnotation.creator().equals(annotation.creator()) &&
+        currentAnnotation.preferenceScore() == annotation.preferenceScore();
   }
 
   private AnnotationRecord updateExistingAnnotation(AnnotationRecord currentAnnotationRecord,
