@@ -64,7 +64,7 @@ public class HandleService {
     handleAttributes.add(
         new HandleAttribute(7, "issueNumber", "1".getBytes(StandardCharsets.UTF_8)));
     handleAttributes.add(
-        new HandleAttribute(8, "pidStatus", "ACTIVE".getBytes(StandardCharsets.UTF_8)));
+        new HandleAttribute(8, "pidStatus", "DRAFT".getBytes(StandardCharsets.UTF_8)));
     handleAttributes.add(
         new HandleAttribute(11, "pidKernelMetadataLicense",
             "https://creativecommons.org/publicdomain/zero/1.0/".getBytes(StandardCharsets.UTF_8)));
