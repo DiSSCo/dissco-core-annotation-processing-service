@@ -30,7 +30,7 @@ public class AnnotationController {
   @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AnnotationRecord> createAnnotation(@RequestBody AnnotationEvent event)
       throws TransformerException {
-    log.error("Received annotation request");
+    log.info("Received annotation request");
     var result = processingService.handleMessages(event);
     return ResponseEntity.ok(result);
   }
@@ -39,7 +39,7 @@ public class AnnotationController {
   public ResponseEntity<Void> archiveAnnotation(@PathVariable("prefix") String prefix,
       @PathVariable("postfix") String postfix){
     var id = prefix + '/' + postfix;
-    log.info("Received a archive request for annotation: {}", id);
+    log.info("Received an archive request for annotation: {}", id);
     processingService.archiveAnnotation(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
