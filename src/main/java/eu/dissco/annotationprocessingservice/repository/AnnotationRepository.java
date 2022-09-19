@@ -23,13 +23,15 @@ public class AnnotationRepository {
   private final ObjectMapper mapper;
   private final DSLContext context;
 
-  public Optional<AnnotationRecord> getAnnotation(JsonNode targetId, JsonNode generator, String motivation) {
+  public Optional<AnnotationRecord> getAnnotation(JsonNode targetId, JsonNode generator,
+      String motivation) {
     var query = context.select(NEW_ANNOTATION.asterisk())
         .distinctOn(NEW_ANNOTATION.ID)
         .from(NEW_ANNOTATION)
         .where(NEW_ANNOTATION.TARGET_ID.eq(targetId.get("id").asText()))
         .and(NEW_ANNOTATION.GENERATOR_ID.eq(generator.get("id").asText()))
-        .and(NEW_ANNOTATION.MOTIVATION.eq(motivation));
+        .and(NEW_ANNOTATION.MOTIVATION.eq(motivation))
+        .and(NEW_ANNOTATION.DELETED.isNull());
     if (targetId.get("fieldSet") != null) {
       query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get("fieldSet").asText()));
     }
