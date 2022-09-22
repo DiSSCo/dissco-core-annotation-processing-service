@@ -26,6 +26,12 @@ public class ProcessingService {
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
 
+  private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
+    return currentAnnotation.body().equals(annotation.body()) &&
+        currentAnnotation.creator().equals(annotation.creator()) &&
+        currentAnnotation.preferenceScore() == annotation.preferenceScore();
+  }
+
   public AnnotationRecord handleMessages(AnnotationEvent event) throws TransformerException {
     log.info("Received annotation event of: {}", event);
     var annotation = convertToAnnotation(event);
@@ -47,12 +53,6 @@ public class ProcessingService {
     }
   }
 
-  private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
-    return currentAnnotation.body().equals(annotation.body()) &&
-        currentAnnotation.creator().equals(annotation.creator()) &&
-        currentAnnotation.preferenceScore() == annotation.preferenceScore();
-  }
-
   private AnnotationRecord updateExistingAnnotation(AnnotationRecord currentAnnotationRecord,
       Annotation annotation) {
     if (handleNeedsUpdate(currentAnnotationRecord.annotation(), annotation)) {
@@ -60,7 +60,7 @@ public class ProcessingService {
     }
     var id = currentAnnotationRecord.id();
     var version = currentAnnotationRecord.version() + 1;
-    var annotationRecord = new AnnotationRecord(id, version, annotation);
+    var annotationRecord = new AnnotationRecord(id, version, annotation.created(), annotation);
     var result = repository.createAnnotationRecord(annotationRecord);
     if (result == SUCCESS) {
       log.info("Annotation: {} has been successfully committed to database", id);
@@ -88,7 +88,7 @@ public class ProcessingService {
   private AnnotationRecord persistNewAnnotation(Annotation annotation) throws TransformerException {
     var id = handleService.createNewHandle(annotation);
     log.info("New id has been generated for Annotation: {}", id);
-    var annotationRecord = new AnnotationRecord(id, 1, annotation);
+    var annotationRecord = new AnnotationRecord(id, 1, annotation.created(), annotation);
     var result = repository.createAnnotationRecord(annotationRecord);
     if (result == SUCCESS) {
       log.info("Annotation: {} has been successfully committed to database", id);
@@ -125,13 +125,14 @@ public class ProcessingService {
   }
 
   public void archiveAnnotation(String id) {
-    if(repository.getAnnotationById(id).isPresent()){
+    if (repository.getAnnotationById(id).isPresent()) {
       log.info("Removing annotation: {} from indexing service", id);
       var document = elasticRepository.archiveAnnotation(id);
-      if (document.result().jsonValue().equals("deleted") || document.result().jsonValue().equals("not_found")) {
+      if (document.result().jsonValue().equals("deleted") || document.result().jsonValue()
+          .equals("not_found")) {
         log.info("Archive annotation: {} in database", id);
         var result = repository.archiveAnnotation(id);
-        if (result > 0){
+        if (result > 0) {
           log.info("Archived {} versions of annotation: {}", result, id);
           log.info("Tombstoning PID record of annotation: {}", id);
           handleService.archiveRecord(id, "e2befba6-9324-4bb4-9f41-d7dfae4a44b0");
