@@ -59,7 +59,10 @@ public class AnnotationRepository {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-    return new AnnotationRecord(record.get(NEW_ANNOTATION.ID), record.get(NEW_ANNOTATION.VERSION),
+    return new AnnotationRecord(
+        record.get(NEW_ANNOTATION.ID),
+        record.get(NEW_ANNOTATION.VERSION),
+        record.get(NEW_ANNOTATION.CREATED),
         annotation);
   }
 
