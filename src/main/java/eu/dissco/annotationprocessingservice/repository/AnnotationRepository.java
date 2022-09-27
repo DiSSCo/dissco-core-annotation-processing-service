@@ -34,9 +34,13 @@ public class AnnotationRepository {
         .and(NEW_ANNOTATION.DELETED.isNull());
     if (targetId.get("fieldSet") != null) {
       query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get("fieldSet").asText()));
+    } else {
+      query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }
     if (targetId.get("indvProp") != null) {
       query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get("indvProp").asText()));
+    } else {
+      query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }
     return query.orderBy(NEW_ANNOTATION.ID, NEW_ANNOTATION.VERSION.desc())
         .fetchOptional(this::mapAnnotationRecord);
