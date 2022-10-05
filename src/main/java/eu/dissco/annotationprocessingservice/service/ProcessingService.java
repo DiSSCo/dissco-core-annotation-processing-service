@@ -36,7 +36,7 @@ public class ProcessingService {
     log.info("Received annotation event of: {}", event);
     var annotation = convertToAnnotation(event);
     var currentAnnotationOptional = repository.getAnnotation(annotation.target(),
-        annotation.generator(), annotation.motivation());
+        annotation.creator(), annotation.motivation());
     if (currentAnnotationOptional.isEmpty()) {
       return persistNewAnnotation(annotation);
     } else {
