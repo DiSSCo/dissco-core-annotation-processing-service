@@ -153,17 +153,31 @@
 						</goals>
 					</execution>
 					<execution>
+						<id>prepare-agent-integration</id>
+						<goals>
+							<goal>prepare-agent-integration</goal>
+						</goals>
+					</execution>
+					<execution>
 						<id>report</id>
+						<phase>prepare-package</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>
-						<configuration>
-							<formats>
-								<format>XML</format>
-							</formats>
-						</configuration>
+					</execution>
+					<execution>
+						<id>report-integration</id>
+						<goals>
+							<goal>report-integration</goal>
+						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<configuration>
+					<useSystemClassLoader>false</useSystemClassLoader>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.jooq</groupId>
