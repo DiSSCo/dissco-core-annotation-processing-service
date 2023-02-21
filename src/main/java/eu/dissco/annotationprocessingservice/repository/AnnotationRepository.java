@@ -26,7 +26,6 @@ public class AnnotationRepository {
   public Optional<AnnotationRecord> getAnnotation(JsonNode targetId, String creator,
       String motivation) {
     var query = context.select(NEW_ANNOTATION.asterisk())
-        .distinctOn(NEW_ANNOTATION.ID)
         .from(NEW_ANNOTATION)
         .where(NEW_ANNOTATION.TARGET_ID.eq(targetId.get("id").asText()))
         .and(NEW_ANNOTATION.CREATOR.eq(creator))
@@ -40,8 +39,7 @@ public class AnnotationRepository {
     else {
       query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }
-    return query.orderBy(NEW_ANNOTATION.ID, NEW_ANNOTATION.VERSION.desc())
-        .fetchOptional(this::mapAnnotationRecord);
+    return query.fetchOptional(this::mapAnnotationRecord);
   }
 
   private AnnotationRecord mapAnnotationRecord(Record record) {
@@ -95,6 +93,24 @@ public class AnnotationRepository {
             JSONB.jsonb(annotationRecord.annotation().generator().toString()))
         .set(NEW_ANNOTATION.GENERATED, annotationRecord.annotation().generated())
         .set(NEW_ANNOTATION.LAST_CHECKED, Instant.now())
+        .onConflict(NEW_ANNOTATION.ID).doUpdate()
+        .set(NEW_ANNOTATION.VERSION, annotationRecord.version())
+        .set(NEW_ANNOTATION.TYPE, annotationRecord.annotation().type())
+        .set(NEW_ANNOTATION.MOTIVATION, annotationRecord.annotation().motivation())
+        .set(NEW_ANNOTATION.TARGET_ID, annotationRecord.annotation().target().get("id").asText())
+        .set(NEW_ANNOTATION.TARGET_FIELD, targetField)
+        .set(NEW_ANNOTATION.TARGET_BODY,
+            JSONB.jsonb(annotationRecord.annotation().target().toString()))
+        .set(NEW_ANNOTATION.BODY, JSONB.jsonb(annotationRecord.annotation().body().toString()))
+        .set(NEW_ANNOTATION.PREFERENCE_SCORE, annotationRecord.annotation().preferenceScore())
+        .set(NEW_ANNOTATION.CREATOR, annotationRecord.annotation().creator())
+        .set(NEW_ANNOTATION.CREATED, annotationRecord.annotation().created())
+        .set(NEW_ANNOTATION.GENERATOR_ID,
+            annotationRecord.annotation().generator().get("id").asText())
+        .set(NEW_ANNOTATION.GENERATOR_BODY,
+            JSONB.jsonb(annotationRecord.annotation().generator().toString()))
+        .set(NEW_ANNOTATION.GENERATED, annotationRecord.annotation().generated())
+        .set(NEW_ANNOTATION.LAST_CHECKED, Instant.now())
         .execute();
   }
 
@@ -107,11 +123,9 @@ public class AnnotationRepository {
 
   public Optional<String> getAnnotationById(String id) {
     return context.select(NEW_ANNOTATION.ID)
-        .distinctOn(NEW_ANNOTATION.ID)
         .from(NEW_ANNOTATION)
         .where(NEW_ANNOTATION.ID.eq(id))
         .and(NEW_ANNOTATION.DELETED.isNull())
-        .orderBy(NEW_ANNOTATION.ID, NEW_ANNOTATION.VERSION.desc())
         .fetchOptional(Record1::value1);
   }
 
