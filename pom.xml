@@ -127,7 +127,7 @@
 	</dependencies>
 
 	<build>
-		<defaultGoal>clean validate</defaultGoal>
+		<defaultGoal>-B verify</defaultGoal>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
