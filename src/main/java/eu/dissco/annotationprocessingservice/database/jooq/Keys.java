@@ -27,5 +27,5 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<HandlesRecord> HANDLES_PKEY = Internal.createUniqueKey(Handles.HANDLES, DSL.name("handles_pkey"), new TableField[] { Handles.HANDLES.HANDLE, Handles.HANDLES.IDX }, true);
-    public static final UniqueKey<NewAnnotationRecord> NEW_ANNOTATION_PKEY = Internal.createUniqueKey(NewAnnotation.NEW_ANNOTATION, DSL.name("new_annotation_pkey"), new TableField[] { NewAnnotation.NEW_ANNOTATION.ID, NewAnnotation.NEW_ANNOTATION.VERSION }, true);
+    public static final UniqueKey<NewAnnotationRecord> NEW_ANNOTATION_PK = Internal.createUniqueKey(NewAnnotation.NEW_ANNOTATION, DSL.name("new_annotation_pk"), new TableField[] { NewAnnotation.NEW_ANNOTATION.ID }, true);
 }

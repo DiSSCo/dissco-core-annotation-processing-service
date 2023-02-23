@@ -169,12 +169,12 @@ public class NewAnnotation extends TableImpl<NewAnnotationRecord> {
 
     @Override
     public UniqueKey<NewAnnotationRecord> getPrimaryKey() {
-        return Keys.NEW_ANNOTATION_PKEY;
+        return Keys.NEW_ANNOTATION_PK;
     }
 
     @Override
     public List<UniqueKey<NewAnnotationRecord>> getKeys() {
-        return Arrays.<UniqueKey<NewAnnotationRecord>>asList(Keys.NEW_ANNOTATION_PKEY);
+        return Arrays.<UniqueKey<NewAnnotationRecord>>asList(Keys.NEW_ANNOTATION_PK);
     }
 
     @Override
