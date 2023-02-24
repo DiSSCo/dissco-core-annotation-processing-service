@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
-import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MOTIVATION;
 import static eu.dissco.annotationprocessingservice.TestUtils.generateTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotatioNRecord;
@@ -13,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class DigitalMediaObjectRepositoryIT extends BaseRepositoryIT {
+class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
   private AnnotationRepository repository;
