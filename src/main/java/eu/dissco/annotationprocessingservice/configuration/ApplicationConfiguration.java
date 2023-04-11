@@ -1,6 +1,9 @@
 package eu.dissco.annotationprocessingservice.configuration;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.time.Instant;
 import java.util.Random;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -13,7 +16,12 @@ public class ApplicationConfiguration {
 
   @Bean
   public ObjectMapper objectMapper() {
-    return new ObjectMapper().findAndRegisterModules();
+    var mapper = new ObjectMapper().findAndRegisterModules();
+    SimpleModule dateModule = new SimpleModule();
+    dateModule.addSerializer(Instant.class, new InstantSerializer());
+    dateModule.addDeserializer(Instant.class, new InstantDeserializer());
+    mapper.registerModule(dateModule);;
+    return mapper;
   }
 
   @Bean
