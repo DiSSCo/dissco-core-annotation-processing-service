@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import java.time.Instant;
 
@@ -21,12 +22,28 @@ public class TestUtils {
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final Instant GENERATED = Instant.parse("2023-02-17T09:49:27.391Z");
 
+
+  public static AnnotationEvent givenAnnotationEvent() throws JsonProcessingException {
+    return new AnnotationEvent(
+        TYPE,
+        MOTIVATION,
+        CREATOR,
+        CREATED,
+        generateTarget(),
+        generateBody()
+    );
+  }
   public static AnnotationRecord givenAnnotationRecord()
       throws JsonProcessingException {
-    return givenAnnotatioNRecord(MOTIVATION);
+    return givenAnnotationRecord(MOTIVATION, CREATOR);
   }
 
-  public static AnnotationRecord givenAnnotatioNRecord(String motivation)
+  public static AnnotationRecord givenAnnotationRecord(String motivation)
+      throws JsonProcessingException {
+    return givenAnnotationRecord(motivation, CREATOR);
+  }
+
+  public static AnnotationRecord givenAnnotationRecord(String motivation, String creator)
       throws JsonProcessingException {
     return new AnnotationRecord(
         ID,
@@ -34,11 +51,11 @@ public class TestUtils {
         CREATED,
         new Annotation(
             TYPE,
-            MOTIVATION,
+            motivation,
             generateTarget(),
             generateBody(),
             PREFERENCE_SCORE,
-            CREATOR,
+            creator,
             CREATED,
             generateGenerator(),
             GENERATED

@@ -4,10 +4,8 @@ import static eu.dissco.annotationprocessingservice.database.jooq.Tables.HANDLES
 
 import eu.dissco.annotationprocessingservice.domain.HandleAttribute;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -41,7 +39,7 @@ public class HandleRepository {
   }
 
   public void updateHandleAttributes(String id, Instant recordTimestamp,
-      List<HandleAttribute> handleAttributes) {
+      List<HandleAttribute> handleAttributes, boolean versionIncrement) {
     var queryList = new ArrayList<Query>();
     for (var handleAttribute : handleAttributes) {
       var query = context.update(HANDLES)
@@ -51,12 +49,12 @@ public class HandleRepository {
           .and(HANDLES.IDX.eq(handleAttribute.index()));
       queryList.add(query);
     }
-    queryList.addAll(versionIncrement(id, recordTimestamp));
+    queryList.add(versionIncrement(id, recordTimestamp, versionIncrement));
     context.batch(queryList).execute();
   }
 
-  private List<Query> versionIncrement(String pid, Instant recordTimestamp) {
-    var issueAttributes = new ArrayList<Query>();
+  private Query versionIncrement(String pid, Instant recordTimestamp,
+      boolean versionIncrement) {
     var currentVersion =
         Integer.parseInt(context.select(HANDLES.DATA)
             .from(HANDLES)
@@ -64,23 +62,23 @@ public class HandleRepository {
                 StandardCharsets.UTF_8)))
             .and(HANDLES.TYPE.eq("issueNumber".getBytes(StandardCharsets.UTF_8)))
             .fetchOne(dbRecord -> new String(dbRecord.value1())));
-    var version = currentVersion + 1;
-    issueAttributes.add(context.update(HANDLES)
+    int version;
+    if (versionIncrement) {
+      version = currentVersion + 1;
+    } else {
+      version = currentVersion - 1;
+    }
+
+    return context.update(HANDLES)
         .set(HANDLES.DATA, String.valueOf(version).getBytes(StandardCharsets.UTF_8))
         .set(HANDLES.TIMESTAMP, recordTimestamp.getEpochSecond())
         .where(HANDLES.HANDLE.eq(pid.getBytes(
             StandardCharsets.UTF_8)))
-        .and(HANDLES.TYPE.eq("issueNumber".getBytes(StandardCharsets.UTF_8))));
-    issueAttributes.add(context.update(HANDLES)
-        .set(HANDLES.DATA, createIssueDate(recordTimestamp))
-        .set(HANDLES.TIMESTAMP, recordTimestamp.getEpochSecond())
-        .where(HANDLES.HANDLE.eq(pid.getBytes(
-            StandardCharsets.UTF_8)))
-        .and(HANDLES.TYPE.eq("issueDate".getBytes(StandardCharsets.UTF_8))));
-    return issueAttributes;
+        .and(HANDLES.TYPE.eq("issueNumber".getBytes(StandardCharsets.UTF_8)));
   }
 
-  public void archiveAnnotation(String id, Instant recordTimestamp, HandleAttribute status, HandleAttribute text) {
+  public void archiveAnnotation(String id, Instant recordTimestamp, HandleAttribute status,
+      HandleAttribute text) {
     var queryList = new ArrayList<Query>();
     var statusQuery = context.update(HANDLES)
         .set(HANDLES.DATA, status.data())
@@ -100,12 +98,13 @@ public class HandleRepository {
         .set(HANDLES.PUB_READ, true)
         .set(HANDLES.PUB_WRITE, false);
     queryList.add(textQuery);
-    queryList.addAll(versionIncrement(id, recordTimestamp));
+    queryList.add(versionIncrement(id, recordTimestamp, true));
     context.batch(queryList).execute();
   }
 
-  private byte[] createIssueDate(Instant recordTimestamp) {
-    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-    return formatter.format(Date.from(recordTimestamp)).getBytes(StandardCharsets.UTF_8);
+  public void rollbackHandleCreation(String id) {
+    context.delete(HANDLES)
+        .where(HANDLES.HANDLE.eq(id.getBytes(StandardCharsets.UTF_8)))
+        .execute();
   }
 }

@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
+import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.HandleAttribute;
 import eu.dissco.annotationprocessingservice.repository.HandleRepository;
 import java.io.StringWriter;
@@ -29,12 +30,15 @@ import org.w3c.dom.Document;
 public class HandleService {
 
   private static final String PREFIX = "20.5000.1025/";
+  private static final String HANDLE = "Handle";
+  private static final String MOCK_HANDLE = "https://hdl.handle.net/21...";
   private final Random random;
-  private final char[] symbols = "ABCDEFGHJKLMNPQRSTUVWXYZ1234567890".toCharArray();
+  private final char[] symbols = "ABCDEFGHJKLMNPQRSTVWXYZ1234567890".toCharArray();
   private final char[] buffer = new char[11];
   private final ObjectMapper mapper;
   private final DocumentBuilder documentBuilder;
   private final HandleRepository repository;
+  private final TransformerFactory transformerFactory;
 
   public String createNewHandle(Annotation annotation)
       throws TransformerException {
@@ -55,9 +59,9 @@ public class HandleService {
     handleAttributes.add(new HandleAttribute(2, "pidIssuer",
         createPidReference("https://doi.org/10.22/10.22/2AA-GAA-E29", "DOI", "RA Issuing DOI")));
     handleAttributes.add(new HandleAttribute(3, "digitalObjectType",
-        createPidReference("https://hdl.handle.net/21...", "Handle", "Annotation")));
+        createPidReference(MOCK_HANDLE, HANDLE, "Annotation")));
     handleAttributes.add(new HandleAttribute(4, "digitalObjectSubtype",
-        createPidReference("https://hdl.handle.net/21...", "Handle", annotation.motivation())));
+        createPidReference(MOCK_HANDLE, HANDLE, annotation.motivation())));
     handleAttributes.add(
         new HandleAttribute(5, "10320/loc", createLocations(handle)));
     handleAttributes.add(new HandleAttribute(6, "issueDate", createIssueDate(recordTimestamp)));
@@ -73,11 +77,16 @@ public class HandleService {
   }
 
   public void updateHandle(String id, Annotation annotation) {
-    var handleAttributes = new ArrayList<HandleAttribute>();
+    var handleAttributes = updateHandles(annotation);
     var recordTimeStamp = Instant.now();
+    repository.updateHandleAttributes(id, recordTimeStamp, handleAttributes, true);
+  }
+
+  private List<HandleAttribute> updateHandles(Annotation annotation) {
+    var handleAttributes = new ArrayList<HandleAttribute>();
     handleAttributes.add(new HandleAttribute(4, "digitalObjectSubtype",
-        createPidReference("https://hdl.handle.net/21...", "Handle", annotation.motivation())));
-    repository.updateHandleAttributes(id, recordTimeStamp, handleAttributes);
+        createPidReference(MOCK_HANDLE, HANDLE, annotation.motivation())));
+    return handleAttributes;
   }
 
   private byte[] createIssueDate(Instant recordTimestamp) {
@@ -98,8 +107,7 @@ public class HandleService {
   }
 
   private String documentToString(Document document) throws TransformerException {
-    var tf = TransformerFactory.newInstance();
-    var transformer = tf.newTransformer();
+    var transformer = transformerFactory.newTransformer();
     transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
     StringWriter writer = new StringWriter();
     transformer.transform(new DOMSource(document), new StreamResult(writer));
@@ -156,5 +164,15 @@ public class HandleService {
             StandardCharsets.UTF_8));
     var recordTimestamp = Instant.now();
     repository.archiveAnnotation(id, recordTimestamp, status, text);
+  }
+
+  public void rollbackHandleCreation(AnnotationRecord annotationRecord) {
+    repository.rollbackHandleCreation(annotationRecord.id());
+  }
+
+  public void deleteVersion(AnnotationRecord annotationRecord) {
+    var handleAttributes = updateHandles(annotationRecord.annotation());
+    repository.updateHandleAttributes(annotationRecord.id(), Instant.now(), handleAttributes,
+        false);
   }
 }
