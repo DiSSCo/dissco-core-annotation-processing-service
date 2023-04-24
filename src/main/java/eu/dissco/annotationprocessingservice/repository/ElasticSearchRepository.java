@@ -16,23 +16,15 @@ public class ElasticSearchRepository {
   private final ElasticsearchClient client;
   private final ElasticSearchProperties properties;
 
-  public IndexResponse indexAnnotation(AnnotationRecord annotationRecord) {
-    try {
-      return client.index(
-          idx -> idx.index(properties.getIndexName()).id(annotationRecord.id())
-              .document(annotationRecord));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public IndexResponse indexAnnotation(AnnotationRecord annotationRecord) throws IOException {
+    return client.index(
+        idx -> idx.index(properties.getIndexName()).id(annotationRecord.id())
+            .document(annotationRecord));
   }
 
-  public DeleteResponse archiveAnnotation(String id) {
-    try {
-      return client.delete(
-          req -> req.index(properties.getIndexName()).id(id)
-      );
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public DeleteResponse archiveAnnotation(String id) throws IOException {
+    return client.delete(
+        req -> req.index(properties.getIndexName()).id(id)
+    );
   }
 }

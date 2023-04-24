@@ -1,12 +1,18 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import java.io.IOException;
 import java.time.Instant;
 import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +38,8 @@ public class ProcessingService {
         currentAnnotation.preferenceScore() == annotation.preferenceScore();
   }
 
-  public AnnotationRecord handleMessages(AnnotationEvent event) throws TransformerException {
+  public AnnotationRecord handleMessage(AnnotationEvent event)
+      throws TransformerException, DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
     var annotation = convertToAnnotation(event);
     var currentAnnotationOptional = repository.getAnnotation(annotation.target(),
@@ -54,7 +61,7 @@ public class ProcessingService {
   }
 
   private AnnotationRecord updateExistingAnnotation(AnnotationRecord currentAnnotationRecord,
-      Annotation annotation) {
+      Annotation annotation) throws FailedProcessingException {
     if (handleNeedsUpdate(currentAnnotationRecord.annotation(), annotation)) {
       handleService.updateHandle(currentAnnotationRecord.id(), annotation);
     }
@@ -64,41 +71,100 @@ public class ProcessingService {
     var result = repository.createAnnotationRecord(annotationRecord);
     if (result == SUCCESS) {
       log.info("Annotation: {} has been successfully committed to database", id);
-      var indexDocument = elasticRepository.indexAnnotation(annotationRecord);
-      if (indexDocument.result().jsonValue().equals("updated")) {
+      IndexResponse indexDocument = null;
+      try {
+        indexDocument = elasticRepository.indexAnnotation(annotationRecord);
+      } catch (IOException e) {
+        rollbackUpdatedAnnotation(currentAnnotationRecord, annotationRecord, false);
+      }
+      if (indexDocument.result().equals(Result.Updated)) {
         log.info("Annotation: {} has been successfully indexed", id);
-        kafkaService.publishUpdateEvent(currentAnnotationRecord, annotationRecord);
+        try {
+          kafkaService.publishUpdateEvent(currentAnnotationRecord, annotationRecord);
+        } catch (JsonProcessingException e) {
+          rollbackUpdatedAnnotation(currentAnnotationRecord, annotationRecord, true);
+        }
+      } else {
+        log.error("Elasticsearch did not update annotation: {}", id);
+        throw new FailedProcessingException();
       }
     }
     return annotationRecord;
+  }
+
+  private void rollbackUpdatedAnnotation(AnnotationRecord currentAnnotationRecord,
+      AnnotationRecord annotationRecord, boolean elasticRollback) throws FailedProcessingException {
+    if (elasticRollback) {
+      try {
+        elasticRepository.indexAnnotation(currentAnnotationRecord);
+      } catch (IOException e) {
+        log.error("Fatal exception, unable to rollback update for: {}", annotationRecord, e);
+      }
+    }
+    repository.createAnnotationRecord(currentAnnotationRecord);
+    if (handleNeedsUpdate(currentAnnotationRecord.annotation(), annotationRecord.annotation())) {
+      handleService.deleteVersion(currentAnnotationRecord);
+    }
+    throw new FailedProcessingException();
   }
 
   private boolean handleNeedsUpdate(Annotation currentAnnotation, Annotation annotation) {
     return !currentAnnotation.motivation().equals(annotation.motivation());
   }
 
-  private void processEqualAnnotation(AnnotationRecord currentAnnotationRecord) {
+  private void processEqualAnnotation(AnnotationRecord currentAnnotationRecord)
+      throws FailedProcessingException {
     var result = repository.updateLastChecked(currentAnnotationRecord);
     if (result == SUCCESS) {
       log.info("Successfully updated lastChecked for existing annotation: {}",
           currentAnnotationRecord.id());
+    } else {
+      throw new FailedProcessingException();
     }
   }
 
-  private AnnotationRecord persistNewAnnotation(Annotation annotation) throws TransformerException {
+  private AnnotationRecord persistNewAnnotation(Annotation annotation)
+      throws TransformerException, FailedProcessingException {
     var id = handleService.createNewHandle(annotation);
     log.info("New id has been generated for Annotation: {}", id);
     var annotationRecord = new AnnotationRecord(id, 1, annotation.created(), annotation);
     var result = repository.createAnnotationRecord(annotationRecord);
     if (result == SUCCESS) {
       log.info("Annotation: {} has been successfully committed to database", id);
-      var indexDocument = elasticRepository.indexAnnotation(annotationRecord);
-      if (indexDocument.result().jsonValue().equals("created")) {
+      IndexResponse indexDocument = null;
+      try {
+        indexDocument = elasticRepository.indexAnnotation(annotationRecord);
+      } catch (IOException e) {
+        rollbackNewAnnotation(annotationRecord, false);
+      }
+      if (indexDocument.result().equals(Result.Created)) {
         log.info("Annotation: {} has been successfully indexed", id);
-        kafkaService.publishCreateEvent(annotationRecord);
+        try {
+          kafkaService.publishCreateEvent(annotationRecord);
+        } catch (JsonProcessingException e) {
+          rollbackNewAnnotation(annotationRecord, true);
+        }
+      } else {
+        log.error("Elasticsearch did not create annotation: {}", id);
+        throw new FailedProcessingException();
       }
     }
     return annotationRecord;
+  }
+
+  private void rollbackNewAnnotation(AnnotationRecord annotationRecord, boolean elasticRollback)
+      throws FailedProcessingException {
+    log.warn("Rolling back for annotation: {}", annotationRecord);
+    if (elasticRollback) {
+      try {
+        elasticRepository.archiveAnnotation(annotationRecord.id());
+      } catch (IOException e) {
+        log.info("Fatal exception, unable to rollback: {}", annotationRecord.id(), e);
+      }
+    }
+    repository.rollbackAnnotation(annotationRecord.id());
+    handleService.rollbackHandleCreation(annotationRecord);
+    throw new FailedProcessingException();
   }
 
   private Annotation convertToAnnotation(AnnotationEvent event) {
@@ -124,19 +190,16 @@ public class ProcessingService {
     return objectNode;
   }
 
-  public void archiveAnnotation(String id) {
+  public void archiveAnnotation(String id) throws IOException {
     if (repository.getAnnotationById(id).isPresent()) {
       log.info("Removing annotation: {} from indexing service", id);
       var document = elasticRepository.archiveAnnotation(id);
-      if (document.result().jsonValue().equals("deleted") || document.result().jsonValue()
-          .equals("not_found")) {
+      if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
         log.info("Archive annotation: {} in database", id);
-        var result = repository.archiveAnnotation(id);
-        if (result > 0) {
-          log.info("Archived {} versions of annotation: {}", result, id);
-          log.info("Tombstoning PID record of annotation: {}", id);
-          handleService.archiveRecord(id, "e2befba6-9324-4bb4-9f41-d7dfae4a44b0");
-        }
+        repository.archiveAnnotation(id);
+        log.info("Archived annotation: {}", id);
+        log.info("Tombstoning PID record of annotation: {}", id);
+        handleService.archiveRecord(id, "e2befba6-9324-4bb4-9f41-d7dfae4a44b0");
       }
     } else {
       log.info("Annotation with id: {} is already archived", id);

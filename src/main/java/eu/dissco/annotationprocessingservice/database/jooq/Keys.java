@@ -8,7 +8,6 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.HandlesRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.NewAnnotationRecord;
-
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;

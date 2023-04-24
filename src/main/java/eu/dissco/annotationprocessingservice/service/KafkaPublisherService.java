@@ -21,7 +21,7 @@ public class KafkaPublisherService {
   private final ObjectMapper mapper;
   private final KafkaTemplate<String, String> kafkaTemplate;
 
-  public void publishCreateEvent(AnnotationRecord annotationRecord) {
+  public void publishCreateEvent(AnnotationRecord annotationRecord) throws JsonProcessingException {
     var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
         "create",
         "annotation-processing-service",
@@ -31,15 +31,11 @@ public class KafkaPublisherService {
         mapper.valueToTree(annotationRecord),
         null,
         "Annotation newly created");
-    try {
-      kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
   public void publishUpdateEvent(AnnotationRecord currentAnnotationRecord,
-      AnnotationRecord annotationRecord) {
+      AnnotationRecord annotationRecord) throws JsonProcessingException {
     var jsonPatch = createJsonPatch(currentAnnotationRecord, annotationRecord);
     var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
         "update",
@@ -50,11 +46,7 @@ public class KafkaPublisherService {
         mapper.valueToTree(annotationRecord),
         jsonPatch,
         "Annotation has been updated");
-    try {
-      kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
   private JsonNode createJsonPatch(AnnotationRecord currentAnnotationRecord,

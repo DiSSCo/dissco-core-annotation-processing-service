@@ -7,72 +7,83 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class AnnotationRepository {
+
+  private static final String FIELD_SET = "fieldSet";
+  private static final String INDV_PROP = "indvProp";
 
   private final ObjectMapper mapper;
   private final DSLContext context;
 
   public Optional<AnnotationRecord> getAnnotation(JsonNode targetId, String creator,
-      String motivation) {
+      String motivation) throws DataBaseException {
     var query = context.select(NEW_ANNOTATION.asterisk())
         .from(NEW_ANNOTATION)
         .where(NEW_ANNOTATION.TARGET_ID.eq(targetId.get("id").asText()))
         .and(NEW_ANNOTATION.CREATOR.eq(creator))
         .and(NEW_ANNOTATION.MOTIVATION.eq(motivation))
         .and(NEW_ANNOTATION.DELETED.isNull());
-    if (targetId.get("fieldSet") != null) {
-      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get("fieldSet").asText()));
-    } else if (targetId.get("indvProp") != null) {
-      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get("indvProp").asText()));
-    }
-    else {
+    if (targetId.get(INDV_PROP) != null) {
+      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(INDV_PROP).asText()));
+    } else if (targetId.get(FIELD_SET) != null) {
+      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(FIELD_SET).asText()));
+    } else {
       query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }
-    return query.fetchOptional(this::mapAnnotationRecord);
+    var dbRecord = query.fetchOptional();
+    if (dbRecord.isPresent()) {
+      return Optional.of(mapAnnotationRecord(dbRecord.get()));
+    } else {
+      return Optional.empty();
+    }
   }
 
-  private AnnotationRecord mapAnnotationRecord(Record record) {
-    Annotation annotation = null;
+  private AnnotationRecord mapAnnotationRecord(Record dbRecord) throws DataBaseException {
+    Annotation annotation;
     try {
       annotation = new Annotation(
-          record.get(NEW_ANNOTATION.TYPE),
-          record.get(NEW_ANNOTATION.MOTIVATION),
-          mapper.readTree(record.get(NEW_ANNOTATION.TARGET_BODY).data()),
-          mapper.readTree(record.get(NEW_ANNOTATION.BODY).data()),
-          record.get(NEW_ANNOTATION.PREFERENCE_SCORE),
-          record.get(NEW_ANNOTATION.CREATOR),
-          record.get(NEW_ANNOTATION.CREATED),
-          mapper.readTree(record.get(NEW_ANNOTATION.GENERATOR_BODY).data()),
-          record.get(NEW_ANNOTATION.GENERATED)
+          dbRecord.get(NEW_ANNOTATION.TYPE),
+          dbRecord.get(NEW_ANNOTATION.MOTIVATION),
+          mapper.readTree(dbRecord.get(NEW_ANNOTATION.TARGET_BODY).data()),
+          mapper.readTree(dbRecord.get(NEW_ANNOTATION.BODY).data()),
+          dbRecord.get(NEW_ANNOTATION.PREFERENCE_SCORE),
+          dbRecord.get(NEW_ANNOTATION.CREATOR),
+          dbRecord.get(NEW_ANNOTATION.CREATED),
+          mapper.readTree(dbRecord.get(NEW_ANNOTATION.GENERATOR_BODY).data()),
+          dbRecord.get(NEW_ANNOTATION.GENERATED)
       );
     } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+      log.error("Failed to get data from database, Unable to parse JSONB to JSON", e);
+      throw new DataBaseException(e.getMessage());
     }
     return new AnnotationRecord(
-        record.get(NEW_ANNOTATION.ID),
-        record.get(NEW_ANNOTATION.VERSION),
-        record.get(NEW_ANNOTATION.CREATED),
+        dbRecord.get(NEW_ANNOTATION.ID),
+        dbRecord.get(NEW_ANNOTATION.VERSION),
+        dbRecord.get(NEW_ANNOTATION.CREATED),
         annotation);
   }
 
   public int createAnnotationRecord(AnnotationRecord annotationRecord) {
     String targetField = null;
-    if (annotationRecord.annotation().target().get("fieldSet") != null) {
-      targetField = annotationRecord.annotation().target().get("fieldSet").asText();
+    if (annotationRecord.annotation().target().get(FIELD_SET) != null) {
+      targetField = annotationRecord.annotation().target().get(FIELD_SET).asText();
     }
-    if (annotationRecord.annotation().target().get("indvProp") != null) {
-      targetField = annotationRecord.annotation().target().get("indvProp").asText();
+    if (annotationRecord.annotation().target().get(INDV_PROP) != null) {
+      targetField = annotationRecord.annotation().target().get(INDV_PROP).asText();
     }
     return context.insertInto(NEW_ANNOTATION)
         .set(NEW_ANNOTATION.ID, annotationRecord.id())
@@ -129,10 +140,14 @@ public class AnnotationRepository {
         .fetchOptional(Record1::value1);
   }
 
-  public int archiveAnnotation(String id) {
-    return context.update(NEW_ANNOTATION)
+  public void archiveAnnotation(String id) {
+    context.update(NEW_ANNOTATION)
         .set(NEW_ANNOTATION.DELETED, Instant.now())
         .where(NEW_ANNOTATION.ID.eq(id))
         .execute();
+  }
+
+  public void rollbackAnnotation(String id) {
+    context.delete(NEW_ANNOTATION).where(NEW_ANNOTATION.ID.eq(id)).execute();
   }
 }
