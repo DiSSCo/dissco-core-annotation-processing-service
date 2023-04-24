@@ -37,10 +37,10 @@ public class AnnotationRepository {
         .and(NEW_ANNOTATION.CREATOR.eq(creator))
         .and(NEW_ANNOTATION.MOTIVATION.eq(motivation))
         .and(NEW_ANNOTATION.DELETED.isNull());
-    if (targetId.get(FIELD_SET) != null) {
-      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(FIELD_SET).asText()));
-    } else if (targetId.get(INDV_PROP) != null) {
+    if (targetId.get(INDV_PROP) != null) {
       query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(INDV_PROP).asText()));
+    } else if (targetId.get(FIELD_SET) != null) {
+      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(FIELD_SET).asText()));
     } else {
       query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }

@@ -10,6 +10,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,10 +44,11 @@ public class ApplicationConfiguration {
   }
 
   @Bean
-  public TransformerFactory transformerFactory() {
+  public TransformerFactory transformerFactory() throws TransformerConfigurationException {
     var factory = TransformerFactory.newInstance();
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+    factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
     return factory;
   }
 }

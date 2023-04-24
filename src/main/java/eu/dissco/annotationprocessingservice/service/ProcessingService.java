@@ -84,6 +84,9 @@ public class ProcessingService {
         } catch (JsonProcessingException e) {
           rollbackUpdatedAnnotation(currentAnnotationRecord, annotationRecord, true);
         }
+      } else {
+        log.error("Elasticsearch did not update annotation: {}", id);
+        throw new FailedProcessingException();
       }
     }
     return annotationRecord;
@@ -141,6 +144,9 @@ public class ProcessingService {
         } catch (JsonProcessingException e) {
           rollbackNewAnnotation(annotationRecord, true);
         }
+      } else {
+        log.error("Elasticsearch did not create annotation: {}", id);
+        throw new FailedProcessingException();
       }
     }
     return annotationRecord;
