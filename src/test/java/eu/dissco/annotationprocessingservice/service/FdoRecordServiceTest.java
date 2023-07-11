@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +36,7 @@ class FdoRecordServiceTest {
     var expected = givenPostRequest();
     ((ObjectNode) expected.get(0).get("data")).put("id", ID);
 
-    assertThat(fdoRecordService.buildPatchDeleteHandleRequest(givenAnnotationRecord()))
+    assertThat(fdoRecordService.buildPatchRollbackHandleRequest(givenAnnotation(), ID))
         .isEqualTo(expected);
   }
 
@@ -43,6 +44,26 @@ class FdoRecordServiceTest {
   void testRollbackCreation() throws Exception {
     assertThat(fdoRecordService.buildRollbackCreationRequest(givenAnnotationRecord()))
         .isEqualTo(givenRollbackCreationRequest());
+  }
+
+  @Test
+  void testArchiveAnnotation() throws Exception {
+    // Given
+    var expected = List.of(MAPPER.readTree("""
+        {
+          "data":{
+            "id":"20.5000.1025/KZL-VC0-ZK2",
+            "attributes":{
+              "tombstoneText":"This annotation was archived"
+            }
+          }
+        }
+        """));
+    // When
+    var result = fdoRecordService.buildArchiveHandleRequest(ID);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
   }
 
   @Test

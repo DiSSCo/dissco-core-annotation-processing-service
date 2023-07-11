@@ -25,7 +25,7 @@ public class KafkaConsumerService {
 
   @KafkaListener(topics = "${kafka.consumer.topic}")
   public void getMessages(@Payload String message)
-      throws JsonProcessingException, TransformerException, DataBaseException, FailedProcessingException {
+      throws JsonProcessingException, DataBaseException, FailedProcessingException {
     var event = mapper.readValue(message, AnnotationEvent.class);
     service.handleMessage(event);
   }

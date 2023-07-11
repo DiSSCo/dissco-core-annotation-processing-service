@@ -60,6 +60,12 @@ public class HandleComponent {
     validateResponse(response);
   }
 
+  public void archiveHandle(List<JsonNode> request) throws PidCreationException{
+    var requestBody = BodyInserters.fromValue(request);
+    var response = sendRequest(HttpMethod.PUT, requestBody, "");
+    validateResponse(response);
+  }
+
   private <T> Mono<JsonNode> sendRequest(HttpMethod httpMethod,
       BodyInserter<T, ReactiveHttpOutputMessage> requestBody, String endpoint)
       throws PidCreationException {

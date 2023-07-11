@@ -36,13 +36,24 @@ public class FdoRecordService {
     return List.of(request);
   }
 
-  public List<JsonNode> buildPatchDeleteHandleRequest(AnnotationRecord annotation) {
+  public List<JsonNode> buildPatchRollbackHandleRequest(Annotation annotation, String handle) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
-    var attributes = generateAttributes(annotation.annotation());
+    var attributes = generateAttributes(annotation);
     data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
     data.set("attributes", attributes);
-    data.put("id", annotation.id());
+    data.put("id", handle);
+    request.set("data", data);
+    return List.of(request);
+  }
+
+  public List<JsonNode> buildArchiveHandleRequest(String id){
+    var request = mapper.createObjectNode();
+    var data = mapper.createObjectNode();
+    var attributes = mapper.createObjectNode();
+    attributes.put("tombstoneText", "This annotation was archived");
+    data.put("id", id);
+    data.set("attributes", attributes);
     request.set("data", data);
     return List.of(request);
   }

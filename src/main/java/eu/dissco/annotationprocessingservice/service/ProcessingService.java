@@ -10,8 +10,10 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
 import javax.xml.transform.TransformerException;
@@ -28,9 +30,10 @@ public class ProcessingService {
 
   private final ObjectMapper mapper;
   private final AnnotationRepository repository;
-  private final HandleService handleService;
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
+  private final FdoRecordService fdoRecordService;
+  private final HandleComponent handleComponent;
 
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
     return currentAnnotation.body().equals(annotation.body()) &&
@@ -39,7 +42,7 @@ public class ProcessingService {
   }
 
   public AnnotationRecord handleMessage(AnnotationEvent event)
-      throws TransformerException, DataBaseException, FailedProcessingException {
+      throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
     var annotation = convertToAnnotation(event);
     var currentAnnotationOptional = repository.getAnnotation(annotation.target(),
@@ -62,8 +65,11 @@ public class ProcessingService {
 
   private AnnotationRecord updateExistingAnnotation(AnnotationRecord currentAnnotationRecord,
       Annotation annotation) throws FailedProcessingException {
-    if (handleNeedsUpdate(currentAnnotationRecord.annotation(), annotation)) {
-      handleService.updateHandle(currentAnnotationRecord.id(), annotation);
+    try {
+      filterUpdatesAndUpdateHandleRecord(currentAnnotationRecord, annotation);
+    } catch (PidCreationException e) {
+      log.error("Unable to post update for annotation {}", currentAnnotationRecord.id(), e);
+      throw new FailedProcessingException();
     }
     var id = currentAnnotationRecord.id();
     var version = currentAnnotationRecord.version() + 1;
@@ -102,15 +108,11 @@ public class ProcessingService {
       }
     }
     repository.createAnnotationRecord(currentAnnotationRecord);
-    if (handleNeedsUpdate(currentAnnotationRecord.annotation(), annotationRecord.annotation())) {
-      handleService.deleteVersion(currentAnnotationRecord);
-    }
+    filterUpdatesAndRollbackHandleUpdateRecord(currentAnnotationRecord,
+        annotationRecord.annotation());
     throw new FailedProcessingException();
   }
 
-  private boolean handleNeedsUpdate(Annotation currentAnnotation, Annotation annotation) {
-    return !currentAnnotation.motivation().equals(annotation.motivation());
-  }
 
   private void processEqualAnnotation(AnnotationRecord currentAnnotationRecord)
       throws FailedProcessingException {
@@ -124,8 +126,8 @@ public class ProcessingService {
   }
 
   private AnnotationRecord persistNewAnnotation(Annotation annotation)
-      throws TransformerException, FailedProcessingException {
-    var id = handleService.createNewHandle(annotation);
+      throws FailedProcessingException {
+    var id = postHandle(annotation);
     log.info("New id has been generated for Annotation: {}", id);
     var annotationRecord = new AnnotationRecord(id, 1, annotation.created(), annotation);
     var result = repository.createAnnotationRecord(annotationRecord);
@@ -152,6 +154,16 @@ public class ProcessingService {
     return annotationRecord;
   }
 
+  private String postHandle(Annotation annotation) throws FailedProcessingException {
+    var requestBody = fdoRecordService.buildPostHandleRequest(annotation);
+    try {
+      return handleComponent.postHandle(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to create handle for given annotation. ", e);
+      throw new FailedProcessingException();
+    }
+  }
+
   private void rollbackNewAnnotation(AnnotationRecord annotationRecord, boolean elasticRollback)
       throws FailedProcessingException {
     log.warn("Rolling back for annotation: {}", annotationRecord);
@@ -163,8 +175,43 @@ public class ProcessingService {
       }
     }
     repository.rollbackAnnotation(annotationRecord.id());
-    handleService.rollbackHandleCreation(annotationRecord);
+    rollbackHandleCreation(annotationRecord);
     throw new FailedProcessingException();
+  }
+
+  private void filterUpdatesAndUpdateHandleRecord(AnnotationRecord currentAnnotationRecord,
+      Annotation annotation)
+      throws PidCreationException {
+    if (!fdoRecordService.handleNeedsUpdate(currentAnnotationRecord.annotation(), annotation)) {
+      return;
+    }
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation,
+        currentAnnotationRecord.id());
+    handleComponent.updateHandle(requestBody);
+  }
+
+  private void filterUpdatesAndRollbackHandleUpdateRecord(AnnotationRecord currentAnnotationRecord,
+      Annotation annotation) {
+    if (!fdoRecordService.handleNeedsUpdate(currentAnnotationRecord.annotation(), annotation)) {
+      return;
+    }
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation,
+        currentAnnotationRecord.id());
+    try {
+      handleComponent.rollbackHandleUpdate(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to rollback handle update for annotation {}", currentAnnotationRecord.id(),
+          e);
+    }
+  }
+
+  private void rollbackHandleCreation(AnnotationRecord annotationRecord) {
+    var requestBody = fdoRecordService.buildRollbackCreationRequest(annotationRecord);
+    try {
+      handleComponent.rollbackHandleCreation(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to rollback creation for annotation {}", annotationRecord.id(), e);
+    }
   }
 
   private Annotation convertToAnnotation(AnnotationEvent event) {
@@ -199,7 +246,12 @@ public class ProcessingService {
         repository.archiveAnnotation(id);
         log.info("Archived annotation: {}", id);
         log.info("Tombstoning PID record of annotation: {}", id);
-        handleService.archiveRecord(id, "e2befba6-9324-4bb4-9f41-d7dfae4a44b0");
+        var requestBody =fdoRecordService.buildArchiveHandleRequest(id);
+        try {
+          handleComponent.archiveHandle(requestBody);
+        } catch (PidCreationException e){
+          log.error("Unable to archive handle for annotation {}", id, e);
+        }
       }
     } else {
       log.info("Annotation with id: {} is already archived", id);

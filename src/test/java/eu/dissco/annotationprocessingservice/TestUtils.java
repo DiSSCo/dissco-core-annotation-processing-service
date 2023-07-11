@@ -53,6 +53,23 @@ public class TestUtils {
         givenAnnotation(motivation, creator));
   }
 
+  public static AnnotationRecord givenAnnotationRecord(AnnotationEvent annotationEvent)
+      throws JsonProcessingException {
+    return new AnnotationRecord(
+        ID, 1, CREATED,
+        new Annotation(
+            annotationEvent.type(),
+            annotationEvent.motivation(),
+            annotationEvent.target(),
+            annotationEvent.body(),
+            100,
+            annotationEvent.creator(),
+            annotationEvent.created(),
+            generateGenerator(),
+            CREATED
+        ));
+  }
+
   public static Annotation givenAnnotation(String motivation, String creator) throws JsonProcessingException{
     return new Annotation(
         TYPE,
@@ -105,7 +122,7 @@ public class TestUtils {
     );
   }
 
-  private static JsonNode generateGenerator() throws JsonProcessingException {
+  public static JsonNode generateGenerator() throws JsonProcessingException {
     return MAPPER.readValue(
         """
             {
