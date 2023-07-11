@@ -1,0 +1,4 @@
+# Date: July 11, 2023
+# Issue: snappy-java high issue, https://www.cvedetails.com/cve/CVE-2023-34453/
+# Solution: Spring needs to update its version
+CVE-2023-34455
