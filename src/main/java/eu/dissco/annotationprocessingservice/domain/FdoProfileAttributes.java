@@ -11,7 +11,8 @@ public enum FdoProfileAttributes {
   ANNOTATION_TOPIC("annotationTopic", null),
   REPLACE_OR_APPEND("replaceOrAppend", null),
   ACCESS_RESTRICTED("accessRestricted", null),
-  LINKED_OBJECT_URL("linkedObjectUrl", null);
+  LINKED_OBJECT_URL("linkedObjectUrl", null),
+  LINKED_IS_PID("linkedObjectIsPid", null);
 
 
   private final String attribute;

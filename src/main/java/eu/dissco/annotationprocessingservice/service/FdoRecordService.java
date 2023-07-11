@@ -5,6 +5,7 @@ import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.DIGITAL_OBJECT_TYPE;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
+import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.LINKED_IS_PID;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.LINKED_OBJECT_URL;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.REPLACE_OR_APPEND;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.SUBJECT_ID;
@@ -75,6 +76,7 @@ public class FdoRecordService {
     var generatorId = annotation.generator().get("id");
     if (generatorId != null) {
       attributes.put(LINKED_OBJECT_URL.getAttribute(), generatorId.asText());
+      attributes.put(LINKED_IS_PID.getAttribute(), true);
     }
     return attributes;
   }
