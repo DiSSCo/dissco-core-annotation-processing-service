@@ -7,6 +7,7 @@ import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import java.time.Instant;
+import java.util.List;
 
 public class TestUtils {
 
@@ -49,18 +50,33 @@ public class TestUtils {
         ID,
         VERSION,
         CREATED,
-        new Annotation(
-            TYPE,
-            motivation,
-            generateTarget(),
-            generateBody(),
-            PREFERENCE_SCORE,
-            creator,
-            CREATED,
-            generateGenerator(),
-            GENERATED
-        )
-    );
+        givenAnnotation(motivation, creator));
+  }
+
+  public static Annotation givenAnnotation(String motivation, String creator) throws JsonProcessingException{
+    return new Annotation(
+        TYPE,
+        motivation,
+        generateTarget(),
+        generateBody(),
+        PREFERENCE_SCORE,
+        creator,
+        CREATED,
+        generateGenerator(),
+        GENERATED);
+  }
+
+  public static Annotation givenAnnotation() throws JsonProcessingException{
+    return new Annotation(
+        TYPE,
+        MOTIVATION,
+        generateTarget(),
+        generateBody(),
+        PREFERENCE_SCORE,
+        CREATOR,
+        CREATED,
+        generateGenerator(),
+        GENERATED);
   }
 
   public static JsonNode generateTarget() throws JsonProcessingException {
@@ -99,6 +115,36 @@ public class TestUtils {
             }
             """, JsonNode.class
     );
+  }
+
+  public static List<JsonNode> givenPostRequest() throws Exception {
+    return List.of(MAPPER.readTree("""
+        {
+            "data": {
+              "type": "annotation",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "issuedForAgent": "https://ror.org/0566bfb96",
+                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "subjectDigitalObjectId": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
+                "annotationTopic":"20.5000.1025/460-A7R-QMJ",
+                "replaceOrAppend": "append",
+                "accessRestricted":false,
+                "linkedObjectUrl":"https://hdl.handle.net/anno-process-service-pid"
+              }
+            }
+          }
+        """));
+  }
+
+  public static JsonNode givenRollbackCreationRequest() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "data": [
+            {"id":"20.5000.1025/KZL-VC0-ZK2"}
+          ]
+        }
+        """);
   }
 
 }
