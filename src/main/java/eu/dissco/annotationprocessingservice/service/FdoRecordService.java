@@ -27,13 +27,17 @@ public class FdoRecordService {
 
   private final ObjectMapper mapper;
 
+  private static final String ATTRIBUTES = "attributes";
+  private static final String DATA = "data";
+  private static final String ID = "id";
+
   public List<JsonNode> buildPostHandleRequest(Annotation annotation) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation);
     data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
-    data.set("attributes", attributes);
-    request.set("data", data);
+    data.set(ATTRIBUTES, attributes);
+    request.set(DATA, data);
     return List.of(request);
   }
 
@@ -42,9 +46,9 @@ public class FdoRecordService {
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation);
     data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
-    data.set("attributes", attributes);
-    data.put("id", handle);
-    request.set("data", data);
+    data.set(ATTRIBUTES, attributes);
+    data.put(ID, handle);
+    request.set(DATA, data);
     return List.of(request);
   }
 
@@ -53,9 +57,9 @@ public class FdoRecordService {
     var data = mapper.createObjectNode();
     var attributes = mapper.createObjectNode();
     attributes.put("tombstoneText", "This annotation was archived");
-    data.put("id", id);
-    data.set("attributes", attributes);
-    request.set("data", data);
+    data.put(ID, id);
+    data.set(ATTRIBUTES, attributes);
+    request.set(DATA, data);
     return List.of(request);
   }
 
@@ -64,7 +68,7 @@ public class FdoRecordService {
     attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
     attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), DIGITAL_OBJECT_TYPE.getDefaultValue());
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
-    var targetId = annotation.target().get("id");
+    var targetId = annotation.target().get(ID);
     if (targetId != null) {
       attributes.put(SUBJECT_ID.getAttribute(), targetId.asText());
     } else {
@@ -73,7 +77,7 @@ public class FdoRecordService {
     attributes.put(ANNOTATION_TOPIC.getAttribute(), annotation.motivation());
     attributes.put(REPLACE_OR_APPEND.getAttribute(), "append");
     attributes.put(ACCESS_RESTRICTED.getAttribute(), false);
-    var generatorId = annotation.generator().get("id");
+    var generatorId = annotation.generator().get(ID);
     if (generatorId != null) {
       attributes.put(LINKED_OBJECT_URL.getAttribute(), generatorId.asText());
       attributes.put(LINKED_IS_PID.getAttribute(), true);
@@ -82,14 +86,14 @@ public class FdoRecordService {
   }
 
   public JsonNode buildRollbackCreationRequest(AnnotationRecord annotationRecord) {
-    var dataNode = List.of(mapper.createObjectNode().put("id", annotationRecord.id()));
+    var dataNode = List.of(mapper.createObjectNode().put(ID, annotationRecord.id()));
     ArrayNode dataArray = mapper.valueToTree(dataNode);
-    return mapper.createObjectNode().set("data", dataArray);
+    return mapper.createObjectNode().set(DATA, dataArray);
   }
 
   public boolean handleNeedsUpdate(Annotation currentAnnotation, Annotation newAnnotation) {
     return (
-        !Objects.equals(currentAnnotation.target().get("id"), (newAnnotation.target().get("id"))) ||
+        !Objects.equals(currentAnnotation.target().get(ID), (newAnnotation.target().get(ID))) ||
             !currentAnnotation.motivation().equals(newAnnotation.motivation()));
   }
 

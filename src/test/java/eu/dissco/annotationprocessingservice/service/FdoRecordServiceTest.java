@@ -2,19 +2,25 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
+import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.MOTIVATION;
+import static eu.dissco.annotationprocessingservice.TestUtils.TYPE;
+import static eu.dissco.annotationprocessingservice.TestUtils.generateGenerator;
+import static eu.dissco.annotationprocessingservice.TestUtils.generateTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRecord;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FdoRecordServiceTest {
 
@@ -26,9 +32,46 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testPostRequest() throws Exception {
+  void testBuildPostRequest() throws Exception {
     assertThat(fdoRecordService.buildPostHandleRequest(givenAnnotation(MOTIVATION, CREATOR)))
         .isEqualTo(givenPostRequest());
+  }
+
+  @Test
+  void testBuildPostRequestFailure() throws Exception {
+    // Given
+    var annotation = new Annotation(TYPE, MOTIVATION, MAPPER.createObjectNode(),
+        MAPPER.createObjectNode(), 100, CREATOR, CREATED, generateGenerator(), CREATED);
+
+    // Then
+    assertThrows(IllegalStateException.class, () -> fdoRecordService.buildPostHandleRequest(annotation));
+  }
+
+  void testBuildPostRequestNoGenerator() throws Exception {
+    var annotation = new Annotation(TYPE, MOTIVATION, generateTarget(),
+        MAPPER.createObjectNode(), 100, CREATOR, CREATED, MAPPER.createObjectNode(), CREATED);
+    var expected = MAPPER.readTree("""
+           {
+            "data": {
+              "type": "annotation",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "issuedForAgent": "https://ror.org/0566bfb96",
+                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "subjectDigitalObjectId": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
+                "annotationTopic":"20.5000.1025/460-A7R-QMJ",
+                "replaceOrAppend": "append",
+                "accessRestricted":false,
+              }
+            }
+          }
+        """);
+
+    var result = fdoRecordService.buildPostHandleRequest(annotation);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+
   }
 
   @Test
