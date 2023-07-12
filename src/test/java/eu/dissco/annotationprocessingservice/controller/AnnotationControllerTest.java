@@ -35,7 +35,7 @@ class AnnotationControllerTest {
 
   @Test
   void testCreateAnnotation()
-      throws JsonProcessingException, DataBaseException, FailedProcessingException, TransformerException {
+      throws Exception {
     // Given
     given(service.handleMessage(givenAnnotationEvent())).willReturn(givenAnnotationRecord());
 
@@ -48,7 +48,7 @@ class AnnotationControllerTest {
   }
 
   @Test
-  void testArchiveAnnotation() throws IOException {
+  void testArchiveAnnotation() throws Exception {
     // Given
 
     // When

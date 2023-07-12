@@ -346,29 +346,25 @@ class ProcessingTest {
     // Then
     then(repository).should().archiveAnnotation(ID);
     then(fdoRecordService).should().buildArchiveHandleRequest(ID);
-    then(handleComponent).should().archiveHandle(any());
+    then(handleComponent).should().archiveHandle(any(), eq(ID));
   }
 
   @Test
   void testArchiveAnnotationHandleFailed() throws Exception {
     // Given
     given(repository.getAnnotationById(ID)).willReturn(Optional.of(ID));
-    var deleteResponse = mock(DeleteResponse.class);
-    given(deleteResponse.result()).willReturn(Result.Deleted);
-    given(elasticRepository.archiveAnnotation(ID)).willReturn(deleteResponse);
-    doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any());
+    doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any(), eq(ID));
 
     // When
-    service.archiveAnnotation(ID);
+    assertThrows(FailedProcessingException.class, () -> service.archiveAnnotation(ID));
 
     // Then
-    then(repository).should().archiveAnnotation(ID);
-    then(fdoRecordService).should().buildArchiveHandleRequest(ID);
-    then(handleComponent).should().archiveHandle(any());
+    then(elasticRepository).shouldHaveNoInteractions();
+    then(repository).shouldHaveNoMoreInteractions();
   }
 
   @Test
-  void testArchiveMissingAnnotation() throws IOException {
+  void testArchiveMissingAnnotation() throws Exception {
     // Given
     given(repository.getAnnotationById(ID)).willReturn(Optional.empty());
 

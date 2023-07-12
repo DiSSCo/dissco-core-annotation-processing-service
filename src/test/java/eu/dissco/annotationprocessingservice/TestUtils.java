@@ -147,8 +147,7 @@ public class TestUtils {
                 "annotationTopic":"20.5000.1025/460-A7R-QMJ",
                 "replaceOrAppend": "append",
                 "accessRestricted":false,
-                "linkedObjectUrl":"https://hdl.handle.net/anno-process-service-pid",
-                "linkedObjectIsPid":true
+                "linkedObjectUrl":"https://hdl.handle.net/anno-process-service-pid"
               }
             }
           }

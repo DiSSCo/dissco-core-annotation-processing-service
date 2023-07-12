@@ -30,9 +30,9 @@ public class AnnotationController {
 
   private final ProcessingService processingService;
 
-  @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AnnotationRecord> createAnnotation(@RequestBody AnnotationEvent event)
-      throws TransformerException, DataBaseException, FailedProcessingException {
+      throws DataBaseException, FailedProcessingException {
     log.info("Received annotation request");
     var result = processingService.handleMessage(event);
     return ResponseEntity.ok(result);
@@ -40,7 +40,7 @@ public class AnnotationController {
 
   @DeleteMapping(value = "/{prefix}/{postfix}")
   public ResponseEntity<Void> archiveAnnotation(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) throws IOException {
+      @PathVariable("postfix") String postfix) throws IOException, FailedProcessingException {
     var id = prefix + '/' + postfix;
     log.info("Received an archive request for annotation: {}", id);
     processingService.archiveAnnotation(id);

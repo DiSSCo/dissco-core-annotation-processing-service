@@ -237,8 +237,16 @@ public class ProcessingService {
     return objectNode;
   }
 
-  public void archiveAnnotation(String id) throws IOException {
+  public void archiveAnnotation(String id) throws IOException, FailedProcessingException {
     if (repository.getAnnotationById(id).isPresent()) {
+      log.info("Archive annotation: {} in handle service", id);
+      var requestBody = fdoRecordService.buildArchiveHandleRequest(id);
+      try {
+        handleComponent.archiveHandle(requestBody, id);
+      } catch (PidCreationException e) {
+        log.error("Unable to archive annotation in handle system for annotation {}", id, e);
+        throw new FailedProcessingException();
+      }
       log.info("Removing annotation: {} from indexing service", id);
       var document = elasticRepository.archiveAnnotation(id);
       if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
@@ -246,12 +254,6 @@ public class ProcessingService {
         repository.archiveAnnotation(id);
         log.info("Archived annotation: {}", id);
         log.info("Tombstoning PID record of annotation: {}", id);
-        var requestBody =fdoRecordService.buildArchiveHandleRequest(id);
-        try {
-          handleComponent.archiveHandle(requestBody);
-        } catch (PidCreationException e){
-          log.error("Unable to archive handle for annotation {}", id, e);
-        }
       }
     } else {
       log.info("Annotation with id: {} is already archived", id);
