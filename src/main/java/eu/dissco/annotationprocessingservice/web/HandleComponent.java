@@ -60,7 +60,7 @@ public class HandleComponent {
     validateResponse(response);
   }
 
-  public void archiveHandle(List<JsonNode> request, String handle) throws PidCreationException{
+  public void archiveHandle(JsonNode request, String handle) throws PidCreationException{
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.PUT, requestBody, handle);
     validateResponse(response);

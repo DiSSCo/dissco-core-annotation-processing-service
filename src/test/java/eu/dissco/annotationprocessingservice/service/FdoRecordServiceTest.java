@@ -21,6 +21,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 
 class FdoRecordServiceTest {
 
@@ -92,7 +93,7 @@ class FdoRecordServiceTest {
   @Test
   void testArchiveAnnotation() throws Exception {
     // Given
-    var expected = List.of(MAPPER.readTree("""
+    var expected = MAPPER.readTree("""
         {
           "data":{
             "id":"20.5000.1025/KZL-VC0-ZK2",
@@ -101,7 +102,7 @@ class FdoRecordServiceTest {
             }
           }
         }
-        """));
+        """);
     // When
     var result = fdoRecordService.buildArchiveHandleRequest(ID);
 

@@ -51,7 +51,7 @@ public class FdoRecordService {
     return List.of(request);
   }
 
-  public List<JsonNode> buildArchiveHandleRequest(String id){
+  public JsonNode buildArchiveHandleRequest(String id){
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = mapper.createObjectNode();
@@ -59,7 +59,7 @@ public class FdoRecordService {
     data.put(ID, id);
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);
-    return List.of(request);
+    return request;
   }
 
   private JsonNode generateAttributes(Annotation annotation) {
