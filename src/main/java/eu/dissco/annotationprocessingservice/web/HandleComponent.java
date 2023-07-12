@@ -91,9 +91,13 @@ public class HandleComponent {
   private JsonNode validateResponse(Mono<JsonNode> response) throws PidCreationException {
     try {
       return response.toFuture().get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      log.error("PID creation failed.", e);
+      log.error("Interrupted exception has occurred.");
+      throw new PidCreationException(
+          "Interrupted execution: A connection error has occurred in creating a handle.");
+    } catch (ExecutionException e) {
+      log.error("PID creation failed.", e.getCause());
       throw new PidCreationException(e.getCause().getMessage());
     }
   }
