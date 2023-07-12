@@ -60,7 +60,7 @@ public class HandleComponent {
     validateResponse(response);
   }
 
-  public void archiveHandle(JsonNode request, String handle) throws PidCreationException{
+  public void archiveHandle(JsonNode request, String handle) throws PidCreationException {
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.PUT, requestBody, handle);
     validateResponse(response);
@@ -88,7 +88,7 @@ public class HandleComponent {
                     "External Service failed to process after max retries")));
   }
 
-  private JsonNode validateResponse (Mono<JsonNode> response) throws PidCreationException {
+  private JsonNode validateResponse(Mono<JsonNode> response) throws PidCreationException {
     try {
       return response.toFuture().get();
     } catch (InterruptedException e) {
@@ -97,16 +97,12 @@ public class HandleComponent {
       throw new PidCreationException(
           "Interrupted execution: A connection error has occurred in creating a handle.");
     } catch (ExecutionException e) {
-      if (e.getCause().getClass().equals(PidCreationException.class)) {
-        log.error(
-            "Token obtained from Keycloak not accepted by Handle Server. Check Keycloak configuration.");
-        throw new PidCreationException(e.getCause().getMessage());
-      }
+      log.error("PID creation failed.", e);
       throw new PidCreationException(e.getCause().getMessage());
     }
   }
 
-  private String getHandleName(JsonNode jsonResponse) throws PidCreationException{
+  private String getHandleName(JsonNode jsonResponse) throws PidCreationException {
     try {
       return jsonResponse.get("data").get(0).get("id").asText();
     } catch (NullPointerException e) {

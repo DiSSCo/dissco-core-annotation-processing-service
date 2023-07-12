@@ -157,6 +157,17 @@ class HandleComponentTest {
   }
 
   @Test
+  void testArchiveHandle() throws Exception {
+    // Given
+    var requestBody = MAPPER.createObjectNode();
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
+        .addHeader("Content-Type", "application/json"));
+
+    // Then
+    assertDoesNotThrow(() -> handleComponent.archiveHandle(requestBody, ID));
+  }
+
+  @Test
   void testInterruptedException() throws Exception {
     // Given
     var requestBody = givenPostRequest();
