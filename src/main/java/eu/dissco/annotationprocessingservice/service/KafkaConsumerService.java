@@ -6,7 +6,6 @@ import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import javax.xml.transform.TransformerException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -25,7 +24,7 @@ public class KafkaConsumerService {
 
   @KafkaListener(topics = "${kafka.consumer.topic}")
   public void getMessages(@Payload String message)
-      throws JsonProcessingException, TransformerException, DataBaseException, FailedProcessingException {
+      throws JsonProcessingException, DataBaseException, FailedProcessingException {
     var event = mapper.readValue(message, AnnotationEvent.class);
     service.handleMessage(event);
   }
