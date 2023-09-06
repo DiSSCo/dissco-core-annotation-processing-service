@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,7 +17,6 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -80,7 +80,8 @@ public class ProcessingService {
       IndexResponse indexDocument = null;
       try {
         indexDocument = elasticRepository.indexAnnotation(annotationRecord);
-      } catch (IOException e) {
+      } catch (IOException | ElasticsearchException e) {
+        log.error("Rolling back, failed to insert records in elastic", e);
         rollbackUpdatedAnnotation(currentAnnotationRecord, annotationRecord, false);
       }
       if (indexDocument.result().equals(Result.Updated)) {
@@ -103,7 +104,7 @@ public class ProcessingService {
     if (elasticRollback) {
       try {
         elasticRepository.indexAnnotation(currentAnnotationRecord);
-      } catch (IOException e) {
+      } catch (IOException | ElasticsearchException e) {
         log.error("Fatal exception, unable to rollback update for: {}", annotationRecord, e);
       }
     }
@@ -136,7 +137,8 @@ public class ProcessingService {
       IndexResponse indexDocument = null;
       try {
         indexDocument = elasticRepository.indexAnnotation(annotationRecord);
-      } catch (IOException e) {
+      } catch (IOException | ElasticsearchException e) {
+        log.error("Rolling back, failed to insert records in elastic", e);
         rollbackNewAnnotation(annotationRecord, false);
       }
       if (indexDocument.result().equals(Result.Created)) {
@@ -170,7 +172,7 @@ public class ProcessingService {
     if (elasticRollback) {
       try {
         elasticRepository.archiveAnnotation(annotationRecord.id());
-      } catch (IOException e) {
+      } catch (IOException | ElasticsearchException e) {
         log.info("Fatal exception, unable to rollback: {}", annotationRecord.id(), e);
       }
     }
