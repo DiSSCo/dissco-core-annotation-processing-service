@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.domain;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
+import java.util.UUID;
 
 public record AnnotationEvent(
     String type,
@@ -9,7 +10,8 @@ public record AnnotationEvent(
     String creator,
     Instant created,
     JsonNode target,
-    JsonNode body
+    JsonNode body,
+    UUID jobId
 ) {
 
 }

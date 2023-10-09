@@ -31,7 +31,8 @@ public class TestUtils {
         CREATOR,
         CREATED,
         generateTarget(),
-        generateBody()
+        generateBody(),
+        null
     );
   }
   public static AnnotationRecord givenAnnotationRecord()

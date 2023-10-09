@@ -5,6 +5,7 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
 
 
@@ -18,6 +19,11 @@ public class Tables {
      * The table <code>public.handles</code>.
      */
     public static final Handles HANDLES = Handles.HANDLES;
+
+    /**
+     * The table <code>public.mas_job_record</code>.
+     */
+    public static final MasJobRecord MAS_JOB_RECORD = MasJobRecord.MAS_JOB_RECORD;
 
     /**
      * The table <code>public.new_annotation</code>.

@@ -5,6 +5,7 @@ package eu.dissco.annotationprocessingservice.database.jooq.tables.records;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
+
 import org.jooq.Field;
 import org.jooq.Record12;
 import org.jooq.Record2;
@@ -509,5 +510,6 @@ public class HandlesRecord extends UpdatableRecordImpl<HandlesRecord> implements
         setAdminWrite(adminWrite);
         setPubRead(pubRead);
         setPubWrite(pubWrite);
+        resetChangedOnNotNull();
     }
 }
