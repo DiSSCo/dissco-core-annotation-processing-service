@@ -9,6 +9,7 @@ import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.Record1;
+import org.jooq.SelectConditionStep;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -30,7 +32,7 @@ public class AnnotationRepository {
   private final DSLContext context;
 
   public Optional<AnnotationRecord> getAnnotation(JsonNode targetId, String creator,
-      String motivation) throws DataBaseException {
+      String motivation) {
     var query = context.select(NEW_ANNOTATION.asterisk())
         .from(NEW_ANNOTATION)
         .where(NEW_ANNOTATION.TARGET_ID.eq(targetId.get("id").asText()))
@@ -38,21 +40,17 @@ public class AnnotationRepository {
         .and(NEW_ANNOTATION.MOTIVATION.eq(motivation))
         .and(NEW_ANNOTATION.DELETED.isNull());
     if (targetId.get(INDV_PROP) != null) {
-      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(INDV_PROP).asText()));
+      query = query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(INDV_PROP).asText()));
     } else if (targetId.get(FIELD_SET) != null) {
-      query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(FIELD_SET).asText()));
+      query = query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(FIELD_SET).asText()));
     } else {
-      query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
+      query = query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }
     var dbRecord = query.fetchOptional();
-    if (dbRecord.isPresent()) {
-      return Optional.of(mapAnnotationRecord(dbRecord.get()));
-    } else {
-      return Optional.empty();
-    }
+    return dbRecord.map(this::mapAnnotationRecord);
   }
 
-  private AnnotationRecord mapAnnotationRecord(Record dbRecord) throws DataBaseException {
+  private AnnotationRecord mapAnnotationRecord(Record dbRecord) {
     Annotation annotation;
     try {
       annotation = new Annotation(
