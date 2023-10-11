@@ -9,7 +9,6 @@ import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.Record1;
-import org.jooq.SelectConditionStep;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -47,7 +45,11 @@ public class AnnotationRepository {
       query = query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
     }
     var dbRecord = query.fetchOptional();
-    return dbRecord.map(this::mapAnnotationRecord);
+    if (dbRecord.isPresent()) {
+      return dbRecord.map(this::mapAnnotationRecord);
+    } else {
+      return Optional.empty();
+    }
   }
 
   private AnnotationRecord mapAnnotationRecord(Record dbRecord) {
