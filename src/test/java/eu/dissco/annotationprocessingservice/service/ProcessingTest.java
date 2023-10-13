@@ -25,6 +25,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessingTest {
@@ -60,6 +62,8 @@ class ProcessingTest {
   private FdoRecordService fdoRecordService;
   @Mock
   private HandleComponent handleComponent;
+  @Mock
+  private Environment environment;
   private MockedStatic<Instant> mockedStatic;
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingService service;
@@ -69,7 +73,7 @@ class ProcessingTest {
   @BeforeEach
   void setup() {
     service = new ProcessingService(MAPPER, repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent);
+        kafkaPublisherService, fdoRecordService, handleComponent, environment);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -94,6 +98,25 @@ class ProcessingTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(AnnotationRecord.class))).willReturn(indexResponse);
+
+    // When
+    var result = service.handleMessage(givenAnnotationEvent());
+
+    // Then
+    assertThat(result).isNotNull().isInstanceOf(AnnotationRecord.class);
+    assertThat(result.id()).isEqualTo(ID);
+    then(kafkaPublisherService).should().publishCreateEvent(any(AnnotationRecord.class));
+  }
+
+  @Test
+  void testNewMessageWebProfile() throws Exception {
+    // Given
+    given(handleComponent.postHandle(any())).willReturn(ID);
+    given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
+    var indexResponse = mock(IndexResponse.class);
+    given(indexResponse.result()).willReturn(Result.Created);
+    given(elasticRepository.indexAnnotation(any(AnnotationRecord.class))).willReturn(indexResponse);
+    given(environment.matchesProfiles(Profiles.WEB)).willReturn(true);
 
     // When
     var result = service.handleMessage(givenAnnotationEvent());

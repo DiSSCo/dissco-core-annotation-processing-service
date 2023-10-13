@@ -6,6 +6,7 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -34,6 +36,7 @@ public class ProcessingService {
   private final KafkaPublisherService kafkaService;
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
+  private final Environment environment;
 
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
     return currentAnnotation.body().equals(annotation.body()) &&
@@ -45,20 +48,25 @@ public class ProcessingService {
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
     var annotation = convertToAnnotation(event);
-    var currentAnnotationOptional = repository.getAnnotation(annotation.target(),
-        annotation.creator(), annotation.motivation());
-    if (currentAnnotationOptional.isEmpty()) {
+    if (environment.matchesProfiles(Profiles.WEB)){
       return persistNewAnnotation(annotation);
-    } else {
-      var currentAnnotationRecord = currentAnnotationOptional.get();
-      if (annotationAreEqual(currentAnnotationRecord.annotation(), annotation)) {
-        log.info("Received annotation is equal to annotation: {}", currentAnnotationRecord.id());
-        processEqualAnnotation(currentAnnotationRecord);
-        return null;
+    }
+    else {
+      var currentAnnotationOptional = repository.getAnnotation(annotation.target(),
+          annotation.creator(), annotation.motivation());
+      if (currentAnnotationOptional.isEmpty()) {
+        return persistNewAnnotation(annotation);
       } else {
-        log.info("Annotation with id: {} has received an update",
-            currentAnnotationRecord.id());
-        return updateExistingAnnotation(currentAnnotationRecord, annotation);
+        var currentAnnotationRecord = currentAnnotationOptional.get();
+        if (annotationAreEqual(currentAnnotationRecord.annotation(), annotation)) {
+          log.info("Received annotation is equal to annotation: {}", currentAnnotationRecord.id());
+          processEqualAnnotation(currentAnnotationRecord);
+          return null;
+        } else {
+          log.info("Annotation with id: {} has received an update",
+              currentAnnotationRecord.id());
+          return updateExistingAnnotation(currentAnnotationRecord, annotation);
+        }
       }
     }
   }

@@ -1,6 +1,8 @@
 package eu.dissco.annotationprocessingservice.exception;
 
-public class DataBaseException extends Exception {
+import org.jooq.exception.DataAccessException;
+
+public class DataBaseException extends DataAccessException {
 
   public DataBaseException(String message) {
     super(message);
