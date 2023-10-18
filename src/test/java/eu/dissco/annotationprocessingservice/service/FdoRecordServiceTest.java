@@ -1,12 +1,5 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import eu.dissco.annotationprocessingservice.domain.Annotation;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
-import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
@@ -21,7 +14,11 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.annotationprocessingservice.domain.AnnotationOld;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class FdoRecordServiceTest {
 
@@ -41,20 +38,20 @@ class FdoRecordServiceTest {
   @Test
   void testBuildPostRequestFailure() throws Exception {
     // Given
-    var annotation = new Annotation(TYPE, MOTIVATION, MAPPER.createObjectNode(),
+    var annotationOld = new AnnotationOld(TYPE, MOTIVATION, MAPPER.createObjectNode(),
         MAPPER.createObjectNode(), 100, CREATOR, CREATED, generateGenerator(), CREATED);
 
     // Then
-    assertThrows(IllegalStateException.class, () -> fdoRecordService.buildPostHandleRequest(annotation));
+    assertThrows(IllegalStateException.class, () -> fdoRecordService.buildPostHandleRequest(annotationOld));
   }
 
   void testBuildPostRequestNoGenerator() throws Exception {
-    var annotation = new Annotation(TYPE, MOTIVATION, generateTarget(),
+    var annotationOld = new AnnotationOld(TYPE, MOTIVATION, generateTarget(),
         MAPPER.createObjectNode(), 100, CREATOR, CREATED, MAPPER.createObjectNode(), CREATED);
     var expected = MAPPER.readTree("""
            {
             "data": {
-              "type": "annotation",
+              "type": "annotationOld",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
@@ -68,7 +65,7 @@ class FdoRecordServiceTest {
           }
         """);
 
-    var result = fdoRecordService.buildPostHandleRequest(annotation);
+    var result = fdoRecordService.buildPostHandleRequest(annotationOld);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -98,7 +95,7 @@ class FdoRecordServiceTest {
           "data":{
             "id":"20.5000.1025/KZL-VC0-ZK2",
             "attributes":{
-              "tombstoneText":"This annotation was archived"
+              "tombstoneText":"This annotationOld was archived"
             }
           }
         }
@@ -132,7 +129,7 @@ class FdoRecordServiceTest {
               "indvProp": "modified"
             }
         """);
-    var annotation2 = new Annotation(
+    var annotation2 = new AnnotationOld(
         annotation1.type(),
         annotation1.motivation(),
         newTarget,

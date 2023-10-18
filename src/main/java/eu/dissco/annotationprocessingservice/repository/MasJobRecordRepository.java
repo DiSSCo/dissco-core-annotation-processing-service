@@ -3,7 +3,6 @@ package eu.dissco.annotationprocessingservice.repository;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.annotationprocessingservice.domain.Annotation;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.domain;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
 
-public record Annotation(
+public record AnnotationOld(
     String type,
     String motivation,
     JsonNode target,

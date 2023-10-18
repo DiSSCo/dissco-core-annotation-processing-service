@@ -4,9 +4,9 @@
 package eu.dissco.annotationprocessingservice.database.jooq;
 
 
+import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
 
 
 /**
@@ -14,6 +14,11 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
  */
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>public.annotation</code>.
+     */
+    public static final Annotation ANNOTATION = Annotation.ANNOTATION;
 
     /**
      * The table <code>public.handles</code>.
@@ -24,9 +29,4 @@ public class Tables {
      * The table <code>public.mas_job_record</code>.
      */
     public static final MasJobRecord MAS_JOB_RECORD = MasJobRecord.MAS_JOB_RECORD;
-
-    /**
-     * The table <code>public.new_annotation</code>.
-     */
-    public static final NewAnnotation NEW_ANNOTATION = NewAnnotation.NEW_ANNOTATION;
 }

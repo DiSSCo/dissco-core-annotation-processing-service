@@ -2,12 +2,12 @@ package eu.dissco.annotationprocessingservice.controller;
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.service.ProcessingService;
 import java.io.IOException;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,10 +32,18 @@ public class AnnotationController {
   private final ProcessingService processingService;
 
   @PostMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<AnnotationRecord> createAnnotation(@RequestBody AnnotationEvent event)
+  public ResponseEntity<Annotation> createAnnotation(@RequestBody AnnotationEvent event)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation request");
     var result = processingService.handleMessage(event);
+    return ResponseEntity.ok(result);
+  }
+
+  @PatchMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Annotation> updateAnnotation(@RequestBody Annotation annotation)
+      throws DataBaseException, FailedProcessingException, NotFoundException {
+    log.info("Received annotation request");
+    var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
 

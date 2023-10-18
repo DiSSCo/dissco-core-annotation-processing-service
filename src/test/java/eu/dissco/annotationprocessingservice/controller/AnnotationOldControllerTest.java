@@ -7,12 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.exception.DataBaseException;
-import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.service.ProcessingService;
-import java.io.IOException;
-import javax.xml.transform.TransformerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
-class AnnotationControllerTest {
+class AnnotationOldControllerTest {
 
   @Mock
   private ProcessingService service;

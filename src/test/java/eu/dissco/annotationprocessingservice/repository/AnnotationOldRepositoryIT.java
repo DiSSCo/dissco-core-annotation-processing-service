@@ -15,7 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class AnnotationRepositoryIT extends BaseRepositoryIT {
+class AnnotationOldRepositoryIT extends BaseRepositoryIT {
 
   private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
   private AnnotationRepository repository;

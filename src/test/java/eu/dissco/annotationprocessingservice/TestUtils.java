@@ -3,8 +3,8 @@ package eu.dissco.annotationprocessingservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationOld;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import java.time.Instant;
 import java.util.List;
@@ -58,7 +58,7 @@ public class TestUtils {
       throws JsonProcessingException {
     return new AnnotationRecord(
         ID, 1, CREATED,
-        new Annotation(
+        new AnnotationOld(
             annotationEvent.type(),
             annotationEvent.motivation(),
             annotationEvent.target(),
@@ -71,8 +71,8 @@ public class TestUtils {
         ));
   }
 
-  public static Annotation givenAnnotation(String motivation, String creator) throws JsonProcessingException{
-    return new Annotation(
+  public static AnnotationOld givenAnnotation(String motivation, String creator) throws JsonProcessingException{
+    return new AnnotationOld(
         TYPE,
         motivation,
         generateTarget(),
@@ -84,8 +84,8 @@ public class TestUtils {
         GENERATED);
   }
 
-  public static Annotation givenAnnotation() throws JsonProcessingException{
-    return new Annotation(
+  public static AnnotationOld givenAnnotation() throws JsonProcessingException{
+    return new AnnotationOld(
         TYPE,
         MOTIVATION,
         generateTarget(),
@@ -139,7 +139,7 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "annotation",
+              "type": "annotationOld",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",

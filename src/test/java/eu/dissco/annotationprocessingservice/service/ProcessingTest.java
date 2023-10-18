@@ -1,18 +1,14 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
-import static eu.dissco.annotationprocessingservice.TestUtils.GENERATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.generateGenerator;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -26,9 +22,7 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.Annotation;
 import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
-import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -39,7 +33,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
-import javax.xml.transform.TransformerException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,9 +83,9 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord();
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(Optional.empty());
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(Optional.empty());
     given(handleComponent.postHandle(any())).willReturn(ID);
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     var indexResponse = mock(IndexResponse.class);
@@ -132,9 +125,9 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord();
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(Optional.empty());
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(Optional.empty());
     given(handleComponent.postHandle(any())).willThrow(PidCreationException.class);
 
     // Then
@@ -146,9 +139,9 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord(givenAnnotationEvent());
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(Optional.empty());
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(Optional.empty());
     given(handleComponent.postHandle(any())).willReturn(ID);
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     var indexResponse = mock(IndexResponse.class);
@@ -174,9 +167,9 @@ class ProcessingTest {
     // Given
     var annotationEvent = givenAnnotationEvent();
     var annotationRecord =givenAnnotationRecord(annotationEvent);
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(Optional.empty());
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(Optional.empty());
     given(handleComponent.postHandle(any())).willReturn(ID);
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     given(elasticRepository.indexAnnotation(any(AnnotationRecord.class))).willThrow(
@@ -198,9 +191,9 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord();
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(
         Optional.of(annotationRecord));
     given(repository.updateLastChecked(any(AnnotationRecord.class))).willReturn(1);
 
@@ -219,9 +212,9 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord(givenAnnotationEvent());
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(
         Optional.of(givenAnnotationRecord("Another Motivation", "Another Creator")));
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     var indexResponse = mock(IndexResponse.class);
@@ -236,7 +229,7 @@ class ProcessingTest {
     assertThat(result).isNotNull().isInstanceOf(AnnotationRecord.class);
     assertThat(result.id()).isEqualTo(ID);
     then(fdoRecordService).should()
-        .buildPatchRollbackHandleRequest(annotationRecord.annotation(), ID);
+        .buildPatchRollbackHandleRequest(annotationRecord.annotationOld(), ID);
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(AnnotationRecord.class), any(AnnotationRecord.class));
@@ -247,9 +240,9 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord(givenAnnotationEvent());
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(
         Optional.of(givenAnnotationRecord("Another Motivation", "Another Creator")));
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     var indexResponse = mock(IndexResponse.class);
@@ -273,9 +266,9 @@ class ProcessingTest {
   void testUpdateMessageElasticException() throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord(givenAnnotationEvent());
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(
         Optional.of(givenAnnotationRecord("Another Motivation", "Another Creator")));
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     given(elasticRepository.indexAnnotation(any(AnnotationRecord.class))).willThrow(
@@ -288,7 +281,7 @@ class ProcessingTest {
 
     // Then
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(annotationRecord.annotation(), ID);
+        .buildPatchRollbackHandleRequest(annotationRecord.annotationOld(), ID);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(repository).should(times(2)).createAnnotationRecord(any(AnnotationRecord.class));
@@ -299,9 +292,9 @@ class ProcessingTest {
   void testHandleUpdateMessageKafkaException() throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord(givenAnnotationEvent());
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(
         Optional.of(givenAnnotationRecord("Another Motivation", "Another Creator")));
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     var indexResponse = mock(IndexResponse.class);
@@ -317,7 +310,7 @@ class ProcessingTest {
 
     // Then
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(annotationRecord.annotation(), ID);
+        .buildPatchRollbackHandleRequest(annotationRecord.annotationOld(), ID);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(AnnotationRecord.class));
@@ -328,9 +321,9 @@ class ProcessingTest {
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
     // Given
     var annotationRecord = givenAnnotationRecord(givenAnnotationEvent());
-    given(repository.getAnnotation(annotationRecord.annotation().target(),
-        annotationRecord.annotation()
-            .creator(), annotationRecord.annotation().motivation())).willReturn(
+    given(repository.getAnnotation(annotationRecord.annotationOld().target(),
+        annotationRecord.annotationOld()
+            .creator(), annotationRecord.annotationOld().motivation())).willReturn(
         Optional.of(givenAnnotationRecord("Another Motivation", "Another Creator")));
     given(repository.createAnnotationRecord(any(AnnotationRecord.class))).willReturn(1);
     var indexResponse = mock(IndexResponse.class);
@@ -347,7 +340,7 @@ class ProcessingTest {
 
     // Then
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(annotationRecord.annotation(), ID);
+        .buildPatchRollbackHandleRequest(annotationRecord.annotationOld(), ID);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(AnnotationRecord.class));
