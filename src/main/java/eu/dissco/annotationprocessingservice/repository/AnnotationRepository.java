@@ -4,7 +4,6 @@ import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTAT
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
@@ -29,9 +28,6 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AnnotationRepository {
 
-  private static final String FIELD_SET = "fieldSet";
-  private static final String INDV_PROP = "indvProp";
-
   private final ObjectMapper mapper;
   private final DSLContext context;
 
@@ -40,7 +36,7 @@ public class AnnotationRepository {
         .from(ANNOTATION)
         .where(ANNOTATION.TARGET_ID.eq(annotation.getOaTarget().getOdsId())
             .and(ANNOTATION.CREATOR_ID.eq(annotation.getOaCreator().getOdsId())
-                .and(ANNOTATION.MOTIVATION.eq(annotation.getOaMotivatedBy()))
+                .and(ANNOTATION.MOTIVATED_BY.eq(annotation.getOaMotivatedBy()))
                 .and(ANNOTATION.DELETED_ON.isNull())))
         .fetch().map(this::mapAnnotation);
   }

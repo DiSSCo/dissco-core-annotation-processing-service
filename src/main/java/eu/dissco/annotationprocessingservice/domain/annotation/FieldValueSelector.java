@@ -14,7 +14,7 @@ public class FieldValueSelector extends Selector {
   @JsonProperty("ods:field")
   private String odsField;
 
-  FieldValueSelector() {
+  public FieldValueSelector() {
     super(SelectorType.FIELD_VALUE_SELECTOR);
   }
 

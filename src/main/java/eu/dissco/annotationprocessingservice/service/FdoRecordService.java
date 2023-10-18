@@ -45,7 +45,7 @@ public class FdoRecordService {
     return List.of(request);
   }
 
-  public JsonNode buildArchiveHandleRequest(String id){
+  public JsonNode buildArchiveHandleRequest(String id) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = mapper.createObjectNode();
@@ -74,7 +74,8 @@ public class FdoRecordService {
   public boolean handleNeedsUpdate(
       Annotation currentAnnotation, Annotation newAnnotation) {
     return (
-        !Objects.equals(currentAnnotation.getOaTarget().getOdsId(), (newAnnotation.getOaTarget().getOdsId())) ||
+        !Objects.equals(currentAnnotation.getOaTarget().getOdsId(),
+            (newAnnotation.getOaTarget().getOdsId())) ||
             !currentAnnotation.getOaMotivation().equals(newAnnotation.getOaMotivation()));
   }
 

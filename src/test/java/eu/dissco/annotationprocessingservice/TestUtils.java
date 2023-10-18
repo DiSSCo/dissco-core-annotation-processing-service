@@ -4,16 +4,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationOld;
-import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Body;
+import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
+import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
+import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class TestUtils {
 
   public static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules();
 
   public static final String ID = "20.5000.1025/KZL-VC0-ZK2";
+  public static final String TARGET_ID = "20.5000.1025/QRS-123-ABC";
   public static final int VERSION = 1;
   public static final Instant CREATED_RECORD = Instant.parse("2023-02-17T09:52:27.391Z");
   public static final String TYPE = "Annotation";
@@ -23,78 +32,89 @@ public class TestUtils {
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final Instant GENERATED = Instant.parse("2023-02-17T09:49:27.391Z");
 
+  public static final UUID JOB_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+
+  public static Annotation givenAnnotationProcessed(){
+    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
+  }
+  public static Annotation givenAnnotationProcessedAlt(){
+    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivatedBy("a different motivation");
+  }
+
+  public static Annotation givenAnnotationProcessed(String annotationId, String userId, String targetId) {
+    return new Annotation()
+        .withOdsId(annotationId)
+        .withOdsVersion(1)
+        .withOaBody(givenOaBody())
+        .withOaMotivation(Motivation.COMMENTING)
+        .withOaTarget(givenOaTarget(targetId))
+        .withOaCreator(givenCreator(userId))
+        .withDcTermsCreated(CREATED)
+        .withOaGenerated(CREATED)
+        .withAsGenerator(givenGenerator())
+        .withOdsAggregateRating(givenAggregationRating());
+  }
+
+  public static Annotation givenAnnotationRequest(String targetId) {
+    return new Annotation()
+        .withOaBody(givenOaBody())
+        .withOaMotivation(Motivation.COMMENTING)
+        .withOaTarget(givenOaTarget(targetId))
+        .withDcTermsCreated(CREATED)
+        .withOaCreator(givenCreator(CREATOR));
+  }
+
+  public static Annotation givenAnnotationRequest() {
+    return givenAnnotationRequest(TARGET_ID);
+  }
+
+  public static Body givenOaBody() {
+    return new Body()
+        .withOdsType("ods:specimenName")
+        .withOaValue(new ArrayList<>(List.of("a comment")))
+        .withDcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .withOdsScore(0.99);
+  }
+
+  public static Target givenOaTarget(String targetId) {
+    return new Target()
+        .withOdsId(targetId)
+        .withSelector(givenSelector())
+        .withOdsType("digital_specimen");
+  }
+
+  public static FieldValueSelector givenSelector() {
+    return new FieldValueSelector()
+        .withOdsField("ods:specimenName");
+  }
+
+  public static Creator givenCreator(String userId) {
+    return new Creator()
+        .withFoafName("Test User")
+        .withOdsId(userId)
+        .withOdsType("ORCID");
+  }
+
+  public static Generator givenGenerator(){
+    return new Generator()
+        .withFoafName("DiSSCo backend")
+        .withOdsId("https://sandbox.dissco.tech")
+        .withOdsType("Technical Backend");
+  }
+
+  public static AggregateRating givenAggregationRating(){
+    return new AggregateRating()
+        .withRatingValue(0.1)
+        .withOdsType("Score")
+        .withRatingCount(0.2);
+  }
+
 
   public static AnnotationEvent givenAnnotationEvent() throws JsonProcessingException {
     return new AnnotationEvent(
-        TYPE,
-        MOTIVATION,
-        CREATOR,
-        CREATED,
-        generateTarget(),
-        generateBody(),
-        null
+        givenAnnotationProcessed(),
+        JOB_ID
     );
-  }
-  public static AnnotationRecord givenAnnotationRecord()
-      throws JsonProcessingException {
-    return givenAnnotationRecord(MOTIVATION, CREATOR);
-  }
-
-  public static AnnotationRecord givenAnnotationRecord(String motivation)
-      throws JsonProcessingException {
-    return givenAnnotationRecord(motivation, CREATOR);
-  }
-
-  public static AnnotationRecord givenAnnotationRecord(String motivation, String creator)
-      throws JsonProcessingException {
-    return new AnnotationRecord(
-        ID,
-        VERSION,
-        CREATED,
-        givenAnnotation(motivation, creator));
-  }
-
-  public static AnnotationRecord givenAnnotationRecord(AnnotationEvent annotationEvent)
-      throws JsonProcessingException {
-    return new AnnotationRecord(
-        ID, 1, CREATED,
-        new AnnotationOld(
-            annotationEvent.type(),
-            annotationEvent.motivation(),
-            annotationEvent.target(),
-            annotationEvent.body(),
-            100,
-            annotationEvent.creator(),
-            annotationEvent.created(),
-            generateGenerator(),
-            CREATED
-        ));
-  }
-
-  public static AnnotationOld givenAnnotation(String motivation, String creator) throws JsonProcessingException{
-    return new AnnotationOld(
-        TYPE,
-        motivation,
-        generateTarget(),
-        generateBody(),
-        PREFERENCE_SCORE,
-        creator,
-        CREATED,
-        generateGenerator(),
-        GENERATED);
-  }
-
-  public static AnnotationOld givenAnnotation() throws JsonProcessingException{
-    return new AnnotationOld(
-        TYPE,
-        MOTIVATION,
-        generateTarget(),
-        generateBody(),
-        PREFERENCE_SCORE,
-        CREATOR,
-        CREATED,
-        generateGenerator(),
-        GENERATED);
   }
 
   public static JsonNode generateTarget() throws JsonProcessingException {
@@ -143,12 +163,7 @@ public class TestUtils {
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
-                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "subjectDigitalObjectId": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
-                "annotationTopic":"20.5000.1025/460-A7R-QMJ",
-                "replaceOrAppend": "append",
-                "accessRestricted":false,
-                "linkedObjectUrl":"https://hdl.handle.net/anno-process-service-pid"
+                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267"
               }
             }
           }

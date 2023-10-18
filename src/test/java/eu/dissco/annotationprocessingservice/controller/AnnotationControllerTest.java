@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.controller;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRecord;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -16,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
-class AnnotationOldControllerTest {
+class AnnotationControllerTest {
 
   @Mock
   private ProcessingService service;
@@ -32,14 +32,14 @@ class AnnotationOldControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.handleMessage(givenAnnotationEvent())).willReturn(givenAnnotationRecord());
+    given(service.handleMessage(givenAnnotationEvent())).willReturn(givenAnnotationProcessed());
 
     // When
     var result = controller.createAnnotation(givenAnnotationEvent());
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(givenAnnotationRecord());
+    assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
   }
 
   @Test

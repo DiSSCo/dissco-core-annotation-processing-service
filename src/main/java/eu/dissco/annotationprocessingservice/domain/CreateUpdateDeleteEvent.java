@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record CreateUpdateDeleteEvent(
+
     UUID id,
     String eventType,
     String agent,

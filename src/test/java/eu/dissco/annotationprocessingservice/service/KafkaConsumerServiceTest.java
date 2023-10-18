@@ -19,8 +19,6 @@ class KafkaConsumerServiceTest {
 
   @Mock
   private ProcessingService processingService;
-  @Mock
-  private KafkaPublisherService publisherService;
 
   private KafkaConsumerService service;
 
@@ -65,17 +63,5 @@ class KafkaConsumerServiceTest {
             }
             """;
   }
-//
-//  @Test
-//  void testGetInvalidMessages() {
-//    // Given
-//    var message = givenInvalidMessage();
-//
-//    // When
-//    service.getMessages(List.of(message));
-//
-//    // Then
-//    then(processingService).should().handleMessages(List.of());
-//  }
 
 }
