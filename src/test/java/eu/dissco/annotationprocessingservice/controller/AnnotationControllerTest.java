@@ -44,6 +44,20 @@ class AnnotationControllerTest {
   }
 
   @Test
+  void testUpdateAnnotation()
+      throws Exception {
+    // Given
+    given(service.updateAnnotation(givenAnnotationRequest())).willReturn(givenAnnotationProcessed());
+
+    // When
+    var result = controller.updateAnnotation(givenAnnotationRequest());
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+  }
+
+  @Test
   void testArchiveAnnotation() throws Exception {
     // Given
 

@@ -248,6 +248,20 @@ class ProcessingTest {
   }
 
   @Test
+  void testUpdateMessagePidCreationException()
+      throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    var currentAnnotation = givenAnnotationProcessedAlt();
+    given(repository.getAnnotation(annotationRequest)).willReturn(List.of(currentAnnotation));
+    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
+    doThrow(PidCreationException.class).when(handleComponent).updateHandle(any());
+
+    // Then
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
+  }
+
+  @Test
   void testUpdateMessageTooManyRepositoryResults() {
     // Given
     var annotationRequest = givenAnnotationRequest();

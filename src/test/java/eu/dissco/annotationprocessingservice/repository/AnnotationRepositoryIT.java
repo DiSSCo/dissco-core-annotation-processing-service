@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.repository;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,12 +101,21 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetAnnotationIsNull() {
+  void testGetAnnotationIsEmpty() {
     // When
     var result = repository.getAnnotation(givenAnnotationProcessed());
 
     // Then
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testGetAnnotationIsNull() {
+    // When
+    var result = repository.getAnnotation(ID);
+
+    // Then
+    assertThat(result).isNull();
   }
 
   @Test
