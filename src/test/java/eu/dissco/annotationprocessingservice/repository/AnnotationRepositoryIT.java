@@ -75,7 +75,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetAnnotationById() throws JsonProcessingException {
+  void testGetAnnotationById() {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
@@ -85,6 +85,28 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).hasValue(annotation.getOdsId());
+  }
+
+  @Test
+  void testGetAnnotation(){
+    // Given
+    var annotation = givenAnnotationProcessed();
+    repository.createAnnotationRecord(annotation);
+
+    // When
+    var result = repository.getAnnotation(annotation.getOdsId());
+
+    // Then
+    assertThat(result).isEqualTo(annotation);
+  }
+
+  @Test
+  void testGetAnnotationIsNull(){
+    // When
+    var result = repository.getAnnotation(givenAnnotationProcessed());
+
+    // Then
+    assertThat(result).isNull();
   }
 
   @Test
@@ -109,7 +131,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(annotation.getOdsId());
+    repository.rollbackAnnotation(annotation.getOdsId());
 
     // Then
     var result = repository.getAnnotationById(annotation.getOdsId());

@@ -61,7 +61,8 @@ public class TestUtils {
         .withOaMotivation(Motivation.COMMENTING)
         .withOaTarget(givenOaTarget(targetId))
         .withDcTermsCreated(CREATED)
-        .withOaCreator(givenCreator(CREATOR));
+        .withOaCreator(givenCreator(CREATOR))
+        .withOdsAggregateRating(givenAggregationRating());
   }
 
   public static Annotation givenAnnotationRequest() {

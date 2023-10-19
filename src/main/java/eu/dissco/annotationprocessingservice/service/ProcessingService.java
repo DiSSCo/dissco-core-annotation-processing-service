@@ -108,6 +108,7 @@ public class ProcessingService {
     enrichAnnotation(annotation, currentAnnotation.getOdsId(),
         currentAnnotation.getOdsVersion() + 1);
     annotation.withDcTermsCreated(currentAnnotation.getDcTermsCreated());
+    annotation.withOaGenerated(currentAnnotation.getOaGenerated());
 
     repository.createAnnotationRecord(annotation);
 
