@@ -114,11 +114,6 @@
       <artifactId>json-patch</artifactId>
       <version>${json-patch.version}</version>
     </dependency>
-    <dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>2.4</version>
-    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
