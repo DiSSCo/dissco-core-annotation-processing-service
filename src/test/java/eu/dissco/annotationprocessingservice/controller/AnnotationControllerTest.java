@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.controller;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -32,10 +33,10 @@ class AnnotationControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.handleMessage(givenAnnotationEvent())).willReturn(givenAnnotationProcessed());
+    given(service.createNewAnnotation(givenAnnotationRequest())).willReturn(givenAnnotationProcessed());
 
     // When
-    var result = controller.createAnnotation(givenAnnotationEvent());
+    var result = controller.createAnnotation(givenAnnotationRequest());
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);

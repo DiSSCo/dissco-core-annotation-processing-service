@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,7 @@ class FdoRecordServiceTest {
           "data":{
             "id":"20.5000.1025/KZL-VC0-ZK2",
             "attributes":{
-              "tombstoneText":"This annotationOld was archived"
+              "tombstoneText":"This annotation was archived"
             }
           }
         }
@@ -77,10 +78,8 @@ class FdoRecordServiceTest {
 
   private static Stream<Arguments> handleNeedsUpdate() {
     return Stream.of(
-        Arguments.of(givenAnnotationProcessed().withOaCreator(givenCreator("different user"))),
-        Arguments.of(givenAnnotationProcessed().withOaTarget(givenOaTarget("different target"))),
-        Arguments.of(givenAnnotationProcessed().withOdsId("different id"))
-    );
+        Arguments.of(givenAnnotationProcessed().withOaMotivation(Motivation.EDITING)),
+        Arguments.of(givenAnnotationProcessed().withOaTarget(givenOaTarget("different target"))));
   }
 
   @ParameterizedTest

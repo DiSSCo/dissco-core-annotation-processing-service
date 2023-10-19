@@ -32,10 +32,10 @@ public class AnnotationController {
   private final ProcessingService processingService;
 
   @PostMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Annotation> createAnnotation(@RequestBody AnnotationEvent event)
+  public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation request");
-    var result = processingService.handleMessage(event);
+    var result = processingService.createNewAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
 

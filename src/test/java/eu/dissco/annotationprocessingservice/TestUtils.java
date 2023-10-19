@@ -38,7 +38,7 @@ public class TestUtils {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
   }
   public static Annotation givenAnnotationProcessedAlt(){
-    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivatedBy("a different motivation");
+    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivation(Motivation.EDITING);
   }
 
   public static Annotation givenAnnotationProcessed(String annotationId, String userId, String targetId) {
@@ -97,11 +97,10 @@ public class TestUtils {
 
   public static Generator givenGenerator(){
     return new Generator()
-        .withFoafName("DiSSCo backend")
-        .withOdsId("https://sandbox.dissco.tech")
-        .withOdsType("Technical Backend");
+        .withFoafName("Annotation Processing Service")
+        .withOdsId("https://hdl.handle.net/anno-process-service-pid")
+        .withOdsType("tool/Software");
   }
-
   public static AggregateRating givenAggregationRating(){
     return new AggregateRating()
         .withRatingValue(0.1)
@@ -111,10 +110,11 @@ public class TestUtils {
 
 
   public static AnnotationEvent givenAnnotationEvent() throws JsonProcessingException {
-    return new AnnotationEvent(
-        givenAnnotationProcessed(),
-        JOB_ID
-    );
+    return givenAnnotationEvent(givenAnnotationProcessed());
+  }
+
+  public static AnnotationEvent givenAnnotationEvent(Annotation annotation){
+    return new AnnotationEvent(annotation, JOB_ID);
   }
 
   public static JsonNode generateTarget() throws JsonProcessingException {
@@ -159,7 +159,7 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "annotationOld",
+              "type": "handle",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",

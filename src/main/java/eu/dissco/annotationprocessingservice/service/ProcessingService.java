@@ -17,6 +17,7 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -38,14 +39,16 @@ public class ProcessingService {
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
     return currentAnnotation.getOaBody().equals(annotation.getOaBody())
         && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
-        && currentAnnotation.getOaTarget().equals(annotation.getOaTarget()) && (
-        currentAnnotation.getOaMotivatedBy() != null && currentAnnotation.getOaMotivatedBy()
-            .equals(annotation.getOaMotivatedBy())) && currentAnnotation.getOaMotivation()
-        .equals(annotation.getOaMotivation())
-        && currentAnnotation.getOdsAggregateRating() == annotation.getOdsAggregateRating();
+        && currentAnnotation.getOaTarget().equals(annotation.getOaTarget()) &&
+        (currentAnnotation.getOaMotivatedBy() != null
+            && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
+            || currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null)
+        && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
+        && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
-  public Annotation updateAnnotation(Annotation annotation) throws FailedProcessingException, NotFoundException {
+  public Annotation updateAnnotation(Annotation annotation)
+      throws FailedProcessingException, NotFoundException {
     log.info("Received annotation creation request of: {}", annotation);
     var currentAnnotation = repository.getAnnotation(annotation.getOdsId());
     if (currentAnnotation == null) {
@@ -63,19 +66,23 @@ public class ProcessingService {
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
     var annotation = event.annotation();
-    var currentAnnotation = getExistingAnnotation(annotation).get(0);
-    if (annotationAreEqual(currentAnnotation, annotation)) {
-      log.info("Received annotation is equal to annotation: {}", currentAnnotation.getOdsId());
-      processEqualAnnotation(currentAnnotation);
-      return null;
-    } else {
-      log.info("Annotation with id: {} has received an update", currentAnnotation.getOdsId());
-      return updateExistingAnnotation(currentAnnotation, annotation);
+    var currentAnnotationOptional = getExistingAnnotation(annotation);
+    if (currentAnnotationOptional.isPresent()) {
+      var currentAnnotation = currentAnnotationOptional.get();
+      if (annotationAreEqual(currentAnnotation, annotation)) {
+        log.info("Received annotation is equal to annotation: {}", currentAnnotation.getOdsId());
+        processEqualAnnotation(currentAnnotation);
+        return null;
+      } else {
+        log.info("Annotation with id: {} has received an update", currentAnnotation.getOdsId());
+        return updateExistingAnnotation(currentAnnotation, annotation);
+      }
     }
+    return persistNewAnnotation(annotation);
   }
 
 
-  private List<Annotation> getExistingAnnotation(Annotation annotation)
+  private Optional<Annotation> getExistingAnnotation(Annotation annotation)
       throws FailedProcessingException {
     var existingAnnotations = repository.getAnnotation(annotation);
     if (existingAnnotations.size() > 1) {
@@ -84,7 +91,10 @@ public class ProcessingService {
           annotation);
       throw new FailedProcessingException();
     }
-    return existingAnnotations;
+    if (existingAnnotations.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(existingAnnotations.get(0));
   }
 
   private Annotation updateExistingAnnotation(Annotation currentAnnotation,

@@ -18,7 +18,7 @@ public class Annotation {
   @JsonProperty("ods:id")
   private String odsId;
   @JsonProperty("ods:version")
-  private int odsVersion;
+  private Integer odsVersion;
   @JsonProperty("rdf:type")
   private String rdfType = "Annotation";
   @JsonProperty("oa:motivation")

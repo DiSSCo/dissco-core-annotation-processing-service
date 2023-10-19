@@ -38,7 +38,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation);
-    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
+    data.put(TYPE.getAttribute(), "handle");
     data.set(ATTRIBUTES, attributes);
     data.put(ID, handle);
     request.set(DATA, data);
@@ -74,8 +74,7 @@ public class FdoRecordService {
   public boolean handleNeedsUpdate(
       Annotation currentAnnotation, Annotation newAnnotation) {
     return (
-        !Objects.equals(currentAnnotation.getOaTarget().getOdsId(),
-            (newAnnotation.getOaTarget().getOdsId())) ||
+        !Objects.equals(currentAnnotation.getOaTarget().getOdsId(), (newAnnotation.getOaTarget().getOdsId())) ||
             !currentAnnotation.getOaMotivation().equals(newAnnotation.getOaMotivation()));
   }
 

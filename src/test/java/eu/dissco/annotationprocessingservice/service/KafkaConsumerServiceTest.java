@@ -1,7 +1,9 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.mockito.BDDMockito.then;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,8 +30,7 @@ class KafkaConsumerServiceTest {
   }
 
   @Test
-  void testGetMessages()
-      throws DataBaseException, FailedProcessingException, JsonProcessingException, TransformerException {
+  void testGetMessages() throws Exception {
     // Given
     var message = givenMessage();
 
@@ -40,28 +41,11 @@ class KafkaConsumerServiceTest {
     then(processingService).should().handleMessage(givenAnnotationEvent());
   }
 
-  private String givenMessage() {
-    return
-        """
-            {
-              "type": "Annotation",
-              "motivation": "20.5000.1025/460-A7R-QMJ",
-              "creator": "3fafe98f-1bf9-4927-b9c7-4ba070761a72",
-              "created": "2023-02-17T09:50:27.391Z",
-              "target": {
-                "id": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
-                "type": "digital_specimen",
-                "indvProp": "modified"
-              },
-              "body": {
-                "type": "modified",
-                "value": [
-                  "Error correction"
-                ],
-                "description": "Test"
-              }
-            }
-            """;
+  private String givenMessage() throws Exception {
+    var annotationNode = MAPPER.valueToTree(givenAnnotationProcessed());
+    var messageNode = MAPPER.createObjectNode();
+    messageNode.set("annotation", annotationNode);
+    messageNode.put("jobId", JOB_ID.toString());
+    return MAPPER.writeValueAsString(messageNode);
   }
-
 }

@@ -94,7 +94,7 @@ class ProcessingTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent());
+    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
@@ -109,7 +109,6 @@ class ProcessingTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(environment.matchesProfiles(Profiles.WEB)).willReturn(true);
 
     // When
     var result = service.handleMessage(givenAnnotationEvent());
@@ -182,10 +181,10 @@ class ProcessingTest {
       throws Exception {
     // Given
     var annotation = givenAnnotationProcessed();
-    given(repository.getAnnotation(annotation)).willReturn(List.of(annotation));
+    given(repository.getAnnotation(annotation)).willReturn(List.of(givenAnnotationProcessed()));
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent());
+    var result = service.handleMessage(givenAnnotationEvent(annotation));
 
     // Then
     assertThat(result).isNull();
@@ -207,7 +206,7 @@ class ProcessingTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent());
+    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
@@ -233,7 +232,7 @@ class ProcessingTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(false);
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent());
+    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
@@ -255,7 +254,7 @@ class ProcessingTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
+    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
@@ -270,7 +269,7 @@ class ProcessingTest {
   @Test
   void testHandleUpdateMessageKafkaException() throws Exception {
     // Given
-    var annotation = givenAnnotationRequest();
+    var annotation = givenAnnotationRequest().withOdsId(ID);
     given(repository.getAnnotation(annotation)).willReturn(List.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Updated);
@@ -280,7 +279,7 @@ class ProcessingTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
+    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
@@ -295,9 +294,8 @@ class ProcessingTest {
   @Test
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
     // Given
-    var annotation = givenAnnotationRequest();
-    given(repository.getAnnotation(annotation)).willReturn(
-        List.of(givenAnnotationProcessedAlt()));
+    var annotationRequest = givenAnnotationProcessed();
+    given(repository.getAnnotation(annotationRequest)).willReturn(List.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
@@ -311,8 +309,7 @@ class ProcessingTest {
         FailedProcessingException.class);
 
     // Then
-    then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(annotation, ID);
+    then(fdoRecordService).should(times(2)).buildPatchRollbackHandleRequest(annotationRequest.withOdsVersion(2), ID);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(Annotation.class));
