@@ -17,9 +17,9 @@ public class Target {
 
   @JsonProperty("ods:id")
   private String odsId;
-  @JsonPropertyOrder("ods:type")
+  @JsonProperty("ods:type")
   private String odsType;
-  @JsonProperty("oa:Selector")
+  @JsonProperty("oa:selector")
   private Selector oaSelector;
 
   public Target withOdsId(String odsId) {
