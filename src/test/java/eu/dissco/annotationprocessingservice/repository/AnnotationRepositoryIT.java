@@ -37,7 +37,6 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
     var actual = repository.getAnnotation(annotation.getOdsId());
 
-
     // Then
     assertThat(actual).isEqualTo(annotation);
   }
@@ -88,7 +87,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetAnnotation(){
+  void testGetAnnotation() {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
@@ -101,16 +100,16 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetAnnotationIsNull(){
+  void testGetAnnotationIsNull() {
     // When
     var result = repository.getAnnotation(givenAnnotationProcessed());
 
     // Then
-    assertThat(result).isNull();
+    assertThat(result).isEmpty();
   }
 
   @Test
-  void testArchiveAnnotation() throws JsonProcessingException {
+  void testArchiveAnnotation() {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
