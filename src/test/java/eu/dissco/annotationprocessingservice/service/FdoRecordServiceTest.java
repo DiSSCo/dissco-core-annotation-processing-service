@@ -3,7 +3,6 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;

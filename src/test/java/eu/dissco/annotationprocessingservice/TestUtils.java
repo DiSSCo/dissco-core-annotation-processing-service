@@ -23,15 +23,8 @@ public class TestUtils {
 
   public static final String ID = "20.5000.1025/KZL-VC0-ZK2";
   public static final String TARGET_ID = "20.5000.1025/QRS-123-ABC";
-  public static final int VERSION = 1;
-  public static final Instant CREATED_RECORD = Instant.parse("2023-02-17T09:52:27.391Z");
-  public static final String TYPE = "Annotation";
-  public static final String MOTIVATION = "20.5000.1025/460-A7R-QMJ";
-  public static final int PREFERENCE_SCORE = 100;
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
-  public static final Instant GENERATED = Instant.parse("2023-02-17T09:49:27.391Z");
-
   public static final UUID JOB_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
   public static Annotation givenAnnotationProcessed(){
@@ -63,6 +56,17 @@ public class TestUtils {
         .withDcTermsCreated(CREATED)
         .withOaCreator(givenCreator(CREATOR))
         .withOdsAggregateRating(givenAggregationRating());
+  }
+
+  public static Annotation givenAnnotationUpdateRequest() {
+    return new Annotation()
+        .withOaBody(givenOaBody())
+        .withOaMotivation(Motivation.COMMENTING)
+        .withOaTarget(givenOaTarget(TARGET_ID))
+        .withDcTermsCreated(CREATED)
+        .withOaCreator(givenCreator(CREATOR))
+        .withOdsAggregateRating(givenAggregationRating())
+        .withOdsId(ID);
   }
 
   public static Annotation givenAnnotationRequest() {

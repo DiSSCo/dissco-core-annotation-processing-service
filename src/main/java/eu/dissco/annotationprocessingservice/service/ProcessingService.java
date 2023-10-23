@@ -17,6 +17,7 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -78,8 +79,9 @@ public class ProcessingService {
         log.info("Annotation with id: {} has received an update", currentAnnotation.getOdsId());
         updateExistingAnnotation(currentAnnotation, annotation);
       }
+    } else {
+      persistNewAnnotation(annotation);
     }
-    persistNewAnnotation(annotation);
   }
 
 
@@ -154,7 +156,7 @@ public class ProcessingService {
 
   private Annotation persistNewAnnotation(Annotation annotation) throws FailedProcessingException {
     var id = postHandle(annotation);
-    enrichAnnotation(annotation, id, 1);
+    enrichAnnotation(annotation, id, 1, true);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
     repository.createAnnotationRecord(annotation);
     log.info("Annotation: {} has been successfully committed to database", id);
@@ -179,21 +181,26 @@ public class ProcessingService {
     return annotation;
   }
 
-  private void enrichAnnotation(Annotation annotation, String id, int version) {
+  private void enrichAnnotation(Annotation annotation, String id, int version, boolean isNew) {
     annotation.withOdsId(id);
     annotation.withOdsVersion(version);
     annotation.withAsGenerator(createGenerator());
+    if (isNew){
+      annotation.withOaGenerated(Instant.now());
+    }
   }
 
   private void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation, String id, int version){
-    enrichAnnotation(annotation, id, version);
+    enrichAnnotation(annotation, id, version, false);
     annotation.withDcTermsCreated(currentAnnotation.getDcTermsCreated());
     annotation.withOaGenerated(currentAnnotation.getOaGenerated());
   }
 
   private Generator createGenerator() {
-    return new Generator().withOdsId(applicationProperties.getProcessorHandle())
-        .withFoafName("Annotation Processing Service").withOdsType("tool/Software");
+    return new Generator()
+        .withOdsId(applicationProperties.getProcessorHandle())
+        .withFoafName("Annotation Processing Service")
+        .withOdsType("tool/Software");
   }
 
   private String postHandle(Annotation annotation) throws FailedProcessingException {

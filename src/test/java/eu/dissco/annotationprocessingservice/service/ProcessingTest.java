@@ -27,12 +27,12 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -71,6 +71,8 @@ class ProcessingTest {
   private HandleComponent handleComponent;
   @Mock
   private Environment environment;
+  @Mock
+  private ApplicationProperties applicationProperties;
   private MockedStatic<Instant> mockedStatic;
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingService service;
@@ -80,7 +82,7 @@ class ProcessingTest {
   @BeforeEach
   void setup() {
     service = new ProcessingService(MAPPER, repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, environment);
+        kafkaPublisherService, fdoRecordService, handleComponent, environment, applicationProperties);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -102,14 +104,14 @@ class ProcessingTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
+    service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
-    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
-    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+    then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
   }
 
   @Test
@@ -139,11 +141,9 @@ class ProcessingTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent());
+    service.handleMessage(givenAnnotationEvent());
 
     // Then
-    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -172,6 +172,8 @@ class ProcessingTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishCreateEvent(any(
         Annotation.class));
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
@@ -193,6 +195,7 @@ class ProcessingTest {
     given(handleComponent.postHandle(any())).willReturn(ID);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willThrow(
         IOException.class);
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
@@ -213,10 +216,9 @@ class ProcessingTest {
     given(repository.getAnnotation(annotation)).willReturn(List.of(givenAnnotationProcessed()));
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent(annotation));
+    service.handleMessage(givenAnnotationEvent(annotation));
 
     // Then
-    assertThat(result).isNull();
     then(kafkaPublisherService).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
     then(handleComponent).shouldHaveNoInteractions();
@@ -233,13 +235,12 @@ class ProcessingTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
+    service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
-    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
     then(fdoRecordService).should()
         .buildPatchRollbackHandleRequest(annotationRequest, ID);
     then(handleComponent).should().updateHandle(any());
@@ -282,6 +283,7 @@ class ProcessingTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
     var result = service.updateAnnotation(annotationRequest);
@@ -318,7 +320,7 @@ class ProcessingTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
+    service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
     then(fdoRecordService).should().buildPatchRollbackHandleRequest(any(), eq(ID));
@@ -350,13 +352,12 @@ class ProcessingTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(false);
+    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    var result = service.handleMessage(givenAnnotationEvent(annotationRequest));
+    service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
-    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
     then(fdoRecordService).shouldHaveNoMoreInteractions();
     then(handleComponent).shouldHaveNoInteractions();
     then(kafkaPublisherService).should()
@@ -414,7 +415,7 @@ class ProcessingTest {
   @Test
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationProcessed();
+    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
     given(repository.getAnnotation(annotationRequest)).willReturn(
         List.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -426,7 +427,7 @@ class ProcessingTest {
     doThrow(PidCreationException.class).when(handleComponent).rollbackHandleUpdate(any());
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
+    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotationRequest))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
@@ -437,7 +438,6 @@ class ProcessingTest {
     then(elasticRepository).should(times(2)).indexAnnotation(any(Annotation.class));
     then(repository).should(times(2)).createAnnotationRecord(any(Annotation.class));
   }
-
 
   @Test
   void testArchiveAnnotation() throws Exception {
