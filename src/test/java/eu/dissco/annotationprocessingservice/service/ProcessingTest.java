@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
@@ -28,6 +29,7 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -111,6 +113,7 @@ class ProcessingTest {
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getOdsId()).isEqualTo(ID);
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, ID);
   }
 
   @Test
@@ -129,23 +132,7 @@ class ProcessingTest {
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getOdsId()).isEqualTo(ID);
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
-  }
-
-  @Test
-  void testNewMessageWebProfile() throws Exception {
-    // Given
-    given(handleComponent.postHandle(any())).willReturn(ID);
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Created);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-
-    // When
-    var result = service.handleMessage(givenAnnotationEvent());
-
-    // Then
-    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
-    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsComplete(null, ID);
   }
 
   @Test
@@ -159,6 +146,7 @@ class ProcessingTest {
     // Then
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent()));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent());
   }
 
   @Test
@@ -183,6 +171,7 @@ class ProcessingTest {
     then(repository).should().rollbackAnnotation(ID);
     then(fdoRecordService).should().buildRollbackCreationRequest(annotation);
     then(handleComponent).should().rollbackHandleCreation(any());
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent());
   }
 
   @Test
@@ -204,6 +193,7 @@ class ProcessingTest {
     then(fdoRecordService).should().buildRollbackCreationRequest(annotation);
     then(handleComponent).should().rollbackHandleCreation(any());
     then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent());
   }
 
   @Test
@@ -246,6 +236,7 @@ class ProcessingTest {
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, ID);
   }
 
   @Test
@@ -260,6 +251,7 @@ class ProcessingTest {
 
     // Then
     assertThrows(FailedProcessingException.class, () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
   }
 
   @Test
@@ -272,6 +264,7 @@ class ProcessingTest {
     // Then
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
   }
 
   @Test
@@ -295,6 +288,7 @@ class ProcessingTest {
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsComplete(null, ID);
   }
 
   @Test
@@ -305,11 +299,12 @@ class ProcessingTest {
 
     // then
     assertThrows(NotFoundException.class, () -> service.updateAnnotation(annotationRequest));
+    then(masJobRecordService).shouldHaveNoInteractions();
   }
 
   @ParameterizedTest
   @MethodSource("unequalAnnotations")
-  void testAnnotationsAreEqual(Annotation currentAnnotation) throws Exception {
+  void testAnnotationsAreNotEqual(Annotation currentAnnotation) throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
     given(repository.getAnnotation(annotationRequest)).willReturn(List.of(currentAnnotation));
@@ -325,6 +320,7 @@ class ProcessingTest {
     then(fdoRecordService).should().buildPatchRollbackHandleRequest(any(), eq(ID));
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, ID);
   }
 
   private static Stream<Arguments> unequalAnnotations() {
@@ -362,6 +358,7 @@ class ProcessingTest {
     then(handleComponent).shouldHaveNoInteractions();
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, ID);
   }
 
   @Test
@@ -385,6 +382,7 @@ class ProcessingTest {
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(repository).should(times(2)).createAnnotationRecord(any(Annotation.class));
     then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotation));
   }
 
   @Test
@@ -410,6 +408,7 @@ class ProcessingTest {
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(Annotation.class));
     then(repository).should(times(2)).createAnnotationRecord(any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotation));
   }
 
   @Test
@@ -431,12 +430,14 @@ class ProcessingTest {
         FailedProcessingException.class);
 
     // Then
+    then(masJobRecordService).should().markMasJobRecordAsFailed(any());
     then(fdoRecordService).should(times(2))
         .buildPatchRollbackHandleRequest(annotationRequest.withOdsVersion(2), ID);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(Annotation.class));
     then(repository).should(times(2)).createAnnotationRecord(any(Annotation.class));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(any());
   }
 
 
@@ -455,6 +456,7 @@ class ProcessingTest {
     then(repository).should().archiveAnnotation(ID);
     then(fdoRecordService).should().buildArchiveHandleRequest(ID);
     then(handleComponent).should().archiveHandle(any(), eq(ID));
+    then(masJobRecordService).shouldHaveNoInteractions();
   }
 
   @Test

@@ -67,8 +67,9 @@ public class ProcessingService {
   public Annotation handleMessage(AnnotationEvent event)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
+    masJobRecordService.verifyMasJobId(event);
     var annotation = event.annotation();
-    var currentAnnotationOptional = getExistingAnnotation(annotation);
+    var currentAnnotationOptional = getExistingAnnotation(event);
     if (currentAnnotationOptional.isPresent()) {
       var currentAnnotation = currentAnnotationOptional.get();
       if (annotationAreEqual(currentAnnotation, annotation)) {
@@ -83,13 +84,15 @@ public class ProcessingService {
     return persistNewAnnotation(event);
   }
 
-  private Optional<Annotation> getExistingAnnotation(Annotation annotation)
+  private Optional<Annotation> getExistingAnnotation(AnnotationEvent event)
       throws FailedProcessingException {
+    var annotation = event.annotation();
     var existingAnnotations = repository.getAnnotation(annotation);
     if (existingAnnotations.size() > 1) {
       log.error(
           "Multiple annotations exist with same motivation, target, creator as {}, and this is not a web request",
           annotation);
+      masJobRecordService.markMasJobRecordAsFailed(event);
       throw new FailedProcessingException();
     }
     if (existingAnnotations.isEmpty()) {
@@ -100,7 +103,6 @@ public class ProcessingService {
 
   private Annotation updateExistingAnnotation(Annotation currentAnnotation,
       AnnotationEvent event) throws FailedProcessingException {
-    masJobRecordService.verifyMasJobId(event);
     var annotation = event.annotation();
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
@@ -161,9 +163,8 @@ public class ProcessingService {
   }
 
   private Annotation persistNewAnnotation(AnnotationEvent event) throws FailedProcessingException {
-    masJobRecordService.verifyMasJobId(event);
     var annotation = event.annotation();
-    var id = postHandle(annotation);
+    var id = postHandle(event);
     enrichAnnotation(annotation, id, 1);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
     log.info("Annotation: {} has been successfully committed to database", id);
@@ -203,12 +204,14 @@ public class ProcessingService {
         .withFoafName("Annotation Processing Service").withOdsType("tool/Software");
   }
 
-  private String postHandle(Annotation annotation) throws FailedProcessingException {
+  private String postHandle(AnnotationEvent event) throws FailedProcessingException {
+    var annotation = event.annotation();
     var requestBody = fdoRecordService.buildPostHandleRequest(annotation);
     try {
       return handleComponent.postHandle(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotation. ", e);
+      masJobRecordService.markMasJobRecordAsFailed(event);
       throw new FailedProcessingException();
     }
   }
