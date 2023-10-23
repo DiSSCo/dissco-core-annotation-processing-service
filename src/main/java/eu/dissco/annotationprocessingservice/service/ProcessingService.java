@@ -13,10 +13,12 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,8 @@ public class ProcessingService {
   private final KafkaPublisherService kafkaService;
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
+  private final Environment environment;
+  private final ApplicationProperties applicationProperties;
   private final MasJobRecordService masJobRecordService;
 
 
@@ -60,11 +64,11 @@ public class ProcessingService {
   }
 
   public Annotation createNewAnnotation(Annotation annotation) throws FailedProcessingException {
-    log.info("Received annotation update request of: {}", annotation);
+    log.info("Received create annotation request of: {}", annotation);
     return persistNewAnnotation(new AnnotationEvent(annotation, null));
   }
 
-  public Annotation handleMessage(AnnotationEvent event)
+  public void handleMessage(AnnotationEvent event)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
@@ -75,13 +79,13 @@ public class ProcessingService {
       if (annotationAreEqual(currentAnnotation, annotation)) {
         log.info("Received annotation is equal to annotation: {}", currentAnnotation.getOdsId());
         processEqualAnnotation(currentAnnotation);
-        return null;
       } else {
         log.info("Annotation with id: {} has received an update", currentAnnotation.getOdsId());
-        return updateExistingAnnotation(currentAnnotation, event);
+        updateExistingAnnotation(currentAnnotation, event);
       }
+    } else {
+      persistNewAnnotation(event);
     }
-    return persistNewAnnotation(event);
   }
 
   private Optional<Annotation> getExistingAnnotation(AnnotationEvent event)
@@ -111,10 +115,8 @@ public class ProcessingService {
       masJobRecordService.markMasJobRecordAsFailed(event);
       throw new FailedProcessingException();
     }
-    enrichAnnotation(annotation, currentAnnotation.getOdsId(),
+    enrichUpdateAnnotation(annotation, currentAnnotation, currentAnnotation.getOdsId(),
         currentAnnotation.getOdsVersion() + 1);
-    annotation.withDcTermsCreated(currentAnnotation.getDcTermsCreated());
-    annotation.withOaGenerated(currentAnnotation.getOaGenerated());
 
     repository.createAnnotationRecord(annotation);
 
@@ -165,8 +167,9 @@ public class ProcessingService {
   private Annotation persistNewAnnotation(AnnotationEvent event) throws FailedProcessingException {
     var annotation = event.annotation();
     var id = postHandle(event);
-    enrichAnnotation(annotation, id, 1);
+    enrichAnnotation(annotation, id, 1, false);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
+    repository.createAnnotationRecord(annotation);
     log.info("Annotation: {} has been successfully committed to database", id);
     IndexResponse indexDocument = null;
     try {
@@ -193,15 +196,26 @@ public class ProcessingService {
     return annotation;
   }
 
-  private void enrichAnnotation(Annotation annotation, String id, int version) {
+  private void enrichAnnotation(Annotation annotation, String id, int version, boolean isNew) {
     annotation.withOdsId(id);
     annotation.withOdsVersion(version);
     annotation.withAsGenerator(createGenerator());
+    if (isNew){
+      annotation.withOaGenerated(Instant.now());
+    }
+  }
+
+  private void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation, String id, int version){
+    enrichAnnotation(annotation, id, version, false);
+    annotation.withDcTermsCreated(currentAnnotation.getDcTermsCreated());
+    annotation.withOaGenerated(currentAnnotation.getOaGenerated());
   }
 
   private Generator createGenerator() {
-    return new Generator().withOdsId("https://hdl.handle.net/anno-process-service-pid")
-        .withFoafName("Annotation Processing Service").withOdsType("tool/Software");
+    return new Generator()
+        .withOdsId(applicationProperties.getProcessorHandle())
+        .withFoafName("Annotation Processing Service")
+        .withOdsType("tool/Software");
   }
 
   private String postHandle(AnnotationEvent event) throws FailedProcessingException {

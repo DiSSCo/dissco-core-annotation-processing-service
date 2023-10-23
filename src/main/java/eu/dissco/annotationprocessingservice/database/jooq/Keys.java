@@ -5,11 +5,10 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.records.HandlesRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
+
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -28,6 +27,5 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AnnotationRecord> ANNOTATION_PK = Internal.createUniqueKey(Annotation.ANNOTATION, DSL.name("annotation_pk"), new TableField[] { Annotation.ANNOTATION.ID }, true);
-    public static final UniqueKey<HandlesRecord> HANDLES_PKEY = Internal.createUniqueKey(Handles.HANDLES, DSL.name("handles_pkey"), new TableField[] { Handles.HANDLES.HANDLE, Handles.HANDLES.IDX }, true);
     public static final UniqueKey<MasJobRecordRecord> MAS_JOB_RECORD_PK = Internal.createUniqueKey(MasJobRecord.MAS_JOB_RECORD, DSL.name("mas_job_record_pk"), new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 }

@@ -1,4 +1,4 @@
-package web;
+package eu.dissco.annotationprocessingservice.web;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;

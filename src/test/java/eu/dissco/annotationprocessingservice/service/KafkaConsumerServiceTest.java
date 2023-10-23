@@ -6,10 +6,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.mockito.BDDMockito.then;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.exception.DataBaseException;
-import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import javax.xml.transform.TransformerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -31,7 +31,7 @@ public class AnnotationController {
 
   private final ProcessingService processingService;
 
-  @PostMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation request");
@@ -39,10 +39,13 @@ public class AnnotationController {
     return ResponseEntity.ok(result);
   }
 
-  @PatchMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Annotation> updateAnnotation(@RequestBody Annotation annotation)
+  @PatchMapping(value = "{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Annotation> updateAnnotation(
+      @PathVariable("prefix") String prefix,
+      @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException, NotFoundException {
-    log.info("Received annotation request");
+    checkId(prefix, suffix, annotation);
+    log.info("Received annotation request for annotation {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
@@ -55,4 +58,14 @@ public class AnnotationController {
     processingService.archiveAnnotation(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
+
+  private void checkId(String prefix, String suffix, Annotation annotation)
+      throws FailedProcessingException {
+    var id = prefix + "/" + suffix;
+    if (!id.equals(annotation.getOdsId())) {
+      log.error("provided id does not match annotation id");
+      throw new FailedProcessingException();
+    }
+  }
+
 }
