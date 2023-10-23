@@ -37,3 +37,25 @@ CREATE TABLE public.handles (
 );
 CREATE INDEX dataindex ON public.handles USING btree (data);
 CREATE INDEX handleindex ON public.handles USING btree (handle);
+
+CREATE
+EXTENSION IF NOT EXISTS "uuid-ossp";
+
+create table mas_job_record
+(
+    job_id         uuid default uuid_generate_v4() not null
+        constraint mas_job_record_pk
+            primary key,
+    state          text                            not null,
+    creator_id     text                            not null,
+    time_started   timestamp with time zone        not null,
+    time_completed timestamp with time zone,
+    annotations    jsonb,
+    target_id      text                            not null
+);
+
+create index mas_job_record_created_idx
+    on mas_job_record (time_started);
+
+create index mas_job_record_job_id_index
+    on mas_job_record (job_id);
