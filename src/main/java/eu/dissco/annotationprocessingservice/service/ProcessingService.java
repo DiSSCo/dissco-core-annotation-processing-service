@@ -12,6 +12,7 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -35,6 +36,7 @@ public class ProcessingService {
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
   private final Environment environment;
+  private final ApplicationProperties applicationProperties;
 
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
     return currentAnnotation.getOaBody().equals(annotation.getOaBody())
@@ -58,11 +60,11 @@ public class ProcessingService {
   }
 
   public Annotation createNewAnnotation(Annotation annotation) throws FailedProcessingException {
-    log.info("Received annotation update request of: {}", annotation);
+    log.info("Received create annotation request of: {}", annotation);
     return persistNewAnnotation(annotation);
   }
 
-  public Annotation handleMessage(AnnotationEvent event)
+  public void handleMessage(AnnotationEvent event)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
     var annotation = event.annotation();
@@ -72,13 +74,12 @@ public class ProcessingService {
       if (annotationAreEqual(currentAnnotation, annotation)) {
         log.info("Received annotation is equal to annotation: {}", currentAnnotation.getOdsId());
         processEqualAnnotation(currentAnnotation);
-        return null;
       } else {
         log.info("Annotation with id: {} has received an update", currentAnnotation.getOdsId());
-        return updateExistingAnnotation(currentAnnotation, annotation);
+        updateExistingAnnotation(currentAnnotation, annotation);
       }
     }
-    return persistNewAnnotation(annotation);
+    persistNewAnnotation(annotation);
   }
 
 
@@ -105,10 +106,8 @@ public class ProcessingService {
       log.error("Unable to post update for annotation {}", currentAnnotation.getOdsId(), e);
       throw new FailedProcessingException();
     }
-    enrichAnnotation(annotation, currentAnnotation.getOdsId(),
+    enrichUpdateAnnotation(annotation, currentAnnotation, currentAnnotation.getOdsId(),
         currentAnnotation.getOdsVersion() + 1);
-    annotation.withDcTermsCreated(currentAnnotation.getDcTermsCreated());
-    annotation.withOaGenerated(currentAnnotation.getOaGenerated());
 
     repository.createAnnotationRecord(annotation);
 
@@ -157,6 +156,7 @@ public class ProcessingService {
     var id = postHandle(annotation);
     enrichAnnotation(annotation, id, 1);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
+    repository.createAnnotationRecord(annotation);
     log.info("Annotation: {} has been successfully committed to database", id);
     IndexResponse indexDocument = null;
     try {
@@ -185,8 +185,14 @@ public class ProcessingService {
     annotation.withAsGenerator(createGenerator());
   }
 
+  private void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation, String id, int version){
+    enrichAnnotation(annotation, id, version);
+    annotation.withDcTermsCreated(currentAnnotation.getDcTermsCreated());
+    annotation.withOaGenerated(currentAnnotation.getOaGenerated());
+  }
+
   private Generator createGenerator() {
-    return new Generator().withOdsId("https://hdl.handle.net/anno-process-service-pid")
+    return new Generator().withOdsId(applicationProperties.getProcessorHandle())
         .withFoafName("Annotation Processing Service").withOdsType("tool/Software");
   }
 

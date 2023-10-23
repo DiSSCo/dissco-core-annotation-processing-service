@@ -42,7 +42,7 @@ public class AnnotationController {
   @PatchMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> updateAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException, NotFoundException {
-    log.info("Received annotation request");
+    log.info("Received annotation request for annotation {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }

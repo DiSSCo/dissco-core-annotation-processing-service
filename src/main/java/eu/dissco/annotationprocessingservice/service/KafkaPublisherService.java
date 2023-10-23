@@ -22,17 +22,27 @@ public class KafkaPublisherService {
   private final KafkaTemplate<String, String> kafkaTemplate;
 
   public void publishCreateEvent(Annotation annotation) throws JsonProcessingException {
-    var event = new CreateUpdateDeleteEvent(UUID.randomUUID(), "create",
-        "annotation-processing-service", annotation.getOdsId(), SUBJECT_TYPE, Instant.now(),
-        mapper.valueToTree(annotation), null, "Annotation newly created");
+    var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
+        "create",
+        "annotation-processing-service",
+        annotation.getOdsId(),
+        SUBJECT_TYPE,
+        Instant.now(),
+        mapper.valueToTree(annotation),
+        null,
+        "Annotation newly created");
     kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
   public void publishUpdateEvent(Annotation currentAnnotation, Annotation annotation)
       throws JsonProcessingException {
     var jsonPatch = createJsonPatch(currentAnnotation, annotation);
-    var event = new CreateUpdateDeleteEvent(UUID.randomUUID(), "update",
-        "annotation-processing-service", annotation.getOdsId(), SUBJECT_TYPE, Instant.now(),
+    var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
+        "update",
+        "annotation-processing-service",
+        annotation.getOdsId(),
+        SUBJECT_TYPE,
+        Instant.now(),
         mapper.valueToTree(annotation), jsonPatch, "Annotation has been updated");
     kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }

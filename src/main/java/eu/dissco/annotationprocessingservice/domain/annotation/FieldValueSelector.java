@@ -18,7 +18,7 @@ public class FieldValueSelector extends Selector {
     super(SelectorType.FIELD_VALUE_SELECTOR);
   }
 
-  FieldValueSelector(String odsField) {
+  public FieldValueSelector(String odsField) {
     super(SelectorType.FIELD_VALUE_SELECTOR);
     this.odsField = odsField;
   }

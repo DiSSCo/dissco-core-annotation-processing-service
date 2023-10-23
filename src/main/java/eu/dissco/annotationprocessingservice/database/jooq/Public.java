@@ -5,10 +5,11 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -33,11 +34,6 @@ public class Public extends SchemaImpl {
     public final Annotation ANNOTATION = Annotation.ANNOTATION;
 
     /**
-     * The table <code>public.handles</code>.
-     */
-    public final Handles HANDLES = Handles.HANDLES;
-
-    /**
      * The table <code>public.mas_job_record</code>.
      */
     public final MasJobRecord MAS_JOB_RECORD = MasJobRecord.MAS_JOB_RECORD;
@@ -59,7 +55,6 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             Annotation.ANNOTATION,
-            Handles.HANDLES,
             MasJobRecord.MAS_JOB_RECORD
         );
     }
