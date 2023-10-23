@@ -167,7 +167,7 @@ public class ProcessingService {
   private Annotation persistNewAnnotation(AnnotationEvent event) throws FailedProcessingException {
     var annotation = event.annotation();
     var id = postHandle(event);
-    enrichAnnotation(annotation, id, 1, false);
+    enrichAnnotation(annotation, id, 1, true);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
     repository.createAnnotationRecord(annotation);
     log.info("Annotation: {} has been successfully committed to database", id);
