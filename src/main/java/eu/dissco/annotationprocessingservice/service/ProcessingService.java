@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
@@ -28,13 +29,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ProcessingService {
 
-  private final ObjectMapper mapper;
   private final AnnotationRepository repository;
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
   private final FdoRecordService fdoRecordService;
   private final HandleComponent handleComponent;
-  private final Environment environment;
+  private final MasJobRecordService masJobRecordService;
+
 
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
     return currentAnnotation.getOaBody().equals(annotation.getOaBody())
@@ -42,7 +43,8 @@ public class ProcessingService {
         && currentAnnotation.getOaTarget().equals(annotation.getOaTarget()) &&
         (currentAnnotation.getOaMotivatedBy() != null
             && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
-            || currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null)
+            || currentAnnotation.getOaMotivatedBy() == null
+            && annotation.getOaMotivatedBy() == null)
         && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
@@ -54,12 +56,12 @@ public class ProcessingService {
     if (currentAnnotation == null) {
       throw new NotFoundException(annotation.getOdsId());
     }
-    return updateExistingAnnotation(currentAnnotation, annotation);
+    return updateExistingAnnotation(currentAnnotation, new AnnotationEvent(annotation, null));
   }
 
   public Annotation createNewAnnotation(Annotation annotation) throws FailedProcessingException {
     log.info("Received annotation update request of: {}", annotation);
-    return persistNewAnnotation(annotation);
+    return persistNewAnnotation(new AnnotationEvent(annotation, null));
   }
 
   public Annotation handleMessage(AnnotationEvent event)
@@ -75,12 +77,11 @@ public class ProcessingService {
         return null;
       } else {
         log.info("Annotation with id: {} has received an update", currentAnnotation.getOdsId());
-        return updateExistingAnnotation(currentAnnotation, annotation);
+        return updateExistingAnnotation(currentAnnotation, event);
       }
     }
-    return persistNewAnnotation(annotation);
+    return persistNewAnnotation(event);
   }
-
 
   private Optional<Annotation> getExistingAnnotation(Annotation annotation)
       throws FailedProcessingException {
@@ -98,11 +99,14 @@ public class ProcessingService {
   }
 
   private Annotation updateExistingAnnotation(Annotation currentAnnotation,
-      Annotation annotation) throws FailedProcessingException {
+      AnnotationEvent event) throws FailedProcessingException {
+    masJobRecordService.verifyMasJobId(event);
+    var annotation = event.annotation();
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
     } catch (PidCreationException e) {
       log.error("Unable to post update for annotation {}", currentAnnotation.getOdsId(), e);
+      masJobRecordService.markMasJobRecordAsFailed(event);
       throw new FailedProcessingException();
     }
     enrichAnnotation(annotation, currentAnnotation.getOdsId(),
@@ -119,6 +123,7 @@ public class ProcessingService {
       indexDocument = elasticRepository.indexAnnotation(annotation);
     } catch (IOException | ElasticsearchException e) {
       log.error("Rolling back, failed to insert records in elastic", e);
+      masJobRecordService.markMasJobRecordAsFailed(event);
       rollbackUpdatedAnnotation(currentAnnotation, annotation, false);
     }
     if (indexDocument.result().equals(Result.Updated)) {
@@ -126,9 +131,11 @@ public class ProcessingService {
       try {
         kafkaService.publishUpdateEvent(currentAnnotation, annotation);
       } catch (JsonProcessingException e) {
+        masJobRecordService.markMasJobRecordAsFailed(event);
         rollbackUpdatedAnnotation(currentAnnotation, annotation, true);
       }
     }
+    masJobRecordService.markMasJobRecordAsComplete(event.jobId(), annotation.getOdsId());
     return annotation;
   }
 
@@ -153,7 +160,9 @@ public class ProcessingService {
         currentAnnotation.getOdsId());
   }
 
-  private Annotation persistNewAnnotation(Annotation annotation) throws FailedProcessingException {
+  private Annotation persistNewAnnotation(AnnotationEvent event) throws FailedProcessingException {
+    masJobRecordService.verifyMasJobId(event);
+    var annotation = event.annotation();
     var id = postHandle(annotation);
     enrichAnnotation(annotation, id, 1);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
@@ -163,6 +172,7 @@ public class ProcessingService {
       indexDocument = elasticRepository.indexAnnotation(annotation);
     } catch (IOException | ElasticsearchException e) {
       log.error("Rolling back, failed to insert records in elastic", e);
+      masJobRecordService.markMasJobRecordAsFailed(event);
       rollbackNewAnnotation(annotation, false);
     }
     if (indexDocument.result().equals(Result.Created)) {
@@ -170,12 +180,15 @@ public class ProcessingService {
       try {
         kafkaService.publishCreateEvent(annotation);
       } catch (JsonProcessingException e) {
+        masJobRecordService.markMasJobRecordAsFailed(event);
         rollbackNewAnnotation(annotation, true);
       }
     } else {
       log.error("Elasticsearch did not create annotation: {}", id);
+      masJobRecordService.markMasJobRecordAsFailed(event);
       throw new FailedProcessingException();
     }
+    masJobRecordService.markMasJobRecordAsComplete(event.jobId(), annotation.getOdsId());
     return annotation;
   }
 

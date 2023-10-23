@@ -70,7 +70,8 @@ class ProcessingTest {
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private Environment environment;
+  private MasJobRecordService masJobRecordService;
+
   private MockedStatic<Instant> mockedStatic;
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingService service;
@@ -79,8 +80,8 @@ class ProcessingTest {
 
   @BeforeEach
   void setup() {
-    service = new ProcessingService(MAPPER, repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, environment);
+    service = new ProcessingService(repository, elasticRepository,
+        kafkaPublisherService, fdoRecordService, handleComponent, masJobRecordService);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
