@@ -3,7 +3,6 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
@@ -28,8 +27,6 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -80,14 +77,14 @@ class ProcessingTest {
   private ApplicationProperties applicationProperties;
   private MockedStatic<Instant> mockedStatic;
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
-  private ProcessingService service;
+  private ProcessingKafkaService service;
   Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
   MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
 
   @BeforeEach
   void setup() {
-    service = new ProcessingService(repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, environment, applicationProperties, masJobRecordService);
+    service = new ProcessingKafkaService(repository, elasticRepository,
+        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties, masJobRecordService);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);

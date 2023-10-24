@@ -1,13 +1,14 @@
 package eu.dissco.annotationprocessingservice.controller;
 
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
-import eu.dissco.annotationprocessingservice.service.ProcessingService;
+import eu.dissco.annotationprocessingservice.service.ProcessingKafkaService;
+import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,13 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AnnotationController {
 
-  private final ProcessingService processingService;
+  private final ProcessingWebService processingService;
 
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation creation request");
-    var result = processingService.createNewAnnotation(annotation);
+    var result = processingService.persistNewAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
 
@@ -44,7 +45,7 @@ public class AnnotationController {
   public ResponseEntity<Annotation> updateAnnotation(
       @PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
-      throws DataBaseException, FailedProcessingException, NotFoundException, ConflictException {
+      throws DataBaseException, FailedProcessingException, NotFoundException, ConflictException, ForbiddenException {
     checkId(prefix, suffix, annotation);
     log.info("Received annotation update request for annotation {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);

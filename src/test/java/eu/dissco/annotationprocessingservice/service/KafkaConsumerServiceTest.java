@@ -16,13 +16,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class KafkaConsumerServiceTest {
 
   @Mock
-  private ProcessingService processingService;
+  private ProcessingKafkaService processingKafkaService;
 
   private KafkaConsumerService service;
 
   @BeforeEach
   void setup() {
-    service = new KafkaConsumerService(MAPPER, processingService);
+    service = new KafkaConsumerService(MAPPER, processingKafkaService);
   }
 
   @Test
@@ -34,7 +34,7 @@ class KafkaConsumerServiceTest {
     service.getMessages(message);
 
     // Then
-    then(processingService).should().handleMessage(givenAnnotationEvent());
+    then(processingKafkaService).should().handleMessage(givenAnnotationEvent());
   }
 
   private String givenMessage() throws Exception {

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 public class KafkaConsumerService {
 
   private final ObjectMapper mapper;
-  private final ProcessingService service;
+  private final ProcessingKafkaService service;
 
   @KafkaListener(topics = "${kafka.consumer.topic}")
   public void getMessages(@Payload String message)

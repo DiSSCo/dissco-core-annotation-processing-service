@@ -58,6 +58,15 @@ public class AnnotationRepository {
     return dbRecord.map(this::mapAnnotation);
   }
 
+  public Optional<Annotation> getAnnotationForUser(String annotationId, String creatorId) {
+    return context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotationId))
+        .and(ANNOTATION.CREATOR_ID.eq(creatorId))
+        .fetchOptional()
+        .map(this::mapAnnotation);
+  }
+
   private Annotation mapAnnotation(Record dbRecord) {
     try {
       return new Annotation()
