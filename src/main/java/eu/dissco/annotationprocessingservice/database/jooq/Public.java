@@ -4,10 +4,12 @@
 package eu.dissco.annotationprocessingservice.database.jooq;
 
 
-import eu.dissco.annotationprocessingservice.database.jooq.tables.Handles;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -27,14 +29,14 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
-     * The table <code>public.handles</code>.
+     * The table <code>public.annotation</code>.
      */
-    public final Handles HANDLES = Handles.HANDLES;
+    public final Annotation ANNOTATION = Annotation.ANNOTATION;
 
     /**
-     * The table <code>public.new_annotation</code>.
+     * The table <code>public.mas_job_record</code>.
      */
-    public final NewAnnotation NEW_ANNOTATION = NewAnnotation.NEW_ANNOTATION;
+    public final MasJobRecord MAS_JOB_RECORD = MasJobRecord.MAS_JOB_RECORD;
 
     /**
      * No further instances allowed
@@ -51,8 +53,9 @@ public class Public extends SchemaImpl {
 
     @Override
     public final List<Table<?>> getTables() {
-        return Arrays.<Table<?>>asList(
-            Handles.HANDLES,
-            NewAnnotation.NEW_ANNOTATION);
+        return Arrays.asList(
+            Annotation.ANNOTATION,
+            MasJobRecord.MAS_JOB_RECORD
+        );
     }
 }

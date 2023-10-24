@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRecord;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -88,7 +88,7 @@ class ElasticSearchRepositoryIT {
   @Test
   void testIndexAnnotation() throws IOException {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
 
     // When
     var result = repository.indexAnnotation(annotation);
@@ -100,7 +100,7 @@ class ElasticSearchRepositoryIT {
   @Test
   void testArchiveAnnotation() throws IOException {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
     repository.indexAnnotation(annotation);
 
     // When

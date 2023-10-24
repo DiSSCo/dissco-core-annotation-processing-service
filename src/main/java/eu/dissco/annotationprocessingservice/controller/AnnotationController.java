@@ -2,12 +2,13 @@ package eu.dissco.annotationprocessingservice.controller;
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.service.ProcessingService;
 import java.io.IOException;
-import javax.xml.transform.TransformerException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,11 +32,22 @@ public class AnnotationController {
 
   private final ProcessingService processingService;
 
-  @PostMapping(value="",produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<AnnotationRecord> createAnnotation(@RequestBody AnnotationEvent event)
+  @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
-    log.info("Received annotation request");
-    var result = processingService.handleMessage(event);
+    log.info("Received annotation creation request");
+    var result = processingService.createNewAnnotation(annotation);
+    return ResponseEntity.ok(result);
+  }
+
+  @PatchMapping(value = "{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Annotation> updateAnnotation(
+      @PathVariable("prefix") String prefix,
+      @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
+      throws DataBaseException, FailedProcessingException, NotFoundException, ConflictException {
+    checkId(prefix, suffix, annotation);
+    log.info("Received annotation update request for annotation {}", annotation.getOdsId());
+    var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
 
@@ -46,4 +59,14 @@ public class AnnotationController {
     processingService.archiveAnnotation(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
+
+  private void checkId(String prefix, String suffix, Annotation annotation)
+      throws ConflictException {
+    var id = prefix + "/" + suffix;
+    if (!id.equals(annotation.getOdsId())) {
+      log.error("provided id does not match annotation id");
+      throw new ConflictException();
+    }
+  }
+
 }

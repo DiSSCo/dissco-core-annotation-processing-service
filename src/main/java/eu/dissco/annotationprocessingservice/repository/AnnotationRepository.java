@@ -1,14 +1,19 @@
 package eu.dissco.annotationprocessingservice.repository;
 
-import static eu.dissco.annotationprocessingservice.database.jooq.Tables.NEW_ANNOTATION;
+import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.annotationprocessingservice.domain.Annotation;
-import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Body;
+import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
+import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
+import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,131 +28,128 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AnnotationRepository {
 
-  private static final String FIELD_SET = "fieldSet";
-  private static final String INDV_PROP = "indvProp";
-
   private final ObjectMapper mapper;
   private final DSLContext context;
 
-  public Optional<AnnotationRecord> getAnnotation(JsonNode targetId, String creator,
-      String motivation) {
-    var query = context.select(NEW_ANNOTATION.asterisk())
-        .from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.TARGET_ID.eq(targetId.get("id").asText()))
-        .and(NEW_ANNOTATION.CREATOR.eq(creator))
-        .and(NEW_ANNOTATION.MOTIVATION.eq(motivation))
-        .and(NEW_ANNOTATION.DELETED.isNull());
-    if (targetId.get(INDV_PROP) != null) {
-      query = query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(INDV_PROP).asText()));
-    } else if (targetId.get(FIELD_SET) != null) {
-      query = query.and(NEW_ANNOTATION.TARGET_FIELD.eq(targetId.get(FIELD_SET).asText()));
-    } else {
-      query = query.and(NEW_ANNOTATION.TARGET_FIELD.isNull());
-    }
-    var dbRecord = query.fetchOptional();
-    if (dbRecord.isPresent()) {
-      return dbRecord.map(this::mapAnnotationRecord);
-    } else {
-      return Optional.empty();
+  public List<Annotation> getAnnotation(Annotation annotation) {
+    try {
+      return context.select(ANNOTATION.asterisk())
+          .from(ANNOTATION)
+          .where(ANNOTATION.TARGET.eq(
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getOaTarget()))))
+          .and(ANNOTATION.CREATOR_ID.eq(annotation.getOaCreator().getOdsId()))
+          .and(ANNOTATION.MOTIVATION.eq(annotation.getOaMotivation().toString()))
+          .and(ANNOTATION.DELETED_ON.isNull())
+          .fetch().map(this::mapAnnotation);
+    } catch (JsonProcessingException e) {
+      log.error("Unable to parse target {} to JSONB", annotation.getOaTarget());
+      throw new DataBaseException("Unable to parse target to JSONB");
     }
   }
 
-  private AnnotationRecord mapAnnotationRecord(Record dbRecord) {
-    Annotation annotation;
+  public Annotation getAnnotation(String annotationId) {
+    var dbRecord = context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotationId))
+        .fetchOne();
+    if (dbRecord == null) {
+      return null;
+    }
+    return dbRecord.map(this::mapAnnotation);
+  }
+
+  private Annotation mapAnnotation(Record dbRecord) {
     try {
-      annotation = new Annotation(
-          dbRecord.get(NEW_ANNOTATION.TYPE),
-          dbRecord.get(NEW_ANNOTATION.MOTIVATION),
-          mapper.readTree(dbRecord.get(NEW_ANNOTATION.TARGET_BODY).data()),
-          mapper.readTree(dbRecord.get(NEW_ANNOTATION.BODY).data()),
-          dbRecord.get(NEW_ANNOTATION.PREFERENCE_SCORE),
-          dbRecord.get(NEW_ANNOTATION.CREATOR),
-          dbRecord.get(NEW_ANNOTATION.CREATED),
-          mapper.readTree(dbRecord.get(NEW_ANNOTATION.GENERATOR_BODY).data()),
-          dbRecord.get(NEW_ANNOTATION.GENERATED)
-      );
+      return new Annotation()
+          .withOdsId(dbRecord.get(ANNOTATION.ID))
+          .withRdfType(dbRecord.get(ANNOTATION.TYPE))
+          .withOdsVersion(dbRecord.get(ANNOTATION.VERSION))
+          .withOaMotivation(Motivation.fromString(dbRecord.get(ANNOTATION.MOTIVATION)))
+          .withOaMotivatedBy(dbRecord.get(ANNOTATION.MOTIVATED_BY))
+          .withOaTarget(mapper.readValue(dbRecord.get(ANNOTATION.TARGET).data(), Target.class))
+          .withOaBody(mapper.readValue(dbRecord.get(ANNOTATION.BODY).data(), Body.class))
+          .withOaCreator(mapper.readValue(dbRecord.get(ANNOTATION.CREATOR).data(), Creator.class))
+          .withDcTermsCreated(dbRecord.get(ANNOTATION.CREATED))
+          .withOdsDeletedOn(dbRecord.get(ANNOTATION.DELETED_ON))
+          .withAsGenerator(
+              mapper.readValue(dbRecord.get(ANNOTATION.GENERATOR).data(), Generator.class))
+          .withOaGenerated(dbRecord.get(ANNOTATION.GENERATED))
+          .withOdsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
+              AggregateRating.class));
     } catch (JsonProcessingException e) {
       log.error("Failed to get data from database, Unable to parse JSONB to JSON", e);
       throw new DataBaseException(e.getMessage());
     }
-    return new AnnotationRecord(
-        dbRecord.get(NEW_ANNOTATION.ID),
-        dbRecord.get(NEW_ANNOTATION.VERSION),
-        dbRecord.get(NEW_ANNOTATION.CREATED),
-        annotation);
   }
 
-  public int createAnnotationRecord(AnnotationRecord annotationRecord) {
-    String targetField = null;
-    if (annotationRecord.annotation().target().get(FIELD_SET) != null) {
-      targetField = annotationRecord.annotation().target().get(FIELD_SET).asText();
+  public void createAnnotationRecord(Annotation annotation) {
+    try {
+      context.insertInto(ANNOTATION).set(ANNOTATION.ID, annotation.getOdsId())
+          .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+          .set(ANNOTATION.TYPE, annotation.getRdfType())
+          .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().toString())
+          .set(ANNOTATION.MOTIVATED_BY, annotation.getOaMotivatedBy())
+          .set(ANNOTATION.TARGET_ID, annotation.getOaTarget().getOdsId())
+          .set(ANNOTATION.TARGET, JSONB.jsonb(mapper.writeValueAsString(annotation.getOaTarget())))
+          .set(ANNOTATION.BODY, JSONB.jsonb(mapper.writeValueAsString(annotation.getOaBody())))
+          .set(ANNOTATION.AGGREGATE_RATING,
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getOdsAggregateRating())))
+          .set(ANNOTATION.CREATOR,
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getOaCreator())))
+          .set(ANNOTATION.CREATOR_ID, annotation.getOaCreator().getOdsId())
+          .set(ANNOTATION.CREATED, annotation.getDcTermsCreated())
+          .set(ANNOTATION.GENERATOR,
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
+          .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
+          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
+          .onConflict(ANNOTATION.ID).doUpdate()
+          .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+          .set(ANNOTATION.TYPE, annotation.getRdfType())
+          .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().toString())
+          .set(ANNOTATION.MOTIVATED_BY, annotation.getOaMotivatedBy())
+          .set(ANNOTATION.TARGET_ID, annotation.getOaTarget().getOdsId())
+          .set(ANNOTATION.TARGET, JSONB.jsonb(mapper.writeValueAsString(annotation.getOaTarget())))
+          .set(ANNOTATION.BODY, JSONB.jsonb(mapper.writeValueAsString(annotation.getOaBody())))
+          .set(ANNOTATION.AGGREGATE_RATING,
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getOdsAggregateRating())))
+          .set(ANNOTATION.CREATOR,
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getOaCreator())))
+          .set(ANNOTATION.CREATOR_ID, annotation.getOaCreator().getOdsId())
+          .set(ANNOTATION.CREATED, annotation.getDcTermsCreated())
+          .set(ANNOTATION.GENERATOR,
+              JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
+          .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
+          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
+          .execute();
+    } catch (JsonProcessingException e) {
+      log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
+      throw new DataBaseException(e.getMessage());
     }
-    if (annotationRecord.annotation().target().get(INDV_PROP) != null) {
-      targetField = annotationRecord.annotation().target().get(INDV_PROP).asText();
-    }
-    return context.insertInto(NEW_ANNOTATION)
-        .set(NEW_ANNOTATION.ID, annotationRecord.id())
-        .set(NEW_ANNOTATION.VERSION, annotationRecord.version())
-        .set(NEW_ANNOTATION.TYPE, annotationRecord.annotation().type())
-        .set(NEW_ANNOTATION.MOTIVATION, annotationRecord.annotation().motivation())
-        .set(NEW_ANNOTATION.TARGET_ID, annotationRecord.annotation().target().get("id").asText())
-        .set(NEW_ANNOTATION.TARGET_FIELD, targetField)
-        .set(NEW_ANNOTATION.TARGET_BODY,
-            JSONB.jsonb(annotationRecord.annotation().target().toString()))
-        .set(NEW_ANNOTATION.BODY, JSONB.jsonb(annotationRecord.annotation().body().toString()))
-        .set(NEW_ANNOTATION.PREFERENCE_SCORE, annotationRecord.annotation().preferenceScore())
-        .set(NEW_ANNOTATION.CREATOR, annotationRecord.annotation().creator())
-        .set(NEW_ANNOTATION.CREATED, annotationRecord.annotation().created())
-        .set(NEW_ANNOTATION.GENERATOR_ID,
-            annotationRecord.annotation().generator().get("id").asText())
-        .set(NEW_ANNOTATION.GENERATOR_BODY,
-            JSONB.jsonb(annotationRecord.annotation().generator().toString()))
-        .set(NEW_ANNOTATION.GENERATED, annotationRecord.annotation().generated())
-        .set(NEW_ANNOTATION.LAST_CHECKED, Instant.now())
-        .onConflict(NEW_ANNOTATION.ID).doUpdate()
-        .set(NEW_ANNOTATION.VERSION, annotationRecord.version())
-        .set(NEW_ANNOTATION.TYPE, annotationRecord.annotation().type())
-        .set(NEW_ANNOTATION.MOTIVATION, annotationRecord.annotation().motivation())
-        .set(NEW_ANNOTATION.TARGET_ID, annotationRecord.annotation().target().get("id").asText())
-        .set(NEW_ANNOTATION.TARGET_FIELD, targetField)
-        .set(NEW_ANNOTATION.TARGET_BODY,
-            JSONB.jsonb(annotationRecord.annotation().target().toString()))
-        .set(NEW_ANNOTATION.BODY, JSONB.jsonb(annotationRecord.annotation().body().toString()))
-        .set(NEW_ANNOTATION.PREFERENCE_SCORE, annotationRecord.annotation().preferenceScore())
-        .set(NEW_ANNOTATION.CREATOR, annotationRecord.annotation().creator())
-        .set(NEW_ANNOTATION.CREATED, annotationRecord.annotation().created())
-        .set(NEW_ANNOTATION.GENERATOR_ID,
-            annotationRecord.annotation().generator().get("id").asText())
-        .set(NEW_ANNOTATION.GENERATOR_BODY,
-            JSONB.jsonb(annotationRecord.annotation().generator().toString()))
-        .set(NEW_ANNOTATION.GENERATED, annotationRecord.annotation().generated())
-        .set(NEW_ANNOTATION.LAST_CHECKED, Instant.now())
-        .execute();
   }
 
-  public int updateLastChecked(AnnotationRecord currentAnnotationRecord) {
-    return context.update(NEW_ANNOTATION)
-        .set(NEW_ANNOTATION.LAST_CHECKED, Instant.now())
-        .where(NEW_ANNOTATION.ID.eq(currentAnnotationRecord.id()))
+  public int updateLastChecked(Annotation currentAnnotation) {
+    return context.update(ANNOTATION)
+        .set(ANNOTATION.LAST_CHECKED, Instant.now())
+        .where(ANNOTATION.ID.eq(currentAnnotation.getOdsId()))
         .execute();
   }
 
   public Optional<String> getAnnotationById(String id) {
-    return context.select(NEW_ANNOTATION.ID)
-        .from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(id))
-        .and(NEW_ANNOTATION.DELETED.isNull())
+    return context.select(ANNOTATION.ID)
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(id))
+        .and(ANNOTATION.DELETED_ON.isNull())
         .fetchOptional(Record1::value1);
   }
 
   public void archiveAnnotation(String id) {
-    context.update(NEW_ANNOTATION)
-        .set(NEW_ANNOTATION.DELETED, Instant.now())
-        .where(NEW_ANNOTATION.ID.eq(id))
+    context.update(ANNOTATION)
+        .set(ANNOTATION.DELETED_ON, Instant.now())
+        .where(ANNOTATION.ID.eq(id))
         .execute();
   }
 
   public void rollbackAnnotation(String id) {
-    context.delete(NEW_ANNOTATION).where(NEW_ANNOTATION.ID.eq(id)).execute();
+    context.delete(ANNOTATION).where(ANNOTATION.ID.eq(id)).execute();
   }
 }

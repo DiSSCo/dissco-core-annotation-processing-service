@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.diff.JsonDiff;
-import eu.dissco.annotationprocessingservice.domain.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.CreateUpdateDeleteEvent;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,37 +21,33 @@ public class KafkaPublisherService {
   private final ObjectMapper mapper;
   private final KafkaTemplate<String, String> kafkaTemplate;
 
-  public void publishCreateEvent(AnnotationRecord annotationRecord) throws JsonProcessingException {
+  public void publishCreateEvent(Annotation annotation) throws JsonProcessingException {
     var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
         "create",
         "annotation-processing-service",
-        annotationRecord.id(),
+        annotation.getOdsId(),
         SUBJECT_TYPE,
         Instant.now(),
-        mapper.valueToTree(annotationRecord),
+        mapper.valueToTree(annotation),
         null,
         "Annotation newly created");
     kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
-  public void publishUpdateEvent(AnnotationRecord currentAnnotationRecord,
-      AnnotationRecord annotationRecord) throws JsonProcessingException {
-    var jsonPatch = createJsonPatch(currentAnnotationRecord, annotationRecord);
+  public void publishUpdateEvent(Annotation currentAnnotation, Annotation annotation)
+      throws JsonProcessingException {
+    var jsonPatch = createJsonPatch(currentAnnotation, annotation);
     var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
         "update",
         "annotation-processing-service",
-        annotationRecord.id(),
+        annotation.getOdsId(),
         SUBJECT_TYPE,
         Instant.now(),
-        mapper.valueToTree(annotationRecord),
-        jsonPatch,
-        "Annotation has been updated");
+        mapper.valueToTree(annotation), jsonPatch, "Annotation has been updated");
     kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
-  private JsonNode createJsonPatch(AnnotationRecord currentAnnotationRecord,
-      AnnotationRecord annotationRecord) {
-    return JsonDiff.asJson(mapper.valueToTree(currentAnnotationRecord.annotation()),
-        mapper.valueToTree(annotationRecord.annotation()));
+  private JsonNode createJsonPatch(Annotation currentAnnotation, Annotation annotation) {
+    return JsonDiff.asJson(mapper.valueToTree(currentAnnotation), mapper.valueToTree(annotation));
   }
 }

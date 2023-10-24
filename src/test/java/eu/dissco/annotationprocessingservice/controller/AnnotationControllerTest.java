@@ -1,18 +1,16 @@
 package eu.dissco.annotationprocessingservice.controller;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRecord;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.service.ProcessingService;
-import java.io.IOException;
-import javax.xml.transform.TransformerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,14 +35,44 @@ class AnnotationControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.handleMessage(givenAnnotationEvent())).willReturn(givenAnnotationRecord());
+    given(service.createNewAnnotation(givenAnnotationRequest())).willReturn(givenAnnotationProcessed());
 
     // When
-    var result = controller.createAnnotation(givenAnnotationEvent());
+    var result = controller.createAnnotation(givenAnnotationRequest());
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(result.getBody()).isEqualTo(givenAnnotationRecord());
+    assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+  }
+
+  @Test
+  void testUpdateAnnotation()
+      throws Exception {
+    // Given
+    var request = givenAnnotationRequest().withOdsId(ID);
+    given(service.updateAnnotation(request)).willReturn(givenAnnotationProcessed());
+    var prefix = ID.split("/")[0];
+    var suffix = ID.split("/")[1];
+
+    // When
+    var result = controller.updateAnnotation(prefix, suffix, request);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+  }
+
+  @Test
+  void testUpdateAnnotationIdMismatch()
+      throws Exception {
+    // Given
+    var request = givenAnnotationRequest().withOdsId(ID);
+    var prefix = ID.split("/")[0];
+    var suffix = "wrong";
+
+    // Then
+    assertThrows(ConflictException.class, () -> controller.updateAnnotation(prefix, suffix, request));
+
   }
 
   @Test

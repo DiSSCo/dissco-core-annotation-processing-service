@@ -1,14 +1,13 @@
 package eu.dissco.annotationprocessingservice.repository;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
-import static eu.dissco.annotationprocessingservice.TestUtils.MOTIVATION;
-import static eu.dissco.annotationprocessingservice.TestUtils.generateTarget;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRecord;
-import static eu.dissco.annotationprocessingservice.database.jooq.Tables.NEW_ANNOTATION;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import org.jooq.Record1;
 import org.junit.jupiter.api.AfterEach;
@@ -27,95 +26,124 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(NEW_ANNOTATION).execute();
+    context.truncate(ANNOTATION).execute();
   }
 
   @Test
   void createAnnotationRecord() throws JsonProcessingException, DataBaseException {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
 
     // When
-    var result = repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation);
+    var actual = repository.getAnnotation(annotation.getOdsId());
 
     // Then
-    var actual = repository.getAnnotation(generateTarget(), CREATOR, MOTIVATION);
-    assertThat(result).isEqualTo(1);
-    assertThat(actual).contains(annotation);
+    assertThat(actual).isEqualTo(annotation);
   }
 
   @Test
-  void updateAnnotationRecord() throws JsonProcessingException, DataBaseException {
+  void updateAnnotationRecord() throws DataBaseException {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
-    var updatedAnnotation = givenAnnotationRecord("new_motivation");
+    var updatedAnnotation = givenAnnotationProcessed().withOaMotivation(Motivation.EDITING);
 
     // When
-    var result = repository.createAnnotationRecord(updatedAnnotation);
+    repository.createAnnotationRecord(updatedAnnotation);
+    var actual = repository.getAnnotation(annotation.getOdsId());
 
     // Then
-    var actual = repository.getAnnotation(generateTarget(), CREATOR, "new_motivation");
-    assertThat(result).isEqualTo(1);
-    assertThat(actual).contains(updatedAnnotation);
+    assertThat(actual).isEqualTo(updatedAnnotation);
   }
 
   @Test
   void testUpdateLastChecked() throws JsonProcessingException {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
-    var initInstant = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.id())).fetchOne(Record1::value1);
+    var initInstant = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
 
     // When
     repository.updateLastChecked(annotation);
 
     // Then
-    var updatedTimestamp = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.id())).fetchOne(Record1::value1);
+    var updatedTimestamp = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
     assertThat(updatedTimestamp).isAfter(initInstant);
   }
 
   @Test
-  void testGetAnnotationById() throws JsonProcessingException {
+  void testGetAnnotationById() {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
 
     // When
-    var result = repository.getAnnotationById(annotation.id());
+    var result = repository.getAnnotationById(annotation.getOdsId());
 
     // Then
-    assertThat(result).hasValue(annotation.id());
+    assertThat(result).hasValue(annotation.getOdsId());
   }
 
   @Test
-  void testArchiveAnnotation() throws JsonProcessingException {
+  void testGetAnnotation() {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(annotation.id());
+    var result = repository.getAnnotation(annotation.getOdsId());
 
     // Then
-    var deletedTimestamp = context.select(NEW_ANNOTATION.DELETED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.id())).fetchOne(Record1::value1);
+    assertThat(result).isEqualTo(annotation);
+  }
+
+  @Test
+  void testGetAnnotationIsEmpty() {
+    // When
+    var result = repository.getAnnotation(givenAnnotationProcessed());
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testGetAnnotationIsNull() {
+    // When
+    var result = repository.getAnnotation(ID);
+
+    // Then
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void testArchiveAnnotation() {
+    // Given
+    var annotation = givenAnnotationProcessed();
+    repository.createAnnotationRecord(annotation);
+
+    // When
+    repository.archiveAnnotation(annotation.getOdsId());
+
+    // Then
+    var deletedTimestamp = context.select(ANNOTATION.DELETED_ON).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
     assertThat(deletedTimestamp).isNotNull();
   }
 
   @Test
-  void testRollbackAnnotation() throws JsonProcessingException {
+  void testRollbackAnnotation() {
     // Given
-    var annotation = givenAnnotationRecord();
+    var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(annotation.id());
+    repository.rollbackAnnotation(annotation.getOdsId());
 
     // Then
-    var result = repository.getAnnotationById(annotation.id());
+    var result = repository.getAnnotationById(annotation.getOdsId());
     assertThat(result).isEmpty();
   }
 
