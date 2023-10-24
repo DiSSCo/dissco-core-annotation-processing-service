@@ -10,8 +10,12 @@ import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -140,6 +144,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       masJobRecordService.markMasJobRecordAsFailed(event);
       throw new FailedProcessingException();
     }
+  }
+
+  private UUID hashAnnotation(Annotation annotation){
+    return AnnotationHasher.getAnnotationHash(annotation);
   }
 
 }

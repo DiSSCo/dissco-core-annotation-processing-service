@@ -37,6 +37,8 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -81,7 +83,8 @@ class ProcessingKafkaServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingKafkaService(repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties, masJobRecordService);
+        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        masJobRecordService);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -103,8 +106,10 @@ class ProcessingKafkaServiceTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     service.handleMessage(givenAnnotationEvent(annotationRequest));
@@ -155,8 +160,10 @@ class ProcessingKafkaServiceTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishCreateEvent(any(
         Annotation.class));
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
@@ -179,7 +186,8 @@ class ProcessingKafkaServiceTest {
     given(handleComponent.postHandle(any())).willReturn(ID);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willThrow(
         IOException.class);
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
@@ -244,8 +252,10 @@ class ProcessingKafkaServiceTest {
     doThrow(PidCreationException.class).when(handleComponent).updateHandle(any());
 
     // Then
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
+    assertThrows(FailedProcessingException.class,
+        () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
   }
 
   @Test
@@ -258,7 +268,8 @@ class ProcessingKafkaServiceTest {
     // Then
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
   }
 
   @ParameterizedTest
@@ -383,7 +394,8 @@ class ProcessingKafkaServiceTest {
     doThrow(PidCreationException.class).when(handleComponent).rollbackHandleUpdate(any());
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotationRequest))).isInstanceOf(
+    assertThatThrownBy(
+        () -> service.handleMessage(givenAnnotationEvent(annotationRequest))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
