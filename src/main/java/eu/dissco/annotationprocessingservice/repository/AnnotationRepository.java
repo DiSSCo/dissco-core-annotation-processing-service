@@ -32,13 +32,19 @@ public class AnnotationRepository {
   private final DSLContext context;
 
   public List<Annotation> getAnnotation(Annotation annotation) {
-    return context.select(ANNOTATION.asterisk())
-        .from(ANNOTATION)
-        .where(ANNOTATION.TARGET_ID.eq(annotation.getOaTarget().getOdsId())
-            .and(ANNOTATION.CREATOR_ID.eq(annotation.getOaCreator().getOdsId())
-                .and(ANNOTATION.MOTIVATED_BY.eq(annotation.getOaMotivatedBy()))
-                .and(ANNOTATION.DELETED_ON.isNull())))
-        .fetch().map(this::mapAnnotation);
+    try {
+      return context.select(ANNOTATION.asterisk())
+          .from(ANNOTATION)
+          .where(
+              ANNOTATION.TARGET.eq(JSONB.jsonb(mapper.writeValueAsString(annotation.getOaTarget())))
+                  .and(ANNOTATION.CREATOR_ID.eq(annotation.getOaCreator().getOdsId())
+                      .and(ANNOTATION.MOTIVATION.eq(annotation.getOaMotivation().toString()))
+                      .and(ANNOTATION.DELETED_ON.isNull())))
+          .fetch().map(this::mapAnnotation);
+    } catch (JsonProcessingException e) {
+      log.error("Unable to parse target {} to JSONB", annotation.getOaTarget());
+      throw new DataBaseException("Unable to parse target to JSONB");
+    }
   }
 
   public Annotation getAnnotation(String annotationId) {
