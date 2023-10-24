@@ -1,7 +1,9 @@
 package eu.dissco.annotationprocessingservice.repository;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,7 +32,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void createAnnotationRecord() throws JsonProcessingException, DataBaseException {
+  void createAnnotationRecord() throws DataBaseException {
     // Given
     var annotation = givenAnnotationProcessed();
 
@@ -40,6 +42,21 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(actual).isEqualTo(annotation);
+  }
+
+  @Test
+  void testGetAnnotationForUser() {
+    // Given
+    var expected = givenAnnotationProcessed();
+    var altAnnotation = givenAnnotationProcessed("alt id", "alt user", "alt target");
+    repository.createAnnotationRecord(expected);
+    repository.createAnnotationRecord(altAnnotation);
+
+    // When
+    var result = repository.getAnnotationForUser(ID, CREATOR);
+
+    // Then
+    assertThat(result).isPresent().contains(expected);
   }
 
   @Test
@@ -58,7 +75,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testUpdateLastChecked() throws JsonProcessingException {
+  void testUpdateLastChecked() {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
@@ -146,5 +163,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var result = repository.getAnnotationById(annotation.getOdsId());
     assertThat(result).isEmpty();
   }
+
+
+
 
 }
