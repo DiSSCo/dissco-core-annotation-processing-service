@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.controller;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
@@ -34,7 +35,7 @@ public class AnnotationController {
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
-    log.info("Received annotation request");
+    log.info("Received annotation creation request");
     var result = processingService.createNewAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
@@ -43,9 +44,9 @@ public class AnnotationController {
   public ResponseEntity<Annotation> updateAnnotation(
       @PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
-      throws DataBaseException, FailedProcessingException, NotFoundException {
+      throws DataBaseException, FailedProcessingException, NotFoundException, ConflictException {
     checkId(prefix, suffix, annotation);
-    log.info("Received annotation request for annotation {}", annotation.getOdsId());
+    log.info("Received annotation update request for annotation {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
@@ -60,11 +61,11 @@ public class AnnotationController {
   }
 
   private void checkId(String prefix, String suffix, Annotation annotation)
-      throws FailedProcessingException {
+      throws ConflictException {
     var id = prefix + "/" + suffix;
     if (!id.equals(annotation.getOdsId())) {
       log.error("provided id does not match annotation id");
-      throw new FailedProcessingException();
+      throw new ConflictException();
     }
   }
 

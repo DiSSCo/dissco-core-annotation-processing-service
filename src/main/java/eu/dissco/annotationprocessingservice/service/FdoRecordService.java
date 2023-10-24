@@ -28,7 +28,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation);
-    data.put(TYPE.getAttribute(), "handle"); // **
+    data.put(TYPE.getAttribute(), "handle");
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);
     return List.of(request);
@@ -57,7 +57,6 @@ public class FdoRecordService {
   }
 
   private JsonNode generateAttributes(Annotation annotation) {
-    // **
     var attributes = mapper.createObjectNode();
     attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
     attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), DIGITAL_OBJECT_TYPE.getDefaultValue());

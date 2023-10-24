@@ -52,7 +52,6 @@ public class ProcessingService {
 
   public Annotation updateAnnotation(Annotation annotation)
       throws FailedProcessingException, NotFoundException {
-    log.info("Received annotation creation request of: {}", annotation);
     var currentAnnotation = repository.getAnnotation(annotation.getOdsId());
     if (currentAnnotation == null) {
       throw new NotFoundException(annotation.getOdsId());
@@ -61,7 +60,6 @@ public class ProcessingService {
   }
 
   public Annotation createNewAnnotation(Annotation annotation) throws FailedProcessingException {
-    log.info("Received create annotation request of: {}", annotation);
     return persistNewAnnotation(annotation);
   }
 

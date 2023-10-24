@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.service.ProcessingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ class AnnotationControllerTest {
     var suffix = "wrong";
 
     // Then
-    assertThrows(FailedProcessingException.class, () -> controller.updateAnnotation(prefix, suffix, request));
+    assertThrows(ConflictException.class, () -> controller.updateAnnotation(prefix, suffix, request));
 
   }
 
