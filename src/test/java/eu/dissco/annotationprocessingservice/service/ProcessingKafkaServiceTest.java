@@ -54,10 +54,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
-class ProcessingTest {
+class ProcessingKafkaServiceTest {
 
   @Mock
   private AnnotationRepository repository;
@@ -71,8 +70,6 @@ class ProcessingTest {
   private HandleComponent handleComponent;
   @Mock
   private MasJobRecordService masJobRecordService;
-
-  private Environment environment;
   @Mock
   private ApplicationProperties applicationProperties;
   private MockedStatic<Instant> mockedStatic;
@@ -115,25 +112,6 @@ class ProcessingTest {
     // Then
     then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, ID);
-  }
-
-  @Test
-  void testCreateAnnotation() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(ID);
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Created);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-
-    // When
-    var result = service.createNewAnnotation(annotationRequest);
-
-    // Then
-    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
-    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
-    then(masJobRecordService).should().markMasJobRecordAsComplete(null, ID);
   }
 
   @Test
@@ -242,7 +220,6 @@ class ProcessingTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
     service.handleMessage(givenAnnotationEvent(annotationRequest));
@@ -282,42 +259,6 @@ class ProcessingTest {
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
     then(masJobRecordService).should().markMasJobRecordAsFailed(givenAnnotationEvent(annotationRequest));
-  }
-
-  @Test
-  void testUpdateAnnotation() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
-    given(repository.getAnnotation(ID)).willReturn(givenAnnotationProcessedAlt());
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Updated);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
-
-    // When
-    var result = service.updateAnnotation(annotationRequest);
-
-    // Then
-    assertThat(result).isEqualTo(givenAnnotationProcessed().withOdsVersion(2));
-    assertThat(result.getOdsId()).isEqualTo(ID);
-    then(fdoRecordService).should()
-        .buildPatchRollbackHandleRequest(annotationRequest, ID);
-    then(handleComponent).should().updateHandle(any());
-    then(kafkaPublisherService).should()
-        .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
-    then(masJobRecordService).should().markMasJobRecordAsComplete(null, ID);
-  }
-
-  @Test
-  void testUpdateAnnotationNotFound() {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
-    given(repository.getAnnotation(ID)).willReturn(null);
-
-    // then
-    assertThrows(NotFoundException.class, () -> service.updateAnnotation(annotationRequest));
-    then(masJobRecordService).shouldHaveNoInteractions();
   }
 
   @ParameterizedTest
@@ -365,7 +306,6 @@ class ProcessingTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(false);
-    given(applicationProperties.getProcessorHandle()).willReturn("https://hdl.handle.net/anno-process-service-pid");
 
     // When
     service.handleMessage(givenAnnotationEvent(annotationRequest));

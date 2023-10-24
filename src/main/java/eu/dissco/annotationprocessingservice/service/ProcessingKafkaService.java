@@ -45,20 +45,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
-  public Annotation updateAnnotation(Annotation annotation)
-      throws FailedProcessingException, NotFoundException {
-    var currentAnnotation = repository.getAnnotation(annotation.getOdsId());
-    if (currentAnnotation == null) {
-      throw new NotFoundException(annotation.getOdsId());
-    }
-    return updateExistingAnnotation(currentAnnotation, new AnnotationEvent(annotation, null));
-  }
-
-  public Annotation createNewAnnotation(Annotation annotation) throws FailedProcessingException {
-    log.info("Received create annotation request of: {}", annotation);
-    return persistNewAnnotation(new AnnotationEvent(annotation, null));
-  }
-
   public void handleMessage(AnnotationEvent event)
       throws DataBaseException, FailedProcessingException {
     log.info("Received annotation event of: {}", event);
