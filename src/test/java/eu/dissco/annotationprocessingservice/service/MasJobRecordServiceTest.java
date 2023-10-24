@@ -82,32 +82,12 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testMarkMasJobRecordAsCompleteNull() {
-
-    // When
-    service.markMasJobRecordAsComplete(null, ID);
-
-    // Then
-    then(repository).shouldHaveNoInteractions();
-  }
-
-  @Test
   void testMarkMasJobRecordAsFailed() throws Exception {
     // When
     service.markMasJobRecordAsFailed(givenAnnotationEvent());
 
     // Then
     then(repository).should().markMasJobRecordAsFailed(JOB_ID);
-  }
-
-  @Test
-  void testMarkMasJobRecordAsFailedNull() {
-
-    // When
-    service.markMasJobRecordAsFailed(new AnnotationEvent(givenAnnotationProcessed(), null));
-
-    // Then
-    then(repository).shouldHaveNoInteractions();
   }
 
 }

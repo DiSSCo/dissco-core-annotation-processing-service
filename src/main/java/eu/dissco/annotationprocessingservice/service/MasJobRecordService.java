@@ -37,10 +37,6 @@ public class MasJobRecordService {
   }
 
   public void markMasJobRecordAsComplete(UUID jobId, String annotationId) {
-    if (jobId == null) {
-      log.trace("Job Id has already been checked");
-      return;
-    }
     var annotationNode = buildAnnotationNode(annotationId);
     repository.markMasJobRecordAsComplete(jobId, annotationNode);
   }
@@ -54,10 +50,6 @@ public class MasJobRecordService {
   }
 
   public void markMasJobRecordAsFailed(AnnotationEvent event) {
-    if (event.jobId() == null) {
-      log.trace("Job Id has already been checked");
-      return;
-    }
     repository.markMasJobRecordAsFailed(event.jobId());
   }
 
