@@ -6,11 +6,11 @@ import lombok.Getter;
 public enum AnnotationState {
   SCHEDULED("scheduled"),
   FAILED("failed"),
-  COMPLETE("complete");
+  COMPLETED("completed");
 
   private final String state;
 
-  AnnotationState(String s){
+  AnnotationState(String s) {
     this.state = s;
   }
 

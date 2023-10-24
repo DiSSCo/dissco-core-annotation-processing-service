@@ -15,6 +15,7 @@ import static org.mockito.BDDMockito.then;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,20 +40,29 @@ class MasJobRecordServiceTest {
     service = new MasJobRecordService(repository, environment, MAPPER);
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void testVerifyMasJobIdSucceeds(boolean isWeb) {
+  @Test
+  void testVerifyMasJobIdKafka() {
     // Given
-    given(environment.matchesProfiles(Profiles.WEB)).willReturn(isWeb);
+    given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(true);
 
     // When
     assertDoesNotThrow(() -> service.verifyMasJobId(givenAnnotationEvent()));
   }
 
   @Test
+  void testVerifyMasJobIdWeb() throws Exception {
+    // Given
+    var annotationEvent = givenAnnotationEvent();
+    given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(false);
+
+    // When
+    assertThrows(UnsupportedOperationException.class, () -> service.verifyMasJobId(annotationEvent));
+  }
+
+  @Test
   void testVerifyMasJobIdKafkaFails() {
     // Given
-    given(environment.matchesProfiles(Profiles.WEB)).willReturn(false);
+    given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(true);
 
     // When
     assertThrows(FailedProcessingException.class,

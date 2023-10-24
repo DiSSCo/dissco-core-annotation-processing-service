@@ -24,14 +24,16 @@ public class MasJobRecordRepository {
   private final ObjectMapper mapper;
 
   public void markMasJobRecordAsFailed(UUID jobId) {
-    context.update(MAS_JOB_RECORD).set(MAS_JOB_RECORD.STATE, AnnotationState.FAILED.getState())
-        .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now()).where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
+    context.update(MAS_JOB_RECORD)
+        .set(MAS_JOB_RECORD.STATE, AnnotationState.FAILED.getState())
+        .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
+        .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
         .execute();
   }
 
   public void markMasJobRecordAsComplete(UUID jobId, JsonNode annotations) {
     try {
-      context.update(MAS_JOB_RECORD).set(MAS_JOB_RECORD.STATE, AnnotationState.COMPLETE.getState())
+      context.update(MAS_JOB_RECORD).set(MAS_JOB_RECORD.STATE, AnnotationState.COMPLETED.getState())
           .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
           .set(MAS_JOB_RECORD.ANNOTATIONS, JSONB.jsonb(mapper.writeValueAsString(annotations)))
           .where(MAS_JOB_RECORD.JOB_ID.eq(jobId)).execute();

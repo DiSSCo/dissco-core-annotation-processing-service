@@ -11,6 +11,7 @@ import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationState;
+import java.util.UUID;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,8 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   @Test
   void testMarkMasJobRecordAsFailed() {
     // Given
-    postMjr();
+    postMjr(JOB_ID);
+    postMjr(UUID.fromString("4159bef5-91f8-4a15-aa65-caf342aa18af"));
 
     // When
     repository.markMasJobRecordAsFailed(JOB_ID);
@@ -51,7 +53,8 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   @Test
   void testMarkMasJobRecordAsComplete() throws Exception {
     // Given
-    postMjr();
+    postMjr(JOB_ID);
+    postMjr(UUID.fromString("4159bef5-91f8-4a15-aa65-caf342aa18af"));
     var annotations = MAPPER.readTree(ANNOTATION_JSONB);
 
     // When
@@ -63,15 +66,15 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(AnnotationState.COMPLETE.getState());
+    assertThat(result.value2()).isEqualTo(AnnotationState.COMPLETED.getState());
     assertThat(result.value3()).isNotNull();
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
   }
 
-  private void postMjr() {
+  private void postMjr(UUID jobId) {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.STATE,
             MAS_JOB_RECORD.CREATOR_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TIME_STARTED)
-        .values(JOB_ID, AnnotationState.SCHEDULED.getState(), ID, TARGET_ID, CREATED)
+        .values(jobId, AnnotationState.SCHEDULED.getState(), ID, TARGET_ID, CREATED)
         .execute();
   }
 }
