@@ -1,5 +1,9 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -9,6 +13,7 @@ import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -68,6 +73,136 @@ public class ProcessingWebService extends AbstractProcessingService {
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
       throw new FailedProcessingException();
+    }
+  }
+
+  private void indexElasticNewAnnotation(Annotation annotation, String id)
+      throws FailedProcessingException {
+    IndexResponse indexDocument = null;
+    try {
+      indexDocument = elasticRepository.indexAnnotation(annotation);
+    } catch (IOException | ElasticsearchException e) {
+      log.error("Rolling back, failed to insert records in elastic", e);
+      rollbackNewAnnotation(annotation, false);
+      throw new FailedProcessingException();
+    }
+    if (indexDocument.result().equals(Result.Created)) {
+      log.info("Annotation: {} has been successfully indexed", id);
+      try {
+        kafkaService.publishCreateEvent(annotation);
+      } catch (JsonProcessingException e) {
+        rollbackNewAnnotation(annotation, true);
+      }
+    } else {
+      log.error("Elasticsearch did not create annotations: {}", id);
+      throw new FailedProcessingException();
+    }
+  }
+
+  private void rollbackNewAnnotation(Annotation annotation, boolean elasticRollback)
+      throws FailedProcessingException {
+    log.warn("Rolling back for annotations: {}", annotation);
+    if (elasticRollback) {
+      try {
+        elasticRepository.archiveAnnotation(annotation.getOdsId());
+      } catch (IOException | ElasticsearchException e) {
+        log.info("Fatal exception, unable to rollback: {}", annotation.getOdsId(), e);
+      }
+    }
+    repository.rollbackAnnotation(annotation.getOdsId());
+    rollbackHandleCreation(annotation);
+    throw new FailedProcessingException();
+  }
+
+  private void rollbackHandleCreation(Annotation annotation) {
+    var requestBody = fdoRecordService.buildRollbackCreationRequest(annotation);
+    try {
+      handleComponent.rollbackHandleCreation(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to rollback creation for annotations {}", annotation.getOdsId(), e);
+    }
+  }
+
+  private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,
+      Annotation annotation) throws PidCreationException {
+    if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
+      return;
+    }
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation
+    );
+    handleComponent.updateHandle(requestBody);
+  }
+
+  private void filterUpdatesAndRollbackHandleUpdateRecord(Annotation currentAnnotation,
+      Annotation annotation) {
+    if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
+      return;
+    }
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation
+    );
+    try {
+      handleComponent.rollbackHandleUpdate(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to rollback handle update for annotations {}", currentAnnotation.getOdsId(),
+          e);
+    }
+  }
+
+  private void rollbackUpdatedAnnotation(Annotation currentAnnotation, Annotation annotation,
+      boolean elasticRollback) throws FailedProcessingException {
+    if (elasticRollback) {
+      try {
+        elasticRepository.indexAnnotation(currentAnnotation);
+      } catch (IOException | ElasticsearchException e) {
+        log.error("Fatal exception, unable to rollback update for: {}", annotation, e);
+      }
+    }
+    repository.createAnnotationRecord(currentAnnotation);
+    filterUpdatesAndRollbackHandleUpdateRecord(currentAnnotation, annotation);
+    throw new FailedProcessingException();
+  }
+
+  private void indexElasticUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)
+      throws FailedProcessingException {
+    IndexResponse indexDocument = null;
+    try {
+      indexDocument = elasticRepository.indexAnnotation(annotation);
+    } catch (IOException | ElasticsearchException e) {
+      log.error("Rolling back, failed to insert records in elastic", e);
+      rollbackUpdatedAnnotation(currentAnnotation, annotation, false);
+      throw new FailedProcessingException();
+    }
+    if (indexDocument.result().equals(Result.Updated)) {
+      log.info("Annotation: {} has been successfully indexed", currentAnnotation.getOdsId());
+      try {
+        kafkaService.publishUpdateEvent(currentAnnotation, annotation);
+      } catch (JsonProcessingException e) {
+        rollbackUpdatedAnnotation(currentAnnotation, annotation, true);
+        throw new FailedProcessingException();
+      }
+    }
+  }
+
+  public void archiveAnnotation(String id) throws IOException, FailedProcessingException {
+    if (repository.getAnnotationById(id).isPresent()) {
+      log.info("Archive annotations: {} in handle service", id);
+      var requestBody = fdoRecordService.buildArchiveHandleRequest(id);
+      try {
+        handleComponent.archiveHandle(requestBody, id);
+      } catch (PidCreationException e) {
+        log.error("Unable to archive annotations in handle system for annotations {}", id, e);
+        throw new FailedProcessingException();
+      }
+      log.info("Removing annotations: {} from indexing service", id);
+      var document = elasticRepository.archiveAnnotation(id);
+      if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
+        log.info("Archive annotations: {} in database", id);
+        repository.archiveAnnotation(id);
+        log.info("Archived annotations: {}", id);
+        log.info("Tombstoning PID record of annotations: {}", id);
+      }
+    } else {
+      log.info("Annotation with id: {} is already archived", id);
     }
   }
 

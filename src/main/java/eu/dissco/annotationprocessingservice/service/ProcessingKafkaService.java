@@ -19,6 +19,7 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -117,7 +118,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     repository.createAnnotationRecord(annotations);
     log.info("Annotations {} has been successfully committed to database", idList);
     try {
-      indexElasticNewAnnotations(annotations.stream().map(HashedAnnotation::annotation).toList(), idList);
+      indexElasticNewAnnotations(annotations.stream().map(HashedAnnotation::annotation).toList(),
+          idList);
     } catch (FailedProcessingException e) {
       masJobRecordService.markMasJobRecordAsFailed(jobId);
       throw new FailedProcessingException();
@@ -183,10 +185,12 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           kafkaService.publishCreateEvent(annotation);
         }
       } catch (JsonProcessingException e) {
+        log.error("Unable to publish annotations to kafka, rolling back");
         rollbackNewAnnotations(annotations, true);
+        throw new FailedProcessingException();
       }
     } else {
-      log.error("Elasticsearch did not create annotations: {}", idList);
+      partiallyFailedElasticInsert(annotations, bulkResponse);
       throw new FailedProcessingException();
     }
   }
@@ -219,6 +223,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         throw new FailedProcessingException();
       }
     } else {
+      partiallyFailedElasticUpdate(updatedAnnotations, bulkResponse);
       throw new FailedProcessingException();
     }
   }
@@ -299,8 +304,67 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   }
 
-  private void partiallyFailedElasticInsert(){
+  private void partiallyFailedElasticInsert(List<Annotation> annotations,
+      BulkResponse bulkResponse) {
+    var annotationMap = annotations.stream()
+        .collect(Collectors.toMap(Annotation::getOdsId, a -> a));
+    var handleRollbacks = new ArrayList<String>();
+    var annotationRollbacksElasticFail = new ArrayList<Annotation>();
+    var annotationRollbacksElasticSuccess = new ArrayList<Annotation>();
 
+    bulkResponse.items().forEach(
+        item -> {
+          var annotation = annotationMap.get(item.id());
+          if (item.error() != null) {
+            handleRollbacks.add(annotation.getOdsId());
+            annotationRollbacksElasticFail.add(annotation);
+            log.error("Failed item to insert into elastic search: {} with errors {}",
+                annotation.getOdsId(), item.error().reason());
+          } else {
+            try {
+              kafkaService.publishCreateEvent(annotation);
+            } catch (JsonProcessingException e) {
+              log.error("Unable to publish annotation to kafka");
+              handleRollbacks.add(annotation.getOdsId());
+              annotationRollbacksElasticSuccess.add(annotation);
+            }
+          }
+        }
+    );
+    rollbackHandleCreation(handleRollbacks);
+    rollbackNewAnnotations(annotationRollbacksElasticFail, false);
+    rollbackNewAnnotations(annotationRollbacksElasticSuccess, true);
+  }
+
+  private void partiallyFailedElasticUpdate(Set<UpdatedAnnotation> updatedAnnotations,
+      BulkResponse bulkResponse) {
+    var annotationMap = updatedAnnotations.stream()
+        .collect(Collectors.toMap(updatePair -> updatePair.annotation().annotation().getOdsId(),
+            p -> p));
+    var annotationRollbacksElasticFail = new HashSet<UpdatedAnnotation>();
+    var annotationRollbacksElasticSuccess = new HashSet<UpdatedAnnotation>();
+
+    bulkResponse.items().forEach(
+        item -> {
+          var annotationPair = annotationMap.get(item.id());
+          if (item.error() != null) {
+            annotationRollbacksElasticFail.add(annotationPair);
+            log.error("Failed item to insert into elastic search: {} with errors {}",
+                annotationPair.annotation().annotation().getOdsId(), item.error().reason());
+          } else {
+            try {
+              kafkaService.publishUpdateEvent(annotationPair.currentAnnotation().annotation(),
+                  annotationPair.annotation()
+                      .annotation());
+            } catch (JsonProcessingException e) {
+              log.error("Unable to publish annotation to kafka");
+              annotationRollbacksElasticSuccess.add(annotationPair);
+            }
+          }
+        }
+    );
+    rollbackUpdatedAnnotations(annotationRollbacksElasticFail, false);
+    rollbackUpdatedAnnotations(annotationRollbacksElasticSuccess, true);
   }
 
 }
