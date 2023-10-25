@@ -17,7 +17,8 @@ create table annotation
     generated        timestamp with time zone not null,
     last_checked     timestamp with time zone not null,
     aggregate_rating jsonb,
-    deleted_on       timestamp with time zone
+    deleted_on       timestamp with time zone,
+    annotation_hash  uuid
 );
 
 CREATE

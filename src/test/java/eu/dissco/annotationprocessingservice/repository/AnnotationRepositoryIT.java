@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.repository;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
@@ -32,7 +33,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void createAnnotationRecord() throws DataBaseException {
+  void testCreateAnnotationRecord() throws DataBaseException {
     // Given
     var annotation = givenAnnotationProcessed();
 
@@ -42,6 +43,20 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(actual).isEqualTo(annotation);
+  }
+
+  @Test
+  void testCreateAnnotationRecordWithHash() throws DataBaseException {
+    // Given
+    var annotation = givenAnnotationProcessed();
+
+    // When
+    repository.createAnnotationRecord(annotation, ANNOTATION_HASH);
+    var result = context.select(ANNOTATION.asterisk()).from(ANNOTATION).fetchOne();
+
+    // Then
+    assertThat(result.get(ANNOTATION.ANNOTATION_HASH)).isEqualTo(ANNOTATION_HASH);
+    assertThat(result.get(ANNOTATION.ID)).isEqualTo(ID);
   }
 
   @Test
@@ -163,8 +178,5 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var result = repository.getAnnotationById(annotation.getOdsId());
     assertThat(result).isEmpty();
   }
-
-
-
 
 }

@@ -54,7 +54,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     log.info("Received annotation event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
     var annotation = event.annotation();
-    var currentAnnotationOptional = getExistingAnnotation(event);
+    var annotationHash = hashAnnotation(annotation);
+    var currentAnnotationOptional = repository.getAnnotationFromHash(annotationHash);
     if (currentAnnotationOptional.isPresent()) {
       var currentAnnotation = currentAnnotationOptional.get();
       if (annotationAreEqual(currentAnnotation, annotation)) {
@@ -65,25 +66,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         updateExistingAnnotation(currentAnnotation, event);
       }
     } else {
-      persistNewAnnotation(event);
+      persistNewAnnotation(event, annotationHash);
     }
-  }
-
-  private Optional<Annotation> getExistingAnnotation(AnnotationEvent event)
-      throws FailedProcessingException {
-    var annotation = event.annotation();
-    var existingAnnotations = repository.getAnnotation(annotation);
-    if (existingAnnotations.size() > 1) {
-      log.error(
-          "Multiple annotations exist with same motivation, target, creator as {}, and this is not a web request",
-          annotation);
-      masJobRecordService.markMasJobRecordAsFailed(event);
-      throw new FailedProcessingException();
-    }
-    if (existingAnnotations.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(existingAnnotations.get(0));
   }
 
   private Annotation updateExistingAnnotation(Annotation currentAnnotation,
@@ -116,12 +100,12 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         currentAnnotation.getOdsId());
   }
 
-  private Annotation persistNewAnnotation(AnnotationEvent event) throws FailedProcessingException {
+  private void persistNewAnnotation(AnnotationEvent event, UUID annotationHash) throws FailedProcessingException {
     var annotation = event.annotation();
     var id = postHandle(event);
     enrichNewAnnotation(annotation, id);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
-    repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation, annotationHash);
     log.info("Annotation: {} has been successfully committed to database", id);
     try {
       indexElasticNewAnnotation(annotation, id);
@@ -130,7 +114,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     masJobRecordService.markMasJobRecordAsComplete(event.jobId(), annotation.getOdsId());
-    return annotation;
   }
 
 

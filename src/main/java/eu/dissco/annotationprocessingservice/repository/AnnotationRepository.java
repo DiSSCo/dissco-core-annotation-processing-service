@@ -1,9 +1,11 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
+import static org.jooq.impl.DSL.insertInto;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
@@ -12,12 +14,17 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.quota.ClientQuotaAlteration.Op;
 import org.jooq.DSLContext;
+import org.jooq.InsertOnDuplicateSetMoreStep;
+import org.jooq.InsertSetMoreStep;
 import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.Record1;
@@ -58,6 +65,17 @@ public class AnnotationRepository {
     return dbRecord.map(this::mapAnnotation);
   }
 
+  public Optional<Annotation> getAnnotationFromHash(UUID annotationHash){
+    var dbRecord = context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ANNOTATION_HASH.eq(annotationHash))
+        .fetchOne();
+    if (dbRecord == null){
+      return Optional.empty();
+    }
+    return Optional.of(dbRecord.map(this::mapAnnotation));
+  }
+
   public Optional<Annotation> getAnnotationForUser(String annotationId, String creatorId) {
     return context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
@@ -92,8 +110,22 @@ public class AnnotationRepository {
   }
 
   public void createAnnotationRecord(Annotation annotation) {
+    var insertQuery = insertAnnotation(annotation);
+    var fullQuery = onConflict(annotation, insertQuery);
+    fullQuery.execute();
+  }
+
+  public void createAnnotationRecord(Annotation annotation, UUID annotationHash){
+    var insertQuery = insertAnnotation(annotation)
+        .set(ANNOTATION.ANNOTATION_HASH, annotationHash);
+    var fullQuery = onConflict(annotation, insertQuery)
+        .set(ANNOTATION.ANNOTATION_HASH, annotationHash);
+    fullQuery.execute();
+  }
+
+  private @NotNull InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
     try {
-      context.insertInto(ANNOTATION).set(ANNOTATION.ID, annotation.getOdsId())
+      return context.insertInto(ANNOTATION).set(ANNOTATION.ID, annotation.getOdsId())
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
           .set(ANNOTATION.TYPE, annotation.getRdfType())
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().toString())
@@ -110,8 +142,17 @@ public class AnnotationRepository {
           .set(ANNOTATION.GENERATOR,
               JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
           .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
-          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
-          .onConflict(ANNOTATION.ID).doUpdate()
+          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated());
+    } catch (JsonProcessingException e) {
+      log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
+      throw new DataBaseException(e.getMessage());
+    }
+  }
+
+  private @NotNull InsertOnDuplicateSetMoreStep<AnnotationRecord> onConflict(Annotation annotation,
+      InsertSetMoreStep<AnnotationRecord> query) {
+    try {
+      return query.onConflict(ANNOTATION.ID).doUpdate()
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
           .set(ANNOTATION.TYPE, annotation.getRdfType())
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().toString())
@@ -128,8 +169,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.GENERATOR,
               JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
           .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
-          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
-          .execute();
+          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated());
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
