@@ -299,4 +299,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   }
 
+  private void partiallyFailedElasticInsert(){
+
+  }
+
 }
