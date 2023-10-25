@@ -3,7 +3,9 @@ package eu.dissco.annotationprocessingservice.repository;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,6 +132,31 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEqualTo(annotation);
+  }
+
+  @Test
+  void testGetAnnotationFromHash() {
+    // Given
+    repository.createAnnotationRecord(givenAnnotationProcessed(), ANNOTATION_HASH);
+    repository.createAnnotationRecord(givenAnnotationProcessedAlt().withOdsId("alt id"), JOB_ID);
+
+    // When
+    var result = repository.getAnnotationFromHash(ANNOTATION_HASH);
+
+    // Then
+    assertThat(result).isPresent().contains(givenAnnotationProcessed());
+  }
+
+  @Test
+  void testGetAnnotationFromHashEmpty() {
+    // Given
+    repository.createAnnotationRecord(givenAnnotationProcessed(), ANNOTATION_HASH);
+
+    // When
+    var result = repository.getAnnotationFromHash(JOB_ID);
+
+    // Then
+    assertThat(result).isEmpty();
   }
 
   @Test
