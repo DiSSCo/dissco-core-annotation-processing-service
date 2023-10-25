@@ -25,6 +25,7 @@ import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +75,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(ID);
+    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);

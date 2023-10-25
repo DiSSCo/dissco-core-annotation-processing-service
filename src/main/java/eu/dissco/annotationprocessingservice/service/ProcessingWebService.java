@@ -183,27 +183,4 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
   }
 
-  public void archiveAnnotation(String id) throws IOException, FailedProcessingException {
-    if (repository.getAnnotationById(id).isPresent()) {
-      log.info("Archive annotations: {} in handle service", id);
-      var requestBody = fdoRecordService.buildArchiveHandleRequest(id);
-      try {
-        handleComponent.archiveHandle(requestBody, id);
-      } catch (PidCreationException e) {
-        log.error("Unable to archive annotations in handle system for annotations {}", id, e);
-        throw new FailedProcessingException();
-      }
-      log.info("Removing annotations: {} from indexing service", id);
-      var document = elasticRepository.archiveAnnotation(id);
-      if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
-        log.info("Archive annotations: {} in database", id);
-        repository.archiveAnnotation(id);
-        log.info("Archived annotations: {}", id);
-        log.info("Tombstoning PID record of annotations: {}", id);
-      }
-    } else {
-      log.info("Annotation with id: {} is already archived", id);
-    }
-  }
-
 }

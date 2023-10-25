@@ -79,7 +79,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         hashedAnnotations.stream().map(HashedAnnotation::hash).collect(Collectors.toSet()));
     var newAnnotations = filterNewAnnotations(existingAnnotations, hashedAnnotations);
     var equalOrUpdatedAnnotationsMap = hashedAnnotations.stream()
-        .filter(newAnnotations::contains)
+        .filter(annotation -> !newAnnotations.contains(annotation))
         .collect(Collectors.toMap(HashedAnnotation::hash, ha -> ha));
 
     for (var currentAnnotation : existingAnnotations) {

@@ -107,6 +107,9 @@ public class HandleComponent {
     try {
       var handleNames = new ArrayList<String>();
       var dataNodeArray = jsonResponse.get("data");
+      if (!dataNodeArray.isArray()){
+        throw new PidCreationException("UNEXPECTED_MSG + \" Response: {}\", jsonResponse.toPrettyString()");
+      }
       for (var dataNode : dataNodeArray) {
         handleNames.add(dataNode.get("id").asText());
       }

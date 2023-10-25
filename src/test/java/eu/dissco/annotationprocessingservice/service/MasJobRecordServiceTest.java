@@ -17,6 +17,7 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +67,7 @@ class MasJobRecordServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationEvent(givenAnnotationProcessed(), null)));
+        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null)));
   }
 
   @Test
@@ -75,16 +76,16 @@ class MasJobRecordServiceTest {
     var expectedNode = MAPPER.readTree(ANNOTATION_JSONB);
 
     // When
-    service.markMasJobRecordAsComplete(JOB_ID, ID);
+    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID));
 
     // Then
     then(repository).should().markMasJobRecordAsComplete(JOB_ID, expectedNode);
   }
 
   @Test
-  void testMarkMasJobRecordAsFailed() throws Exception {
+  void testMarkMasJobRecordAsFailed() {
     // When
-    service.markMasJobRecordAsFailed(givenAnnotationEvent());
+    service.markMasJobRecordAsFailed(JOB_ID);
 
     // Then
     then(repository).should().markMasJobRecordAsFailed(JOB_ID);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
@@ -33,6 +34,21 @@ public class TestUtils {
           "annotationId":"20.5000.1025/KZL-VC0-ZK2"
          }]
         """;
+
+  public static HashedAnnotation givenHashedAnnotation(){
+    return new HashedAnnotation(
+        givenAnnotationProcessed(),
+        ANNOTATION_HASH
+    );
+  }
+
+  public static HashedAnnotation givenHashedAnnotationAlt(){
+    return new HashedAnnotation(
+        givenAnnotationProcessedAlt(),
+        ANNOTATION_HASH
+    );
+  }
+
 
   public static Annotation givenAnnotationProcessed(){
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
@@ -126,7 +142,7 @@ public class TestUtils {
   }
 
   public static AnnotationEvent givenAnnotationEvent(Annotation annotation){
-    return new AnnotationEvent(annotation, JOB_ID);
+    return new AnnotationEvent(List.of(annotation), JOB_ID);
   }
 
   public static JsonNode generateTarget() throws JsonProcessingException {

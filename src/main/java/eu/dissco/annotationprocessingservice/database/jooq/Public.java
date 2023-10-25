@@ -6,8 +6,10 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -27,7 +29,7 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
-     * The table <code>public.annotations</code>.
+     * The table <code>public.annotation</code>.
      */
     public final Annotation ANNOTATION = Annotation.ANNOTATION;
 

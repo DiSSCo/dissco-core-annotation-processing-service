@@ -12,8 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import java.util.List;
+import java.util.Set;
 import org.jooq.Record1;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,7 +103,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
         .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
 
     // When
-    repository.updateLastChecked(annotation);
+    repository.updateLastChecked(List.of(annotation.getOdsId()));
 
     // Then
     var updatedTimestamp = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
@@ -141,10 +144,10 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(givenAnnotationProcessedAlt().withOdsId("alt id"), JOB_ID);
 
     // When
-    var result = repository.getAnnotationFromHash(ANNOTATION_HASH);
+    var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
 
     // Then
-    assertThat(result).isPresent().contains(givenAnnotationProcessed());
+    assertThat(result).isEqualTo(List.of(new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH)));
   }
 
   @Test
@@ -153,7 +156,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(givenAnnotationProcessed(), ANNOTATION_HASH);
 
     // When
-    var result = repository.getAnnotationFromHash(JOB_ID);
+    var result = repository.getAnnotationFromHash(Set.of(JOB_ID));
 
     // Then
     assertThat(result).isEmpty();
