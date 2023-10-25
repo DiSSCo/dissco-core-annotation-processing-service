@@ -40,7 +40,7 @@ class KafkaConsumerServiceTest {
   private String givenMessage() throws Exception {
     var annotationNode = MAPPER.valueToTree(givenAnnotationProcessed());
     var messageNode = MAPPER.createObjectNode();
-    messageNode.set("annotation", annotationNode);
+    messageNode.set("annotations", annotationNode);
     messageNode.put("jobId", JOB_ID.toString());
     return MAPPER.writeValueAsString(messageNode);
   }

@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.domain;
 
 public enum FdoProfileAttributes {
 
-  TYPE("type", "annotation"),
+  TYPE("type", "annotations"),
   FDO_PROFILE("fdoProfile", "https://hdl.handle.net/21.T11148/64396cf36b976ad08267"),
   DIGITAL_OBJECT_TYPE("digitalObjectType", "https://hdl.handle.net/21.T11148/64396cf36b976ad08267"),
   // Issued for agent should be DiSSCo PID; currently it's set as Naturalis's ROR

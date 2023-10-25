@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
@@ -31,12 +32,12 @@ public class HandleComponent {
 
   private static final String UNEXPECTED_MSG = "Unexpected response from handle API.";
 
-  public String postHandle(List<JsonNode> request)
+  public List<String> postHandle(List<JsonNode> request)
       throws PidCreationException {
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.POST, requestBody, "batch");
     var responseJson = validateResponse(response);
-    return getHandleName(responseJson);
+    return getHandleNames(responseJson);
   }
 
   public void updateHandle(List<JsonNode> request)
@@ -102,9 +103,14 @@ public class HandleComponent {
     }
   }
 
-  private String getHandleName(JsonNode jsonResponse) throws PidCreationException {
+  private List<String> getHandleNames(JsonNode jsonResponse) throws PidCreationException {
     try {
-      return jsonResponse.get("data").get(0).get("id").asText();
+      var handleNames = new ArrayList<String>();
+      var dataNodeArray = jsonResponse.get("data");
+      for (var dataNode : dataNodeArray) {
+        handleNames.add(dataNode.get("id").asText());
+      }
+      return handleNames;
     } catch (NullPointerException e) {
       log.error(UNEXPECTED_MSG + " Response: {}", jsonResponse.toPrettyString());
       throw new PidCreationException(UNEXPECTED_MSG);

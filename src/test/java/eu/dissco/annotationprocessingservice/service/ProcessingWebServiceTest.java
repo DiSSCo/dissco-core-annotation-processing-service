@@ -18,7 +18,6 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
-import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
@@ -106,7 +105,7 @@ class ProcessingWebServiceTest {
     assertThat(result).isEqualTo(givenAnnotationProcessed().withOdsVersion(2));
     assertThat(result.getOdsId()).isEqualTo(ID);
     then(fdoRecordService).should()
-        .buildPatchRollbackHandleRequest(annotationRequest, ID);
+        .buildPatchRollbackHandleRequest(annotationRequest);
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));

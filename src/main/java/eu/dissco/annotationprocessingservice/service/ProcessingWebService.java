@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -43,7 +42,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     var currentAnnotationOptional = repository.getAnnotationForUser(annotation.getOdsId(),
         annotation.getOaCreator().getOdsId());
     if (currentAnnotationOptional.isEmpty()) {
-      log.error("No annotation with id {} found for creator {}", annotation.getOdsId(),
+      log.error("No annotations with id {} found for creator {}", annotation.getOdsId(),
           annotation.getOaCreator().getOdsId());
       throw new ForbiddenException(annotation.getOdsId(), annotation.getOaCreator().getOdsId());
     }
@@ -52,7 +51,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
     } catch (PidCreationException e) {
-      log.error("Unable to post update for annotation {}", currentAnnotation.getOdsId(), e);
+      log.error("Unable to post update for annotations {}", currentAnnotation.getOdsId(), e);
       throw new FailedProcessingException();
     }
     repository.createAnnotationRecord(annotation);
@@ -65,9 +64,9 @@ public class ProcessingWebService extends AbstractProcessingService {
   private String postHandle(Annotation annotation) throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(annotation);
     try {
-      return handleComponent.postHandle(requestBody);
+      return handleComponent.postHandle(requestBody).get(0);
     } catch (PidCreationException e) {
-      log.error("Unable to create handle for given annotation. ", e);
+      log.error("Unable to create handle for given annotations. ", e);
       throw new FailedProcessingException();
     }
   }

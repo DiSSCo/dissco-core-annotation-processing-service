@@ -1,12 +1,13 @@
 package eu.dissco.annotationprocessingservice.domain;
 
-import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import java.util.List;
+import java.util.Set;
 
 public record ProcessResult(
-    List<Annotation> equalAnnotations,
-    List<Annotation> updatedAnnotations,
-    List<Annotation> newAnnotations
+    Set<Annotation> equalAnnotations,
+    Set<UpdatedAnnotation> changedAnnotations,
+    List<HashedAnnotation> newAnnotations
 ) {
 
 }

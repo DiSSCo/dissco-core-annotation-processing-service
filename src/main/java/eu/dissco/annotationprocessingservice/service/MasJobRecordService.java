@@ -4,13 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationState;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,21 +33,23 @@ public class MasJobRecordService {
     }
   }
 
-  public void markMasJobRecordAsComplete(UUID jobId, String annotationId) {
-    var annotationNode = buildAnnotationNode(annotationId);
+  public void markMasJobRecordAsComplete(UUID jobId, List<String> annotationIds) {
+    var annotationNode = buildAnnotationNode(annotationIds);
     repository.markMasJobRecordAsComplete(jobId, annotationNode);
   }
 
-  private JsonNode buildAnnotationNode(String annotationId) {
-    var annotationNode = mapper.createObjectNode();
-    annotationNode.put("annotationId", annotationId);
+  private JsonNode buildAnnotationNode(List<String> annotationIds) {
     var listNode = mapper.createArrayNode();
-    listNode.add(annotationNode);
+    for (var annotationId : annotationIds) {
+      var annotationNode = mapper.createObjectNode();
+      annotationNode.put("annotationId", annotationId);
+      listNode.add(annotationNode);
+    }
     return listNode;
   }
 
-  public void markMasJobRecordAsFailed(AnnotationEvent event) {
-    repository.markMasJobRecordAsFailed(event.jobId());
+  public void markMasJobRecordAsFailed(UUID jobId) {
+    repository.markMasJobRecordAsFailed(jobId);
   }
 
 }

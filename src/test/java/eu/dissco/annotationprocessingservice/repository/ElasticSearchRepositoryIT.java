@@ -33,7 +33,7 @@ class ElasticSearchRepositoryIT {
 
   private static final DockerImageName ELASTIC_IMAGE = DockerImageName.parse(
       "docker.elastic.co/elasticsearch/elasticsearch").withTag("8.6.1");
-  private static final String ANNOTATION_INDEX = "annotation";
+  private static final String ANNOTATION_INDEX = "annotations";
   private static final String ELASTICSEARCH_USERNAME = "elastic";
   private static final String ELASTICSEARCH_PASSWORD = "s3cret";
   private static final ElasticsearchContainer container = new ElasticsearchContainer(

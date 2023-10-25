@@ -55,7 +55,7 @@ public abstract class AbstractProcessingService {
 
   protected void rollbackNewAnnotation(Annotation annotation, boolean elasticRollback)
       throws FailedProcessingException {
-    log.warn("Rolling back for annotation: {}", annotation);
+    log.warn("Rolling back for annotations: {}", annotation);
     if (elasticRollback) {
       try {
         elasticRepository.archiveAnnotation(annotation.getOdsId());
@@ -73,27 +73,27 @@ public abstract class AbstractProcessingService {
     try {
       handleComponent.rollbackHandleCreation(requestBody);
     } catch (PidCreationException e) {
-      log.error("Unable to rollback creation for annotation {}", annotation.getOdsId(), e);
+      log.error("Unable to rollback creation for annotations {}", annotation.getOdsId(), e);
     }
   }
 
   public void archiveAnnotation(String id) throws IOException, FailedProcessingException {
     if (repository.getAnnotationById(id).isPresent()) {
-      log.info("Archive annotation: {} in handle service", id);
+      log.info("Archive annotations: {} in handle service", id);
       var requestBody = fdoRecordService.buildArchiveHandleRequest(id);
       try {
         handleComponent.archiveHandle(requestBody, id);
       } catch (PidCreationException e) {
-        log.error("Unable to archive annotation in handle system for annotation {}", id, e);
+        log.error("Unable to archive annotations in handle system for annotations {}", id, e);
         throw new FailedProcessingException();
       }
-      log.info("Removing annotation: {} from indexing service", id);
+      log.info("Removing annotations: {} from indexing service", id);
       var document = elasticRepository.archiveAnnotation(id);
       if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
-        log.info("Archive annotation: {} in database", id);
+        log.info("Archive annotations: {} in database", id);
         repository.archiveAnnotation(id);
-        log.info("Archived annotation: {}", id);
-        log.info("Tombstoning PID record of annotation: {}", id);
+        log.info("Archived annotations: {}", id);
+        log.info("Tombstoning PID record of annotations: {}", id);
       }
     } else {
       log.info("Annotation with id: {} is already archived", id);
@@ -105,8 +105,8 @@ public abstract class AbstractProcessingService {
     if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
       return;
     }
-    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation,
-        currentAnnotation.getOdsId());
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation
+    );
     handleComponent.updateHandle(requestBody);
   }
 
@@ -115,12 +115,12 @@ public abstract class AbstractProcessingService {
     if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
       return;
     }
-    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation,
-        currentAnnotation.getOdsId());
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation
+    );
     try {
       handleComponent.rollbackHandleUpdate(requestBody);
     } catch (PidCreationException e) {
-      log.error("Unable to rollback handle update for annotation {}", currentAnnotation.getOdsId(),
+      log.error("Unable to rollback handle update for annotations {}", currentAnnotation.getOdsId(),
           e);
     }
   }
@@ -157,7 +157,7 @@ public abstract class AbstractProcessingService {
         rollbackNewAnnotation(annotation, true);
       }
     } else {
-      log.error("Elasticsearch did not create annotation: {}", id);
+      log.error("Elasticsearch did not create annotations: {}", id);
       throw new FailedProcessingException();
     }
   }

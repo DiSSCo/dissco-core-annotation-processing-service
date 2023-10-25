@@ -38,7 +38,7 @@ class FdoRecordServiceTest {
     var expected = givenPostRequest();
     ((ObjectNode) expected.get(0).get("data")).put("id", ID);
 
-    assertThat(fdoRecordService.buildPatchRollbackHandleRequest(givenAnnotationProcessed(), ID))
+    assertThat(fdoRecordService.buildPatchRollbackHandleRequest(givenAnnotationProcessed()))
         .isEqualTo(expected);
   }
 

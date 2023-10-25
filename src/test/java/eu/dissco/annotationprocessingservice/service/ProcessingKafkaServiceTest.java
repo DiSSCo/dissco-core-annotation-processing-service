@@ -31,20 +31,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -221,7 +216,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should()
-        .buildPatchRollbackHandleRequest(annotationRequest, ID);
+        .buildPatchRollbackHandleRequest(annotationRequest);
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
@@ -260,7 +255,7 @@ class ProcessingKafkaServiceTest {
     service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
-    then(fdoRecordService).should().buildPatchRollbackHandleRequest(any(), eq(ID));
+    then(fdoRecordService).should().buildPatchRollbackHandleRequest(any(Annotation.class));
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, ID);
@@ -318,7 +313,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(annotation, ID);
+        .buildPatchRollbackHandleRequest(annotation);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(repository).should(times(2)).createAnnotationRecord(any(Annotation.class));
@@ -344,7 +339,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(annotation, ID);
+        .buildPatchRollbackHandleRequest(annotation);
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(Annotation.class));
@@ -373,7 +368,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(masJobRecordService).should().markMasJobRecordAsFailed(any());
     then(fdoRecordService).should(times(2))
-        .buildPatchRollbackHandleRequest(annotationRequest.withOdsVersion(2), ID);
+        .buildPatchRollbackHandleRequest(annotationRequest.withOdsVersion(2));
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotation(any(Annotation.class));

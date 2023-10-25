@@ -7,7 +7,6 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
-import eu.dissco.annotationprocessingservice.service.ProcessingKafkaService;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,7 @@ public class AnnotationController {
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
-    log.info("Received annotation creation request");
+    log.info("Received annotations creation request");
     var result = processingService.persistNewAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
@@ -47,7 +46,7 @@ public class AnnotationController {
       @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException, NotFoundException, ConflictException, ForbiddenException {
     checkId(prefix, suffix, annotation);
-    log.info("Received annotation update request for annotation {}", annotation.getOdsId());
+    log.info("Received annotations update request for annotations {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
@@ -56,7 +55,7 @@ public class AnnotationController {
   public ResponseEntity<Void> archiveAnnotation(@PathVariable("prefix") String prefix,
       @PathVariable("postfix") String postfix) throws IOException, FailedProcessingException {
     var id = prefix + '/' + postfix;
-    log.info("Received an archive request for annotation: {}", id);
+    log.info("Received an archive request for annotations: {}", id);
     processingService.archiveAnnotation(id);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
@@ -65,7 +64,7 @@ public class AnnotationController {
       throws ConflictException {
     var id = prefix + "/" + suffix;
     if (!id.equals(annotation.getOdsId())) {
-      log.error("provided id does not match annotation id");
+      log.error("provided id does not match annotations id");
       throw new ConflictException();
     }
   }

@@ -1,11 +1,11 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
-import static org.jooq.impl.DSL.insertInto;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
@@ -16,16 +16,18 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.quota.ClientQuotaAlteration.Op;
 import org.jooq.DSLContext;
 import org.jooq.InsertOnDuplicateSetMoreStep;
 import org.jooq.InsertSetMoreStep;
 import org.jooq.JSONB;
+import org.jooq.Query;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
@@ -65,15 +67,12 @@ public class AnnotationRepository {
     return dbRecord.map(this::mapAnnotation);
   }
 
-  public Optional<Annotation> getAnnotationFromHash(UUID annotationHash){
+  public List<HashedAnnotation> getAnnotationFromHash(Set<UUID> annotationHashes) {
     var dbRecord = context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
-        .where(ANNOTATION.ANNOTATION_HASH.eq(annotationHash))
-        .fetchOne();
-    if (dbRecord == null){
-      return Optional.empty();
-    }
-    return Optional.of(dbRecord.map(this::mapAnnotation));
+        .where(ANNOTATION.ANNOTATION_HASH.in(annotationHashes))
+        .fetch();
+    return dbRecord.map(this::mapHashedAnnotation);
   }
 
   public Optional<Annotation> getAnnotationForUser(String annotationId, String creatorId) {
@@ -109,10 +108,29 @@ public class AnnotationRepository {
     }
   }
 
+  private HashedAnnotation mapHashedAnnotation(Record dbRecord) {
+    return new HashedAnnotation(
+        mapAnnotation(dbRecord),
+        dbRecord.get(ANNOTATION.ANNOTATION_HASH)
+    );
+  }
+
   public void createAnnotationRecord(Annotation annotation) {
     var insertQuery = insertAnnotation(annotation);
     var fullQuery = onConflict(annotation, insertQuery);
     fullQuery.execute();
+  }
+
+  public void createAnnotationRecord(List<HashedAnnotation> hashedAnnotations) {
+    var queryList = new ArrayList<Query>();
+    for (var hashedAnnotation : hashedAnnotations) {
+      var insertQuery = insertAnnotation(hashedAnnotation.annotation())
+          .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
+      var fullQuery = onConflict(hashedAnnotation.annotation(), insertQuery)
+          .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
+      queryList.add(fullQuery);
+    }
+    context.batch(queryList).execute();
   }
 
   public void createAnnotationRecord(Annotation annotation, UUID annotationHash){
@@ -176,10 +194,10 @@ public class AnnotationRepository {
     }
   }
 
-  public int updateLastChecked(Annotation currentAnnotation) {
+  public int updateLastChecked(List<String> idList) {
     return context.update(ANNOTATION)
         .set(ANNOTATION.LAST_CHECKED, Instant.now())
-        .where(ANNOTATION.ID.eq(currentAnnotation.getOdsId()))
+        .where(ANNOTATION.ID.in(idList))
         .execute();
   }
 
@@ -200,5 +218,9 @@ public class AnnotationRepository {
 
   public void rollbackAnnotation(String id) {
     context.delete(ANNOTATION).where(ANNOTATION.ID.eq(id)).execute();
+  }
+
+  public void rollbackAnnotations(List<String> idList) {
+    context.delete(ANNOTATION).where(ANNOTATION.ID.in(idList)).execute();
   }
 }
