@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -69,6 +70,13 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       persistNewAnnotation(event, annotationHash);
     }
   }
+
+  private ProcessResult processAnnotations(AnnotationEvent event){
+
+
+  }
+
+
 
   private Annotation updateExistingAnnotation(Annotation currentAnnotation,
       AnnotationEvent event) throws FailedProcessingException {
