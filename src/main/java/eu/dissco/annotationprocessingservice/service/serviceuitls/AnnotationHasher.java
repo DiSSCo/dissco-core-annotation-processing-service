@@ -42,7 +42,7 @@ public class AnnotationHasher {
   }
 
   private static String getAnnotationHashString(Annotation annotation) {
-    return annotation.getOaTarget() + "-" + annotation.getOaCreator().getOdsId() + "-"
+    return annotation.getOaTarget().toString() + "-" + annotation.getOaCreator().getOdsId() + "-"
         + annotation.getOaMotivation().toString();
   }
 

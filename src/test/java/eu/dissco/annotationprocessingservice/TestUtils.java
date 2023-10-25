@@ -26,6 +26,7 @@ public class TestUtils {
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final UUID JOB_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+  public static final UUID ANNOTATION_HASH = UUID.fromString("091dcacc-d5f9-4c33-038c-476202c1f825");
   public static final String ANNOTATION_JSONB =
       """
         [{
