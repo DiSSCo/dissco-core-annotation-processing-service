@@ -133,14 +133,6 @@ public class AnnotationRepository {
     context.batch(queryList).execute();
   }
 
-  public void createAnnotationRecord(Annotation annotation, UUID annotationHash){
-    var insertQuery = insertAnnotation(annotation)
-        .set(ANNOTATION.ANNOTATION_HASH, annotationHash);
-    var fullQuery = onConflict(annotation, insertQuery)
-        .set(ANNOTATION.ANNOTATION_HASH, annotationHash);
-    fullQuery.execute();
-  }
-
   private @NotNull InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
     try {
       return context.insertInto(ANNOTATION).set(ANNOTATION.ID, annotation.getOdsId())

@@ -7,6 +7,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,10 +54,10 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testCreateAnnotationRecordWithHash() throws DataBaseException {
     // Given
-    var annotation = givenAnnotationProcessed();
+    var annotation = givenHashedAnnotation();
 
     // When
-    repository.createAnnotationRecord(annotation, ANNOTATION_HASH);
+    repository.createAnnotationRecord(List.of(annotation));
     var result = context.select(ANNOTATION.asterisk()).from(ANNOTATION).fetchOne();
 
     // Then
@@ -140,8 +141,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetAnnotationFromHash() {
     // Given
-    repository.createAnnotationRecord(givenAnnotationProcessed(), ANNOTATION_HASH);
-    repository.createAnnotationRecord(givenAnnotationProcessedAlt().withOdsId("alt id"), JOB_ID);
+    var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withOdsId("alt id"), JOB_ID);
+    repository.createAnnotationRecord(List.of(givenHashedAnnotation(), altHashedAnnotation));
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
@@ -153,7 +154,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetAnnotationFromHashEmpty() {
     // Given
-    repository.createAnnotationRecord(givenAnnotationProcessed(), ANNOTATION_HASH);
+    repository.createAnnotationRecord(List.of(givenHashedAnnotation()));
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(JOB_ID));
@@ -203,6 +204,20 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.rollbackAnnotation(annotation.getOdsId());
+
+    // Then
+    var result = repository.getAnnotationById(annotation.getOdsId());
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testRollbackAnnotationList() {
+    // Given
+    var annotation = givenAnnotationProcessed();
+    repository.createAnnotationRecord(annotation);
+
+    // When
+    repository.rollbackAnnotations(List.of(annotation.getOdsId()));
 
     // Then
     var result = repository.getAnnotationById(annotation.getOdsId());

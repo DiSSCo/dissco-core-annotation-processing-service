@@ -12,6 +12,7 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
+import java.util.List;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -96,6 +97,21 @@ class ElasticSearchRepositoryIT {
     // Then
     assertThat(result.result().jsonValue()).isEqualTo("created");
   }
+
+  @Test
+  void testIndexAnnotations() throws IOException {
+    // Given
+    var annotations = List.of(givenAnnotationProcessed(), givenAnnotationProcessed().withOdsId("alt"));
+
+    // When
+    var result = repository.indexAnnotations(annotations);
+
+    // Then
+    assertThat(result.errors()).isFalse();
+    // todo
+
+  }
+
 
   @Test
   void testArchiveAnnotation() throws IOException {
