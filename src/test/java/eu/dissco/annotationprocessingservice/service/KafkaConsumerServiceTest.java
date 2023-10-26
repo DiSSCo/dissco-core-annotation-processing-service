@@ -6,6 +6,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.mockito.BDDMockito.then;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,7 @@ class KafkaConsumerServiceTest {
   }
 
   private String givenMessage() throws Exception {
-    var annotationNode = MAPPER.valueToTree(givenAnnotationProcessed());
+    var annotationNode = MAPPER.valueToTree(List.of(givenAnnotationProcessed()));
     var messageNode = MAPPER.createObjectNode();
     messageNode.set("annotations", annotationNode);
     messageNode.put("jobId", JOB_ID.toString());

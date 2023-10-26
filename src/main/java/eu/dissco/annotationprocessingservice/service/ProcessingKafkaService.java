@@ -20,6 +20,7 @@ import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHash
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -94,6 +95,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private void processEqualAnnotations(Set<Annotation> currentAnnotations) {
+    if(currentAnnotations.isEmpty()){
+      return;
+    }
     var idList = currentAnnotations.stream().map(Annotation::getOdsId).toList();
     repository.updateLastChecked(idList);
     log.info("Successfully updated lastChecked for existing annotations: {}", idList);
@@ -110,6 +114,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   private void persistNewAnnotation(List<HashedAnnotation> annotations, UUID jobId)
       throws FailedProcessingException {
+    if (annotations.isEmpty()){
+      return;
+    }
     var idList = postHandles(annotations, jobId);
     for (int i = 0; i < annotations.size(); i++) {
       enrichNewAnnotation(annotations.get(i).annotation(), idList.get(i));
@@ -141,6 +148,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   private void updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations, UUID jobId)
       throws FailedProcessingException {
+    if (updatedAnnotations.isEmpty()){
+      return;
+    }
     var idList = getIdListFromUpdates(updatedAnnotations);
     try {
       filterUpdatesAndUpdateHandleRecord(updatedAnnotations);
@@ -283,7 +293,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   private void filterUpdatesAndUpdateHandleRecord(Set<UpdatedAnnotation> updatedAnnotations)
       throws PidCreationException {
     var requestBody = filterHandleUpdates(updatedAnnotations);
-    handleComponent.updateHandle(requestBody);
+    if (!requestBody.isEmpty()){
+      handleComponent.updateHandle(requestBody);
+    }
   }
 
   private List<JsonNode> filterHandleUpdates(Set<UpdatedAnnotation> updatedAnnotations) {
@@ -292,6 +304,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
             p.annotation().annotation()))
         .map(UpdatedAnnotation::annotation)
         .toList();
+    if (handleNeedsUpdate.isEmpty()){
+      return Collections.emptyList();
+    }
     return fdoRecordService.buildPatchRollbackHandleRequest(
         handleNeedsUpdate.stream().map(HashedAnnotation::annotation).toList());
   }
