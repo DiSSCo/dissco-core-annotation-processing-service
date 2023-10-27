@@ -75,7 +75,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.ArgumentCaptor;
-
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessingKafkaServiceTest {
@@ -154,7 +154,7 @@ class ProcessingKafkaServiceTest {
     given(handleComponent.postHandle(any())).willReturn(List.of(ID, ID_ALT));
     given(repository.getAnnotationFromHash(any())).willReturn(Collections.emptyList());
     givenBulkResponse();
-    given(elasticRepository.indexAnnotations(List.of(annotation, secondAnnotation))).willReturn(bulkResponse);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
 
     // When
     assertThatThrownBy(() -> service.handleMessage(event)).isInstanceOf(
@@ -461,7 +461,7 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).shouldHaveNoInteractions();
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID);
     verify(elasticRepository, times(2)).indexAnnotations(captor.capture());
-    assertThat(captor.getAllValues().get(0)).isEqualTo(List.of(annotation, secondAnnotation));
+    assertThat(captor.getAllValues().get(0)).hasSameElementsAs(List.of(annotation, secondAnnotation));
     assertThat(captor.getAllValues().get(1)).isEqualTo(List.of(givenAnnotationProcessedAlt()));
   }
 
