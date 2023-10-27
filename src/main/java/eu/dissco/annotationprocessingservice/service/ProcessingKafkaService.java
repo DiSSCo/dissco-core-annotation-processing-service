@@ -20,12 +20,14 @@ import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHash
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -53,8 +55,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         && currentAnnotation.getOaTarget().equals(annotation.getOaTarget()) &&
         (currentAnnotation.getOaMotivatedBy() != null
             && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
-            || currentAnnotation.getOaMotivatedBy() == null
-            && annotation.getOaMotivatedBy() == null)
+            || (currentAnnotation.getOaMotivatedBy() == null
+            && annotation.getOaMotivatedBy() == null))
         && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
@@ -64,9 +66,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
     var processResult = processAnnotations(event);
-    processEqualAnnotations(processResult.equalAnnotations());
-    updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
-    persistNewAnnotation(processResult.newAnnotations(), event.jobId());
+    var equalIds = processEqualAnnotations(processResult.equalAnnotations());
+    var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
+    var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());
+    var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
+    masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList);
   }
 
   private ProcessResult processAnnotations(AnnotationEvent event) {
@@ -78,9 +82,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
             .collect(Collectors.toSet());
     var existingAnnotations = repository.getAnnotationFromHash(
         hashedAnnotations.stream().map(HashedAnnotation::hash).collect(Collectors.toSet()));
-    var newAnnotations = filterNewAnnotations(existingAnnotations, hashedAnnotations);
+    var newAnnotations = filterNewAnnotations(hashedAnnotations, existingAnnotations);
     var equalOrUpdatedAnnotationsMap = hashedAnnotations.stream()
-        .filter(annotation -> !newAnnotations.contains(annotation))
+        .filter(ha -> !newAnnotations.contains(ha))
         .collect(Collectors.toMap(HashedAnnotation::hash, ha -> ha));
 
     for (var currentAnnotation : existingAnnotations) {
@@ -94,28 +98,26 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return new ProcessResult(equalAnnotations, changedAnnotations, newAnnotations);
   }
 
-  private void processEqualAnnotations(Set<Annotation> currentAnnotations) {
-    if(currentAnnotations.isEmpty()){
-      return;
+  private List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {
+    if (currentAnnotations.isEmpty()) {
+      return Collections.emptyList();
     }
     var idList = currentAnnotations.stream().map(Annotation::getOdsId).toList();
     repository.updateLastChecked(idList);
     log.info("Successfully updated lastChecked for existing annotations: {}", idList);
+    return idList;
   }
 
-
-  private List<HashedAnnotation> filterNewAnnotations(List<HashedAnnotation> existingAnnotations,
-      Set<HashedAnnotation> allAnnotations) {
-    var currentAnnotationHashes = existingAnnotations.stream().map(HashedAnnotation::hash).collect(
-        Collectors.toSet());
-    return allAnnotations.stream()
-        .filter(ha -> !currentAnnotationHashes.contains(ha.hash())).toList();
+  private List<HashedAnnotation> filterNewAnnotations(Set<HashedAnnotation> allAnnotations,
+      List<HashedAnnotation> existingAnnotations) {
+    var existingHashes = existingAnnotations.stream().map(HashedAnnotation::hash).toList();
+    return allAnnotations.stream().filter(ha -> !existingHashes.contains(ha.hash())).toList();
   }
 
-  private void persistNewAnnotation(List<HashedAnnotation> annotations, UUID jobId)
+  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, UUID jobId)
       throws FailedProcessingException {
-    if (annotations.isEmpty()){
-      return;
+    if (annotations.isEmpty()) {
+      return Collections.emptyList();
     }
     var idList = postHandles(annotations, jobId);
     for (int i = 0; i < annotations.size(); i++) {
@@ -128,10 +130,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       indexElasticNewAnnotations(annotations.stream().map(HashedAnnotation::annotation).toList(),
           idList);
     } catch (FailedProcessingException e) {
+      rollbackHandleCreation(idList);
       masJobRecordService.markMasJobRecordAsFailed(jobId);
       throw new FailedProcessingException();
     }
-    masJobRecordService.markMasJobRecordAsComplete(jobId, idList);
+    return idList;
   }
 
   private List<String> postHandles(List<HashedAnnotation> hashedAnnotations, UUID jobId)
@@ -146,10 +149,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
   }
 
-  private void updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations, UUID jobId)
+  private List<String> updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
+      UUID jobId)
       throws FailedProcessingException {
-    if (updatedAnnotations.isEmpty()){
-      return;
+    if (updatedAnnotations.isEmpty()) {
+      return Collections.emptyList();
     }
     var idList = getIdListFromUpdates(updatedAnnotations);
     try {
@@ -168,10 +172,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     try {
       indexElasticUpdatedAnnotation(updatedAnnotations);
     } catch (FailedProcessingException e) {
+      filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
       masJobRecordService.markMasJobRecordAsFailed(jobId);
       throw new FailedProcessingException();
     }
-    masJobRecordService.markMasJobRecordAsComplete(jobId, idList);
+    return idList;
   }
 
   private UUID hashAnnotation(Annotation annotation) {
@@ -249,7 +254,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       }
     }
     repository.rollbackAnnotations(idList);
-    rollbackHandleCreation(idList);
   }
 
   private void rollbackUpdatedAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
@@ -266,7 +270,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       }
     }
     repository.createAnnotationRecord(currentAnnotationsHashed);
-    filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
   }
 
   private void rollbackHandleCreation(List<String> idList) {
@@ -293,7 +296,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   private void filterUpdatesAndUpdateHandleRecord(Set<UpdatedAnnotation> updatedAnnotations)
       throws PidCreationException {
     var requestBody = filterHandleUpdates(updatedAnnotations);
-    if (!requestBody.isEmpty()){
+    if (!requestBody.isEmpty()) {
       handleComponent.updateHandle(requestBody);
     }
   }
@@ -304,7 +307,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
             p.annotation().annotation()))
         .map(UpdatedAnnotation::annotation)
         .toList();
-    if (handleNeedsUpdate.isEmpty()){
+    if (handleNeedsUpdate.isEmpty()) {
       return Collections.emptyList();
     }
     return fdoRecordService.buildPatchRollbackHandleRequest(
@@ -323,7 +326,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       BulkResponse bulkResponse) {
     var annotationMap = annotations.stream()
         .collect(Collectors.toMap(Annotation::getOdsId, a -> a));
-    var handleRollbacks = new ArrayList<String>();
     var annotationRollbacksElasticFail = new ArrayList<Annotation>();
     var annotationRollbacksElasticSuccess = new ArrayList<Annotation>();
 
@@ -331,22 +333,14 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         item -> {
           var annotation = annotationMap.get(item.id());
           if (item.error() != null) {
-            handleRollbacks.add(annotation.getOdsId());
             annotationRollbacksElasticFail.add(annotation);
             log.error("Failed item to insert into elastic search: {} with errors {}",
                 annotation.getOdsId(), item.error().reason());
           } else {
-            try {
-              kafkaService.publishCreateEvent(annotation);
-            } catch (JsonProcessingException e) {
-              log.error("Unable to publish annotation to kafka");
-              handleRollbacks.add(annotation.getOdsId());
-              annotationRollbacksElasticSuccess.add(annotation);
-            }
+            annotationRollbacksElasticSuccess.add(annotation);
           }
         }
     );
-    rollbackHandleCreation(handleRollbacks);
     rollbackNewAnnotations(annotationRollbacksElasticFail, false);
     rollbackNewAnnotations(annotationRollbacksElasticSuccess, true);
   }
@@ -367,14 +361,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
             log.error("Failed item to insert into elastic search: {} with errors {}",
                 annotationPair.annotation().annotation().getOdsId(), item.error().reason());
           } else {
-            try {
-              kafkaService.publishUpdateEvent(annotationPair.currentAnnotation().annotation(),
-                  annotationPair.annotation()
-                      .annotation());
-            } catch (JsonProcessingException e) {
-              log.error("Unable to publish annotation to kafka");
-              annotationRollbacksElasticSuccess.add(annotationPair);
-            }
+            annotationRollbacksElasticSuccess.add(annotationPair);
           }
         }
     );

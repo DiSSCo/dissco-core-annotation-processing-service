@@ -23,7 +23,7 @@ public class HasRoi {
   @JsonProperty("ac:HeightFrac")
   private double heightFrac;
 
-  public HasRoi withAcxFrac(double xFrac) {
+  public HasRoi withAcXFrac(double xFrac) {
     this.xFrac = xFrac;
     return this;
   }

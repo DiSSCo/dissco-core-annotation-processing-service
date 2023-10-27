@@ -55,7 +55,7 @@ public class FdoRecordService {
   public List<JsonNode> buildPatchRollbackHandleRequest(List<Annotation> annotations) {
     List<JsonNode> requestBody = new ArrayList<>();
     for (var annotation : annotations) {
-      requestBody.add(buildSinglePostHandleRequest(annotation));
+      requestBody.add(buildSinglePatchRollbackHandleRequest(annotation));
     }
     return requestBody;
   }

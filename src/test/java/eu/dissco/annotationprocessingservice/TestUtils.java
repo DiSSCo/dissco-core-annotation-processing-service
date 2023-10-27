@@ -23,41 +23,44 @@ public class TestUtils {
   public static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules();
 
   public static final String ID = "20.5000.1025/KZL-VC0-ZK2";
+  public static final String ID_ALT = "20.5000.1025/ZZZ-YYY-XXX";
   public static final String TARGET_ID = "20.5000.1025/QRS-123-ABC";
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final UUID JOB_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
-  public static final UUID ANNOTATION_HASH = UUID.fromString("091dcacc-d5f9-4c33-038c-476202c1f825");
+  public static final UUID ANNOTATION_HASH = UUID.fromString(
+      "596c5cd6-c50e-b944-de80-48c608d2e81e");
   public static final String ANNOTATION_JSONB =
       """
-        [{
-          "annotationId":"20.5000.1025/KZL-VC0-ZK2"
-         }]
-        """;
+          [{
+            "annotationId":"20.5000.1025/KZL-VC0-ZK2"
+           }]
+          """;
 
-  public static HashedAnnotation givenHashedAnnotation(){
+  public static HashedAnnotation givenHashedAnnotation() {
     return new HashedAnnotation(
         givenAnnotationProcessed(),
         ANNOTATION_HASH
     );
   }
 
-  public static HashedAnnotation givenHashedAnnotationAlt(){
+  public static HashedAnnotation givenHashedAnnotationAlt() {
     return new HashedAnnotation(
         givenAnnotationProcessedAlt(),
         ANNOTATION_HASH
     );
   }
 
-
-  public static Annotation givenAnnotationProcessed(){
+  public static Annotation givenAnnotationProcessed() {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
   }
-  public static Annotation givenAnnotationProcessedAlt(){
+
+  public static Annotation givenAnnotationProcessedAlt() {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivation(Motivation.EDITING);
   }
 
-  public static Annotation givenAnnotationProcessed(String annotationId, String userId, String targetId) {
+  public static Annotation givenAnnotationProcessed(String annotationId, String userId,
+      String targetId) {
     return new Annotation()
         .withOdsId(annotationId)
         .withOdsVersion(1)
@@ -123,13 +126,14 @@ public class TestUtils {
         .withOdsType("ORCID");
   }
 
-  public static Generator givenGenerator(){
+  public static Generator givenGenerator() {
     return new Generator()
         .withFoafName("Annotation Processing Service")
         .withOdsId("https://hdl.handle.net/anno-process-service-pid")
         .withOdsType("tool/Software");
   }
-  public static AggregateRating givenAggregationRating(){
+
+  public static AggregateRating givenAggregationRating() {
     return new AggregateRating()
         .withRatingValue(0.1)
         .withOdsType("Score")
@@ -141,7 +145,7 @@ public class TestUtils {
     return givenAnnotationEvent(givenAnnotationProcessed());
   }
 
-  public static AnnotationEvent givenAnnotationEvent(Annotation annotation){
+  public static AnnotationEvent givenAnnotationEvent(Annotation annotation) {
     return new AnnotationEvent(List.of(annotation), JOB_ID);
   }
 
@@ -196,6 +200,69 @@ public class TestUtils {
             }
           }
         """));
+  }
+
+  public static List<JsonNode> givenPostRequestTwo() throws Exception {
+    var jsonNode = MAPPER.readTree("""
+        {
+            "data": {
+              "type": "handle",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "issuedForAgent": "https://ror.org/0566bfb96"
+              }
+            }
+          }
+        """);
+    return List.of(jsonNode, jsonNode);
+  }
+
+  public static List<JsonNode> givenPatchRequest() throws Exception {
+    return List.of(MAPPER.readTree("""
+        {
+            "data": {
+              "type": "handle",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "issuedForAgent": "https://ror.org/0566bfb96"
+              },
+            "id":"20.5000.1025/KZL-VC0-ZK2"
+          }
+        }
+        """));
+  }
+
+  public static List<JsonNode> givenPatchRequestTwo() throws Exception {
+    var node1 = MAPPER.readTree("""
+        {
+            "data": {
+              "type": "handle",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                "issuedForAgent": "https://ror.org/0566bfb96"
+              },
+            "id":"20.5000.1025/KZL-VC0-ZK2"
+          }
+          }
+        """);
+    var node2 = MAPPER.readTree(
+        """
+              {
+                "data": {
+                  "type": "handle",
+                  "attributes": {
+                   "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                    "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                    "issuedForAgent": "https://ror.org/0566bfb96"
+                  },
+                  "id":"20.5000.1025/QRS-123-ABC"
+              }
+              }
+            """);
+    return List.of(node1, node2);
   }
 
   public static JsonNode givenRollbackCreationRequest() throws Exception {

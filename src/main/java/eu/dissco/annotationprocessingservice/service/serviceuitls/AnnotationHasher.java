@@ -1,6 +1,9 @@
 package eu.dissco.annotationprocessingservice.service.serviceuitls;
 
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.ClassValueSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -42,8 +45,17 @@ public class AnnotationHasher {
   }
 
   private static String getAnnotationHashString(Annotation annotation) {
-    return annotation.getOaTarget().toString() + "-" + annotation.getOaCreator().getOdsId() + "-"
-        + annotation.getOaMotivation().toString();
+    String targetString = null;
+    var selector = annotation.getOaTarget().getOaSelector();
+    switch (selector.getOdsType()){
+      case FIELD_VALUE_SELECTOR -> targetString = ((FieldValueSelector) selector).getOdsField();
+      case FRAGMENT_SELECTOR -> targetString = ((FragmentSelector) selector).getAcHasRoi().toString();
+      case CLASS_VALUE_SELECTOR -> targetString = ((ClassValueSelector) selector).getOdsClass();
+    }
+
+
+    return annotation.getOaTarget().getOdsId() + "-" + targetString + "-" +
+        annotation.getOaCreator().getOdsId() + "-" + annotation.getOaMotivation().toString();
   }
 
 }

@@ -2,15 +2,23 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
+import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequestTwo;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequestTwo;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,12 +42,32 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testPatchRequest() throws Exception {
-    var expected = givenPostRequest();
-    ((ObjectNode) expected.get(0).get("data")).put("id", ID);
+  void testBuildPostRequestBatch() throws Exception {
+    assertThat(fdoRecordService.buildPostHandleRequest(
+        List.of(givenHashedAnnotation(), givenHashedAnnotationAlt())))
+        .isEqualTo(givenPostRequestTwo());
+  }
 
-    assertThat(fdoRecordService.buildPatchRollbackHandleRequest(givenAnnotationProcessed()))
-        .isEqualTo(expected);
+  @Test
+  void testPatchRequest() throws Exception {
+    // When
+    var result = fdoRecordService.buildPatchRollbackHandleRequest(givenAnnotationProcessed());
+
+    // Then
+    assertThat(result).isEqualTo(givenPatchRequest());
+  }
+
+  @Test
+  void testPatchRequestList() throws Exception {
+    // Given
+    var expected = givenPatchRequestTwo();
+
+    // When
+    var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenAnnotationProcessed(),
+        givenAnnotationProcessed().withOdsId(TARGET_ID)));
+
+    // Then
+    assertThat(result).isEqualTo(expected);
   }
 
   @Test
@@ -64,6 +92,25 @@ class FdoRecordServiceTest {
 
     // When
     var result = fdoRecordService.buildArchiveHandleRequest(ID);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testRollbackAnnotationList() throws Exception {
+    // Given
+    var expected = MAPPER.readTree("""
+        {
+          "data": [
+                      {"id":"20.5000.1025/KZL-VC0-ZK2"},
+                      {"id":"20.5000.1025/QRS-123-ABC"}
+                    ]
+                  }
+        """);
+
+    // When
+    var result = fdoRecordService.buildRollbackCreationRequest(List.of(ID, TARGET_ID));
 
     // Then
     assertThat(result).isEqualTo(expected);

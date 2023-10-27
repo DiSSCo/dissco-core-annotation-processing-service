@@ -108,10 +108,9 @@ class ElasticSearchRepositoryIT {
 
     // Then
     assertThat(result.errors()).isFalse();
-    // todo
-
+    assertThat(result.items().get(0).id()).isEqualTo(ID);
+    assertThat(result.items().get(0).result()).isEqualTo("created");
   }
-
 
   @Test
   void testArchiveAnnotation() throws IOException {
@@ -126,5 +125,19 @@ class ElasticSearchRepositoryIT {
     assertThat(result.result().jsonValue()).isEqualTo("deleted");
   }
 
+  @Test
+  void testArchiveAnnotations() throws IOException {
+    // Given
+    var annotation = givenAnnotationProcessed();
+    repository.indexAnnotations(List.of(annotation));
+
+    // When
+    var result = repository.archiveAnnotations(List.of(ID));
+
+    // Then
+    assertThat(result.errors()).isFalse();
+    assertThat(result.items().get(0).id()).isEqualTo(ID);
+    assertThat(result.items().get(0).result()).isEqualTo("deleted");
+  }
 }
 
