@@ -75,6 +75,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
@@ -190,7 +191,6 @@ class ProcessingKafkaServiceTest {
   void testHandleNewMessageKafkaException()
       throws Exception {
     // Given
-    var annotation = givenAnnotationProcessed();
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandle(any())).willReturn(List.of(ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -215,7 +215,7 @@ class ProcessingKafkaServiceTest {
   }
 
   @Test
-  void testHandleNewMessageElasticException()
+  void testHandleNewMessageElasticIOException()
       throws Exception {
     // Given
     var annotation = givenAnnotationProcessed();
@@ -441,7 +441,8 @@ class ProcessingKafkaServiceTest {
     var secondHash = AnnotationHasher.getAnnotationHash(secondAnnotationCurrent);
     var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent, secondHash);
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt(), secondAnnotationCurrentHashed));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt(), secondAnnotationCurrentHashed));
     givenBulkResponse();
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -461,7 +462,8 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).shouldHaveNoInteractions();
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID);
     verify(elasticRepository, times(2)).indexAnnotations(captor.capture());
-    assertThat(captor.getAllValues().get(0)).hasSameElementsAs(List.of(annotation, secondAnnotation));
+    assertThat(captor.getAllValues().get(0)).hasSameElementsAs(
+        List.of(annotation, secondAnnotation));
     assertThat(captor.getAllValues().get(1)).isEqualTo(List.of(givenAnnotationProcessedAlt()));
   }
 

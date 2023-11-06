@@ -14,10 +14,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
+import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Body;
+import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
+import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import java.util.List;
 import java.util.Set;
+import org.jooq.Record;
 import org.jooq.Record1;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,28 +48,27 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testCreateAnnotationRecord() throws DataBaseException {
     // Given
-    var annotation = givenAnnotationProcessed();
+    var expected = givenAnnotationProcessed();
 
     // When
-    repository.createAnnotationRecord(annotation);
-    var actual = repository.getAnnotation(annotation.getOdsId());
+    repository.createAnnotationRecord(expected);
+    var actual = getAnnotation(expected.getOdsId());
 
     // Then
-    assertThat(actual).isEqualTo(annotation);
+    assertThat(actual).isEqualTo(expected);
   }
 
   @Test
   void testCreateAnnotationRecordWithHash() throws DataBaseException {
     // Given
-    var annotation = givenHashedAnnotation();
+    var expected = givenHashedAnnotation();
 
     // When
-    repository.createAnnotationRecord(List.of(annotation));
-    var result = context.select(ANNOTATION.asterisk()).from(ANNOTATION).fetchOne();
+    repository.createAnnotationRecord(List.of(expected));
+    var result = getAnnotation(expected.annotation().getOdsId());
 
     // Then
-    assertThat(result.get(ANNOTATION.ANNOTATION_HASH)).isEqualTo(ANNOTATION_HASH);
-    assertThat(result.get(ANNOTATION.ID)).isEqualTo(ID);
+    assertThat(result).isEqualTo(expected.annotation());
   }
 
   @Test
@@ -89,7 +95,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.createAnnotationRecord(updatedAnnotation);
-    var actual = repository.getAnnotation(annotation.getOdsId());
+    var actual = getAnnotation(annotation.getOdsId());
 
     // Then
     assertThat(actual).isEqualTo(updatedAnnotation);
@@ -126,29 +132,18 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testGetAnnotation() {
-    // Given
-    var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation);
-
-    // When
-    var result = repository.getAnnotation(annotation.getOdsId());
-
-    // Then
-    assertThat(result).isEqualTo(annotation);
-  }
-
-  @Test
   void testGetAnnotationFromHash() {
     // Given
-    var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withOdsId("alt id"), JOB_ID);
+    var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withOdsId("alt id"),
+        JOB_ID);
     repository.createAnnotationRecord(List.of(givenHashedAnnotation(), altHashedAnnotation));
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
 
     // Then
-    assertThat(result).isEqualTo(List.of(new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH)));
+    assertThat(result).isEqualTo(
+        List.of(new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH)));
   }
 
   @Test
@@ -161,24 +156,6 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEmpty();
-  }
-
-  @Test
-  void testGetAnnotationIsEmpty() {
-    // When
-    var result = repository.getAnnotation(givenAnnotationProcessed());
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void testGetAnnotationIsNull() {
-    // When
-    var result = repository.getAnnotation(ID);
-
-    // Then
-    assertThat(result).isNull();
   }
 
   @Test
@@ -222,6 +199,40 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Then
     var result = repository.getAnnotationById(annotation.getOdsId());
     assertThat(result).isEmpty();
+  }
+
+  private Annotation getAnnotation(String annotationId) {
+    var dbRecord = context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotationId))
+        .fetchOne();
+    if (dbRecord == null) {
+      return null;
+    }
+    return dbRecord.map(this::mapAnnotation);
+  }
+
+  private Annotation mapAnnotation(Record dbRecord) {
+    try {
+      return new Annotation()
+          .withOdsId(dbRecord.get(ANNOTATION.ID))
+          .withRdfType(dbRecord.get(ANNOTATION.TYPE))
+          .withOdsVersion(dbRecord.get(ANNOTATION.VERSION))
+          .withOaMotivation(Motivation.fromString(dbRecord.get(ANNOTATION.MOTIVATION)))
+          .withOaMotivatedBy(dbRecord.get(ANNOTATION.MOTIVATED_BY))
+          .withOaTarget(mapper.readValue(dbRecord.get(ANNOTATION.TARGET).data(), Target.class))
+          .withOaBody(mapper.readValue(dbRecord.get(ANNOTATION.BODY).data(), Body.class))
+          .withOaCreator(mapper.readValue(dbRecord.get(ANNOTATION.CREATOR).data(), Creator.class))
+          .withDcTermsCreated(dbRecord.get(ANNOTATION.CREATED))
+          .withOdsDeletedOn(dbRecord.get(ANNOTATION.DELETED_ON))
+          .withAsGenerator(
+              mapper.readValue(dbRecord.get(ANNOTATION.GENERATOR).data(), Generator.class))
+          .withOaGenerated(dbRecord.get(ANNOTATION.GENERATED))
+          .withOdsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
+              AggregateRating.class));
+    } catch (JsonProcessingException ignored) {
+      return null;
+    }
   }
 
 }

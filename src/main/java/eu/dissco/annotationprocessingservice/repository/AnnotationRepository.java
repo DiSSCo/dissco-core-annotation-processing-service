@@ -40,33 +40,6 @@ public class AnnotationRepository {
   private final ObjectMapper mapper;
   private final DSLContext context;
 
-  public List<Annotation> getAnnotation(Annotation annotation) {
-    try {
-      return context.select(ANNOTATION.asterisk())
-          .from(ANNOTATION)
-          .where(ANNOTATION.TARGET.eq(
-              JSONB.jsonb(mapper.writeValueAsString(annotation.getOaTarget()))))
-          .and(ANNOTATION.CREATOR_ID.eq(annotation.getOaCreator().getOdsId()))
-          .and(ANNOTATION.MOTIVATION.eq(annotation.getOaMotivation().toString()))
-          .and(ANNOTATION.DELETED_ON.isNull())
-          .fetch().map(this::mapAnnotation);
-    } catch (JsonProcessingException e) {
-      log.error("Unable to parse target {} to JSONB", annotation.getOaTarget());
-      throw new DataBaseException("Unable to parse target to JSONB");
-    }
-  }
-
-  public Annotation getAnnotation(String annotationId) {
-    var dbRecord = context.select(ANNOTATION.asterisk())
-        .from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotationId))
-        .fetchOne();
-    if (dbRecord == null) {
-      return null;
-    }
-    return dbRecord.map(this::mapAnnotation);
-  }
-
   public List<HashedAnnotation> getAnnotationFromHash(Set<UUID> annotationHashes) {
     var dbRecord = context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
@@ -186,8 +159,8 @@ public class AnnotationRepository {
     }
   }
 
-  public int updateLastChecked(List<String> idList) {
-    return context.update(ANNOTATION)
+  public void updateLastChecked(List<String> idList) {
+    context.update(ANNOTATION)
         .set(ANNOTATION.LAST_CHECKED, Instant.now())
         .where(ANNOTATION.ID.in(idList))
         .execute();

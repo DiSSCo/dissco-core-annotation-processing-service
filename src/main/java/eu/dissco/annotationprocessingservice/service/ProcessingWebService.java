@@ -93,6 +93,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       } catch (JsonProcessingException e) {
         log.error("Unable to publish create event to kafka.");
         rollbackNewAnnotation(annotation, true);
+        throw new FailedProcessingException();
       }
     } else {
       log.error("Elasticsearch did not create annotations: {}", id);
