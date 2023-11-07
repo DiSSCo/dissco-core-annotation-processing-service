@@ -13,9 +13,13 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelecto
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
+import eu.dissco.annotationprocessingservice.domain.annotation.TargetType;
+import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class TestUtils {
@@ -111,7 +115,7 @@ public class TestUtils {
     return new Target()
         .withOdsId(targetId)
         .withSelector(givenSelector())
-        .withOdsType("digital_specimen");
+        .withOdsType(TargetType.DIGITAL_SPECIMEN);
   }
 
   public static FieldValueSelector givenSelector() {
@@ -141,7 +145,7 @@ public class TestUtils {
   }
 
 
-  public static AnnotationEvent givenAnnotationEvent() throws JsonProcessingException {
+  public static AnnotationEvent givenAnnotationEvent() {
     return givenAnnotationEvent(givenAnnotationProcessed());
   }
 
@@ -149,42 +153,12 @@ public class TestUtils {
     return new AnnotationEvent(List.of(annotation), JOB_ID);
   }
 
-  public static JsonNode generateTarget() throws JsonProcessingException {
-    return MAPPER.readValue(
-        """
-            {
-              "id": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
-              "type": "digital_specimen",
-              "indvProp": "modified"
-            }
-            """, JsonNode.class
-    );
-  }
-
-  private static JsonNode generateBody() throws JsonProcessingException {
-    return MAPPER.readValue(
-        """
-            {
-              "type": "modified",
-              "value": [
-                "Error correction"
-              ],
-              "description": "Test"
-            }
-            """, JsonNode.class
-    );
-  }
-
-  public static JsonNode generateGenerator() throws JsonProcessingException {
-    return MAPPER.readValue(
-        """
-            {
-              "id": "https://hdl.handle.net/anno-process-service-pid",
-              "name": "Annotation Procession Service",
-              "type": "tool/Software"
-            }
-            """, JsonNode.class
-    );
+  public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations, List<String> annotationIds){
+    Map<UUID, String> idMap = new HashMap<>();
+    for (int i = 0; i < annotations.size(); i++){
+      idMap.put(AnnotationHasher.getAnnotationHash(annotations.get(i)), annotationIds.get(i));
+    }
+    return idMap;
   }
 
   public static List<JsonNode> givenPostRequest() throws Exception {
@@ -194,28 +168,51 @@ public class TestUtils {
               "type": "handle",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "issuedForAgent": "https://ror.org/0566bfb96",
-                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267"
+               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "issuedForAgent": "https://ror.org/0566bfb96",
+               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetType":"DigitalSpecimen",
+               "motivation":"oa:commenting"
               }
             }
           }
         """));
   }
 
-  public static List<JsonNode> givenPostRequestTwo() throws Exception {
+  public static List<JsonNode> givenPostRequestBatch() throws Exception {
     var jsonNode = MAPPER.readTree("""
         {
             "data": {
               "type": "handle",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "issuedForAgent": "https://ror.org/0566bfb96"
+               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "issuedForAgent": "https://ror.org/0566bfb96",
+               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetType":"DigitalSpecimen",
+               "motivation":"oa:commenting",
+               "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
               }
             }
           }
         """);
-    return List.of(jsonNode, jsonNode);
+    var jsonNode2 = MAPPER.readTree("""
+        {
+            "data": {
+              "type": "handle",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "issuedForAgent": "https://ror.org/0566bfb96",
+               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetType":"DigitalSpecimen",
+               "motivation":"oa:editing",
+               "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
+              }
+            }
+          }
+        """);
+    return List.of(jsonNode, jsonNode2);
   }
 
   public static List<JsonNode> givenPatchRequest() throws Exception {
@@ -226,15 +223,18 @@ public class TestUtils {
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "issuedForAgent": "https://ror.org/0566bfb96"
-              },
+                "issuedForAgent": "https://ror.org/0566bfb96",
+                "targetPid":"20.5000.1025/QRS-123-ABC",
+                "targetType":"DigitalSpecimen",
+                "motivation":"oa:commenting"
+            },
             "id":"20.5000.1025/KZL-VC0-ZK2"
           }
         }
         """));
   }
 
-  public static List<JsonNode> givenPatchRequestTwo() throws Exception {
+  public static List<JsonNode> givenPatchRequestBatch() throws Exception {
     var node1 = MAPPER.readTree("""
         {
             "data": {
@@ -242,7 +242,11 @@ public class TestUtils {
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "issuedForAgent": "https://ror.org/0566bfb96"
+                "issuedForAgent": "https://ror.org/0566bfb96",
+                "targetPid":"20.5000.1025/QRS-123-ABC",
+                "targetType":"DigitalSpecimen",
+                "motivation":"oa:commenting",
+                "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
               },
             "id":"20.5000.1025/KZL-VC0-ZK2"
           }
@@ -255,10 +259,14 @@ public class TestUtils {
                   "type": "handle",
                   "attributes": {
                    "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                    "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                    "issuedForAgent": "https://ror.org/0566bfb96"
+                   "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+                   "issuedForAgent": "https://ror.org/0566bfb96",
+                   "targetPid":"20.5000.1025/QRS-123-ABC",
+                   "targetType":"DigitalSpecimen",
+                   "motivation":"oa:editing",
+                    "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
                   },
-                  "id":"20.5000.1025/QRS-123-ABC"
+                  "id":"20.5000.1025/KZL-VC0-ZK2"
               }
               }
             """);

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -119,9 +120,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
     }
-    var idList = postHandles(annotations, jobId);
-    for (int i = 0; i < annotations.size(); i++) {
-      enrichNewAnnotation(annotations.get(i).annotation(), idList.get(i));
+    var idMap = postHandles(annotations, jobId);
+    var idList = idMap.values().stream().toList();
+    for (var hashedAnnotation : annotations){
+      enrichNewAnnotation(hashedAnnotation.annotation(), idMap.get(hashedAnnotation.hash()));
     }
     log.info("New ids have been generated for Annotations: {}", idList);
     repository.createAnnotationRecord(annotations);
@@ -137,11 +139,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return idList;
   }
 
-  private List<String> postHandles(List<HashedAnnotation> hashedAnnotations, UUID jobId)
+  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, UUID jobId)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {
-      return handleComponent.postHandle(requestBody);
+      return handleComponent.postBatchHandle(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
       masJobRecordService.markMasJobRecordAsFailed(jobId);
@@ -310,8 +312,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     if (handleNeedsUpdate.isEmpty()) {
       return Collections.emptyList();
     }
-    return fdoRecordService.buildPatchRollbackHandleRequest(
-        handleNeedsUpdate.stream().map(HashedAnnotation::annotation).toList());
+    return fdoRecordService.buildPatchRollbackHandleRequest(handleNeedsUpdate);
   }
 
   private static List<String> getIdListFromUpdates(Set<UpdatedAnnotation> updatedAnnotations) {

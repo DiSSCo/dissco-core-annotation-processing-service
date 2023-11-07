@@ -16,7 +16,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotat
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequestTwo;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPostBatchHandleResponse;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,7 +24,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -58,9 +57,12 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +71,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.runner.RunWith;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -127,7 +128,8 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postBatchHandle(any())).willReturn(
+        givenPostBatchHandleResponse(List.of(annotationRequest), List.of(ID)));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
@@ -149,10 +151,10 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotation = givenAnnotationRequest();
     var secondAnnotation = givenAnnotationProcessed()
-        .withOdsId(ID_ALT)
         .withOaTarget(givenOaTarget("alt target"));
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID, ID_ALT));
+    given(handleComponent.postBatchHandle(any())).willReturn(
+        givenPostBatchHandleResponse(List.of(annotation, secondAnnotation), List.of(ID, ID_ALT)));
     given(repository.getAnnotationFromHash(any())).willReturn(Collections.emptyList());
     givenBulkResponse();
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -164,7 +166,6 @@ class ProcessingKafkaServiceTest {
     // Then
     then(fdoRecordService).should().buildPostHandleRequest(anyList());
     then(fdoRecordService).should().buildRollbackCreationRequest(anyList());
-    then(handleComponent).should(times(1)).postHandle(any());
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should(times(1)).createAnnotationRecord(anyList());
     then(repository).should(times(2)).rollbackAnnotations(anyList());
@@ -179,7 +180,7 @@ class ProcessingKafkaServiceTest {
     // Given
 
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
-    given(handleComponent.postHandle(any())).willThrow(PidCreationException.class);
+    given(handleComponent.postBatchHandle(any())).willThrow(PidCreationException.class);
 
     // Then
     assertThrows(FailedProcessingException.class,
@@ -192,7 +193,7 @@ class ProcessingKafkaServiceTest {
       throws Exception {
     // Given
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishCreateEvent(any(
@@ -218,9 +219,8 @@ class ProcessingKafkaServiceTest {
   void testHandleNewMessageElasticIOException()
       throws Exception {
     // Given
-    var annotation = givenAnnotationProcessed();
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
     given(applicationProperties.getProcessorHandle()).willReturn(
@@ -272,7 +272,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should()
-        .buildPatchRollbackHandleRequest(List.of(annotationRequest));
+        .buildPatchRollbackHandleRequest(anyList());
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
@@ -319,12 +319,14 @@ class ProcessingKafkaServiceTest {
         List.of(changedAnnotationOriginalHashed, equalAnnotationHashed));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(
-        fdoRecordService.buildPatchRollbackHandleRequest(List.of(changedAnnotationNew))).willReturn(
+        fdoRecordService.buildPatchRollbackHandleRequest(
+            List.of(new HashedAnnotation(changedAnnotationNew,
+                any())))).willReturn(
         givenPatchRequest());
     given(fdoRecordService.buildPostHandleRequest(
-        List.of(new HashedAnnotation(newAnnotation, ANNOTATION_HASH)))).willReturn(
+        List.of(new HashedAnnotation(newAnnotation, any())))).willReturn(
         givenPostRequest());
-    given(handleComponent.postHandle(givenPostRequest())).willReturn(List.of(ID));
+    given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(bulkResponse.errors()).willReturn(false);
 
@@ -418,7 +420,8 @@ class ProcessingKafkaServiceTest {
     // Then
 
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(List.of(annotation));
+        .buildPatchRollbackHandleRequest(
+            List.of(new HashedAnnotation(annotation, ANNOTATION_HASH)));
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(repository).should(times(2)).createAnnotationRecord(anyList());
@@ -486,7 +489,8 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should((times(2)))
-        .buildPatchRollbackHandleRequest(List.of(annotation));
+        .buildPatchRollbackHandleRequest(
+            List.of(new HashedAnnotation(annotation, ANNOTATION_HASH)));
     then(handleComponent).should().updateHandle(anyList());
     then(handleComponent).should().rollbackHandleUpdate(anyList());
     then(elasticRepository).should(times(2)).indexAnnotations(anyList());
@@ -516,7 +520,8 @@ class ProcessingKafkaServiceTest {
     // Then
     then(masJobRecordService).should().markMasJobRecordAsFailed(any());
     then(fdoRecordService).should(times(2))
-        .buildPatchRollbackHandleRequest(List.of(annotationRequest.withOdsVersion(2)));
+        .buildPatchRollbackHandleRequest(
+            List.of(new HashedAnnotation(annotationRequest.withOdsVersion(2), ANNOTATION_HASH)));
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotations(anyList());

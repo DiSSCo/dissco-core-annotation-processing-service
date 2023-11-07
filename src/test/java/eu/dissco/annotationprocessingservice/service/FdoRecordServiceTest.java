@@ -4,18 +4,16 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequestTwo;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequestBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequestTwo;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequestBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import java.util.List;
@@ -45,7 +43,7 @@ class FdoRecordServiceTest {
   void testBuildPostRequestBatch() throws Exception {
     assertThat(fdoRecordService.buildPostHandleRequest(
         List.of(givenHashedAnnotation(), givenHashedAnnotationAlt())))
-        .isEqualTo(givenPostRequestTwo());
+        .isEqualTo(givenPostRequestBatch());
   }
 
   @Test
@@ -60,11 +58,11 @@ class FdoRecordServiceTest {
   @Test
   void testPatchRequestList() throws Exception {
     // Given
-    var expected = givenPatchRequestTwo();
+    var expected = givenPatchRequestBatch();
 
     // When
-    var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenAnnotationProcessed(),
-        givenAnnotationProcessed().withOdsId(TARGET_ID)));
+    var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenHashedAnnotation(),
+        givenHashedAnnotationAlt()));
 
     // Then
     assertThat(result).isEqualTo(expected);

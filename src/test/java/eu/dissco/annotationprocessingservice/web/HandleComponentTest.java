@@ -10,8 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
-import eu.dissco.annotationprocessingservice.web.HandleComponent;
-import eu.dissco.annotationprocessingservice.web.TokenAuthenticator;
 import java.io.IOException;
 import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
