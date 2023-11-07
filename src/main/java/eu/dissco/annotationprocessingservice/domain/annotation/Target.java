@@ -17,7 +17,7 @@ public class Target {
   @JsonProperty("ods:id")
   private String odsId;
   @JsonProperty("ods:type")
-  private TargetType odsType;
+  private String odsType;
   @JsonProperty("oa:selector")
   private Selector oaSelector;
 
@@ -26,7 +26,7 @@ public class Target {
     return this;
   }
 
-  public Target withOdsType(TargetType odsType) {
+  public Target withOdsType(String odsType) {
     this.odsType = odsType;
     return this;
   }

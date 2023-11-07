@@ -47,7 +47,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation, annotationHash);
-    data.put(TYPE.getAttribute(), "handle");
+    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);
     return request;
@@ -69,7 +69,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation, annotationHash);
-    data.put(TYPE.getAttribute(), "handle");
+    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
     data.set(ATTRIBUTES, attributes);
     data.put(ID, annotation.getOdsId());
     request.set(DATA, data);
@@ -93,7 +93,7 @@ public class FdoRecordService {
     attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), DIGITAL_OBJECT_TYPE.getDefaultValue());
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
     attributes.put(TARGET_PID.getAttribute(), annotation.getOaTarget().getOdsId());
-    attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType().toString());
+    attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType());
     attributes.put(MOTIVATION.getAttribute(), annotation.getOaMotivation().toString());
     if (annotationHash!= null) {
       attributes.put(ANNOTATION_HASH.getAttribute(), annotationHash.toString());

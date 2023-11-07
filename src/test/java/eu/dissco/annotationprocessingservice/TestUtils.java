@@ -13,7 +13,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelecto
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
-import eu.dissco.annotationprocessingservice.domain.annotation.TargetType;
 import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -115,7 +114,7 @@ public class TestUtils {
     return new Target()
         .withOdsId(targetId)
         .withSelector(givenSelector())
-        .withOdsType(TargetType.DIGITAL_SPECIMEN);
+        .withOdsType("DigitalSpecimen");
   }
 
   public static FieldValueSelector givenSelector() {

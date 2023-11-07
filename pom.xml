@@ -86,7 +86,6 @@
       <artifactId>netty-codec-http2</artifactId>
       <version>${netty.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>

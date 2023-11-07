@@ -53,12 +53,15 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
     return currentAnnotation.getOaBody().equals(annotation.getOaBody())
         && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
-        && currentAnnotation.getOaTarget().equals(annotation.getOaTarget()) &&
-        (currentAnnotation.getOaMotivatedBy() != null
+        && currentAnnotation.getOaTarget().equals(annotation.getOaTarget())
+        && (currentAnnotation.getOaMotivatedBy() != null
             && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
             || (currentAnnotation.getOaMotivatedBy() == null
             && annotation.getOaMotivatedBy() == null))
+        && (currentAnnotation.getOdsAggregateRating() != null
         && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
+        || (currentAnnotation.getOdsAggregateRating() == null
+        && annotation.getOdsAggregateRating() == null))
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
