@@ -164,7 +164,7 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "handle",
+              "type": "annotation",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
@@ -182,7 +182,7 @@ public class TestUtils {
     var jsonNode = MAPPER.readTree("""
         {
             "data": {
-              "type": "handle",
+              "type": "annotation",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
@@ -198,7 +198,7 @@ public class TestUtils {
     var jsonNode2 = MAPPER.readTree("""
         {
             "data": {
-              "type": "handle",
+              "type": "annotation",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
@@ -218,7 +218,7 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "handle",
+              "type": "annotation",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
@@ -237,7 +237,7 @@ public class TestUtils {
     var node1 = MAPPER.readTree("""
         {
             "data": {
-              "type": "handle",
+              "type": "annotation",
               "attributes": {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
@@ -255,7 +255,7 @@ public class TestUtils {
         """
               {
                 "data": {
-                  "type": "handle",
+                  "type": "annotation",
                   "attributes": {
                    "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                    "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
