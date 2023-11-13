@@ -38,7 +38,7 @@ class AnnotationHasherTest {
             .withAcXFrac(0.99)
         );
 
-    var expected = UUID.fromString("99243d73-80bf-b44c-2876-62d10deba12d");
+    var expected = UUID.fromString("12cdd96c-758e-dea3-64ec-5234d3115f0e");
 
     // When
     var result = AnnotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
