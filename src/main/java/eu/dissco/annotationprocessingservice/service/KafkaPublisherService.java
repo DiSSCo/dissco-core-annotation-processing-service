@@ -24,7 +24,7 @@ public class KafkaPublisherService {
   public void publishCreateEvent(Annotation annotation) throws JsonProcessingException {
     var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
         "create",
-        "annotations-processing-service",
+        "annotation-processing-service",
         annotation.getOdsId(),
         SUBJECT_TYPE,
         Instant.now(),
@@ -39,7 +39,7 @@ public class KafkaPublisherService {
     var jsonPatch = createJsonPatch(currentAnnotation, annotation);
     var event = new CreateUpdateDeleteEvent(UUID.randomUUID(),
         "update",
-        "annotations-processing-service",
+        "annotation-processing-service",
         annotation.getOdsId(),
         SUBJECT_TYPE,
         Instant.now(),

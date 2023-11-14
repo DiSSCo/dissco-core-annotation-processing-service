@@ -2,6 +2,9 @@ package eu.dissco.annotationprocessingservice.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -50,6 +53,15 @@ public class ApplicationConfiguration {
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
     factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
     return factory;
+  }
+
+  @Bean
+  public MessageDigest messageDigest(){
+    try {
+      return MessageDigest.getInstance("MD5");
+    } catch (NoSuchAlgorithmException e){
+      throw new IllegalStateException("Unable to locate MD5 algorithm");
+    }
   }
 
 }

@@ -33,6 +33,9 @@ public class TestUtils {
   public static final UUID JOB_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
   public static final UUID ANNOTATION_HASH = UUID.fromString(
       "596c5cd6-c50e-b944-de80-48c608d2e81e");
+
+  public static final UUID ANNOTATION_HASH_2 = UUID.fromString("f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
+  public static final UUID ANNOTATION_HASH_3 = UUID.fromString("53502490-24cc-4a93-a1ce-e80f5e77f506");
   public static final String ANNOTATION_JSONB =
       """
           [{
@@ -155,7 +158,7 @@ public class TestUtils {
   public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations, List<String> annotationIds){
     Map<UUID, String> idMap = new HashMap<>();
     for (int i = 0; i < annotations.size(); i++){
-      idMap.put(AnnotationHasher.getAnnotationHash(annotations.get(i)), annotationIds.get(i));
+      idMap.put(ANNOTATION_HASH, annotationIds.get(i));
     }
     return idMap;
   }

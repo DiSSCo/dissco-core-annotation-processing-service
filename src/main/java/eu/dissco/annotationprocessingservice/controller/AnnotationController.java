@@ -34,7 +34,7 @@ public class AnnotationController {
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException {
-    log.info("Received annotations creation request");
+    log.info("Received annotation creation request");
     var result = processingService.persistNewAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
@@ -45,7 +45,7 @@ public class AnnotationController {
       @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException, ConflictException, ForbiddenException {
     checkId(prefix, suffix, annotation);
-    log.info("Received annotations update request for annotations {}", annotation.getOdsId());
+    log.info("Received annotation update request for annotations {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }

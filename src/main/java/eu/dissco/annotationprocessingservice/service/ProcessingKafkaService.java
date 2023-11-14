@@ -39,15 +39,17 @@ import org.springframework.stereotype.Service;
 public class ProcessingKafkaService extends AbstractProcessingService {
 
   private final MasJobRecordService masJobRecordService;
+  private final AnnotationHasher annotationHasher;
 
   public ProcessingKafkaService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository,
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
-      MasJobRecordService masJobRecordService) {
+      MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties);
     this.masJobRecordService = masJobRecordService;
+    this.annotationHasher = annotationHasher;
   }
 
   private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
@@ -185,7 +187,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private UUID hashAnnotation(Annotation annotation) {
-    return AnnotationHasher.getAnnotationHash(annotation);
+    return annotationHasher.getAnnotationHash(annotation);
   }
 
   protected void indexElasticNewAnnotations(List<Annotation> annotations, List<String> idList)

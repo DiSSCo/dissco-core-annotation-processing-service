@@ -33,8 +33,6 @@ public class HandleComponent {
   private final WebClient handleClient;
   private final TokenAuthenticator tokenAuthenticator;
 
-  private static final String UNEXPECTED_MSG = "Unexpected response from handle API.";
-
   public List<String> postHandle(List<JsonNode> request)
       throws PidCreationException {
     var responseJson = sendRequest(request);
@@ -127,8 +125,8 @@ public class HandleComponent {
       }
       return handleNames;
     } catch (NullPointerException e) {
-      log.error(UNEXPECTED_MSG + " Response: {}", jsonResponse.toPrettyString());
-      throw new PidCreationException(UNEXPECTED_MSG);
+      log.error("Unexpected response from handle API. Response: {}", jsonResponse.toPrettyString());
+      throw new PidCreationException("Unexpected response from handle API.");
     }
   }
 
@@ -146,8 +144,8 @@ public class HandleComponent {
       }
       return handleNames;
     } catch (NullPointerException e) {
-      log.error(UNEXPECTED_MSG + " Response: {}", jsonResponse.toPrettyString());
-      throw new PidCreationException(UNEXPECTED_MSG);
+      log.error("Unexpected response from handle API. Response: {}", jsonResponse.toPrettyString());
+      throw new PidCreationException("Unexpected response from handle API.");
     }
   }
 }

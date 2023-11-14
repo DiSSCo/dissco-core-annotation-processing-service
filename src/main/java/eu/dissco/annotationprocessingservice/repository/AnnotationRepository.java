@@ -106,7 +106,7 @@ public class AnnotationRepository {
     context.batch(queryList).execute();
   }
 
-  private @NotNull InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
+  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
     try {
       return context.insertInto(ANNOTATION).set(ANNOTATION.ID, annotation.getOdsId())
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())

@@ -4,30 +4,28 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassValueSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
+@RequiredArgsConstructor
+@Component
 public class AnnotationHasher {
 
-  private AnnotationHasher() {
-  }
+  private final MessageDigest messageDigest;
 
-  public static UUID getAnnotationHash(Annotation annotation) {
+
+  public UUID getAnnotationHash(Annotation annotation) {
     var annotationString = getAnnotationHashString(annotation);
     var annotationHash = hashAnnotation(annotationString);
     return buildUuidFromHash(annotationHash);
   }
 
-  private static String hashAnnotation(String annotationString) {
-    MessageDigest messageDigest = null;
-    try {
-      messageDigest = MessageDigest.getInstance("MD5");
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalStateException("MD5 Algorithm not found");
-    }
-
+  private String hashAnnotation(String annotationString) {
     var hexString = new StringBuilder();
     messageDigest.update(annotationString.getBytes(StandardCharsets.UTF_8));
     var digest = messageDigest.digest();
@@ -52,7 +50,6 @@ public class AnnotationHasher {
       case FRAGMENT_SELECTOR -> targetString = ((FragmentSelector) selector).getAcHasRoi().toString();
       case CLASS_VALUE_SELECTOR -> targetString = ((ClassValueSelector) selector).getOdsClass();
     }
-
 
     return annotation.getOaTarget().getOdsId() + "-" + targetString + "-" +
         annotation.getOaCreator().getOdsId() + "-" + annotation.getOaMotivation().toString();

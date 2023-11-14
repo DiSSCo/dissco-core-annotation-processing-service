@@ -13,52 +13,68 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.HasRoi;
 import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 
+import java.security.MessageDigest;
 import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AnnotationHasherTest {
 
-  @Test
-  void hashTestFieldValueSelector() {
-    // When
-    var result = AnnotationHasher.getAnnotationHash(givenAnnotationProcessed());
+    private AnnotationHasher annotationHasher;
 
-    // Then
-    assertThat(result).isEqualTo(ANNOTATION_HASH);
-  }
-
-  @Test
-  void hashTestFragmentSelector() {
-    // Given
-    var selector = new FragmentSelector()
-        .withAcHasRoi(new HasRoi()
-            .withAcHeightFrac(0.1)
-            .withAcWidthFrac(0.1)
-            .withAcYFrac(0.99)
-            .withAcXFrac(0.99)
+    @BeforeEach
+    private void setup() {
+      try {
+        this.annotationHasher = new AnnotationHasher(
+                MessageDigest.getInstance("MD5")
         );
+      } catch (Exception ignored){
 
-    var expected = UUID.fromString("99243d73-80bf-b44c-2876-62d10deba12d");
+      }
+    }
 
-    // When
-    var result = AnnotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
+    @Test
+    void hashTestFieldValueSelector() {
+        // When
+        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed());
 
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
+        // Then
+        assertThat(result).isEqualTo(ANNOTATION_HASH);
+    }
 
-  @Test
-  void hashTestClassValueSelector() {
-    // Given
-    var selector = new ClassValueSelector()
-        .withOdsClass("ClassName");
-    var expected = UUID.fromString("c0188fcb-9afb-0fba-e926-4cb7aa5097e8");
+    @Test
+    void hashTestFragmentSelector() {
+        // Given
+        var selector = new FragmentSelector()
+                .withAcHasRoi(new HasRoi()
+                        .withAcHeightFrac(0.1)
+                        .withAcWidthFrac(0.1)
+                        .withAcYFrac(0.99)
+                        .withAcXFrac(0.99)
+                );
 
-    // When
-    var result = AnnotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
+        var expected = UUID.fromString("99243d73-80bf-b44c-2876-62d10deba12d");
 
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
+        // When
+        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
+
+        // Then
+        assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void hashTestClassValueSelector() {
+        // Given
+        var selector = new ClassValueSelector()
+                .withOdsClass("ClassName");
+        var expected = UUID.fromString("c0188fcb-9afb-0fba-e926-4cb7aa5097e8");
+
+        // When
+        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
+
+        // Then
+        assertThat(result).isEqualTo(expected);
+    }
 
 }

@@ -1,24 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
-import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
-import static eu.dissco.annotationprocessingservice.TestUtils.ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
-import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPostBatchHandleResponse;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -98,6 +80,8 @@ class ProcessingKafkaServiceTest {
   private ApplicationProperties applicationProperties;
   @Mock
   private BulkResponse bulkResponse;
+  @Mock
+  AnnotationHasher annotationHasher;
   @Captor
   ArgumentCaptor<List<Annotation>> captor;
   private MockedStatic<Instant> mockedStatic;
@@ -110,7 +94,7 @@ class ProcessingKafkaServiceTest {
   void setup() {
     service = new ProcessingKafkaService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        masJobRecordService);
+        masJobRecordService, annotationHasher);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -127,9 +111,9 @@ class ProcessingKafkaServiceTest {
       throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
-    given(handleComponent.postBatchHandle(any())).willReturn(
-        givenPostBatchHandleResponse(List.of(annotationRequest), List.of(ID)));
+    given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
@@ -150,11 +134,12 @@ class ProcessingKafkaServiceTest {
   void testNewMessagePartialElasticFailure() throws Exception {
     // Given
     var annotation = givenAnnotationRequest();
-    var secondAnnotation = givenAnnotationProcessed()
+    var secondAnnotation = givenAnnotationRequest()
         .withOaTarget(givenOaTarget("alt target"));
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
-    given(handleComponent.postBatchHandle(any())).willReturn(
-        givenPostBatchHandleResponse(List.of(annotation, secondAnnotation), List.of(ID, ID_ALT)));
+    Map<UUID, String> idMap = Map.of(ANNOTATION_HASH, ID, ANNOTATION_HASH_2, ID_ALT);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2);
+    given(handleComponent.postBatchHandle(any())).willReturn(idMap);
     given(repository.getAnnotationFromHash(any())).willReturn(Collections.emptyList());
     givenBulkResponse();
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -179,6 +164,7 @@ class ProcessingKafkaServiceTest {
       throws Exception {
     // Given
 
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postBatchHandle(any())).willThrow(PidCreationException.class);
 
@@ -192,6 +178,7 @@ class ProcessingKafkaServiceTest {
   void testHandleNewMessageKafkaException()
       throws Exception {
     // Given
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -219,6 +206,7 @@ class ProcessingKafkaServiceTest {
   void testHandleNewMessageElasticIOException()
       throws Exception {
     // Given
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
@@ -242,6 +230,7 @@ class ProcessingKafkaServiceTest {
   void testHandleEqualMessage()
       throws Exception {
     // Given
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     var annotation = givenAnnotationProcessed();
 
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotation()));
@@ -260,6 +249,7 @@ class ProcessingKafkaServiceTest {
       throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
@@ -284,6 +274,7 @@ class ProcessingKafkaServiceTest {
       throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchRollbackHandleRequest(anyList())).willReturn(
@@ -309,20 +300,17 @@ class ProcessingKafkaServiceTest {
     var changedAnnotationOriginal = (givenAnnotationProcessed().withOaTarget(
         givenOaTarget("changedTarget")).withOdsId(changedId));
     var changedAnnotationOriginalHashed = new HashedAnnotation(
-        changedAnnotationOriginal,
-        AnnotationHasher.getAnnotationHash(changedAnnotationOriginal));
+        changedAnnotationOriginal, ANNOTATION_HASH_2);
     var equalAnnotation = givenAnnotationRequest().withOaTarget(givenOaTarget("equalTarget"));
     var equalAnnotationHashed = new HashedAnnotation(
-        equalAnnotation.withOdsId(equalId).withOdsVersion(1),
-        AnnotationHasher.getAnnotationHash(equalAnnotation));
+        equalAnnotation.withOdsId(equalId).withOdsVersion(1), ANNOTATION_HASH_3);
+
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(changedAnnotationOriginalHashed, equalAnnotationHashed));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(
-        fdoRecordService.buildPatchRollbackHandleRequest(
-            List.of(new HashedAnnotation(changedAnnotationNew,
-                any())))).willReturn(
-        givenPatchRequest());
+    given(fdoRecordService.buildPatchRollbackHandleRequest(List.of(new HashedAnnotation(changedAnnotationNew,any()))))
+            .willReturn(givenPatchRequest());
     given(fdoRecordService.buildPostHandleRequest(
         List.of(new HashedAnnotation(newAnnotation, any())))).willReturn(
         givenPostRequest());
@@ -352,6 +340,7 @@ class ProcessingKafkaServiceTest {
   void testAnnotationsAreNotEqual(Annotation currentAnnotation) throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(new HashedAnnotation(currentAnnotation, ANNOTATION_HASH)));
     given(bulkResponse.errors()).willReturn(false);
@@ -386,6 +375,7 @@ class ProcessingKafkaServiceTest {
       throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -406,6 +396,7 @@ class ProcessingKafkaServiceTest {
   void testUpdateMessageElasticException() throws Exception {
     // Given
     var annotation = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
@@ -441,9 +432,9 @@ class ProcessingKafkaServiceTest {
         .withOdsId(ID_ALT)
         .withOaMotivatedBy("science")
         .withOaTarget(givenOaTarget("alt target"));
-    var secondHash = AnnotationHasher.getAnnotationHash(secondAnnotationCurrent);
-    var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent, secondHash);
+    var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent, ANNOTATION_HASH_2);
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(givenHashedAnnotationAlt(), secondAnnotationCurrentHashed));
     givenBulkResponse();
@@ -474,6 +465,7 @@ class ProcessingKafkaServiceTest {
   void testHandleUpdateMessageKafkaException() throws Exception {
     // Given
     var annotation = givenAnnotationRequest().withOdsId(ID);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
@@ -502,6 +494,7 @@ class ProcessingKafkaServiceTest {
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
