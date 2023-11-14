@@ -15,21 +15,21 @@ import lombok.ToString;
 public class HasRoi {
 
   @JsonProperty("ac:xFrac")
-  private double xFrac;
+  private double valX;
   @JsonProperty("ac:yFrac")
-  private double yFrac;
+  private double valY;
   @JsonProperty("ac:widthFrac")
   private double widthFrac;
-  @JsonProperty("ac:HeightFrac")
+  @JsonProperty("ac:heightFrac")
   private double heightFrac;
 
-  public HasRoi withAcXFrac(double xFrac) {
-    this.xFrac = xFrac;
+  public HasRoi withAcXFrac(double valX) {
+    this.valX = valX;
     return this;
   }
 
-  public HasRoi withAcYFrac(double yFrac) {
-    this.yFrac = yFrac;
+  public HasRoi withAcYFrac(double valY) {
+    this.valY = valY;
     return this;
   }
 
