@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
+import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -42,14 +42,14 @@ public class ProcessingWebService extends AbstractProcessingService {
   }
 
   public Annotation updateAnnotation(Annotation annotation)
-      throws FailedProcessingException, ForbiddenException {
+      throws FailedProcessingException, NotFoundException {
 
     var currentAnnotationOptional = repository.getAnnotationForUser(annotation.getOdsId(),
         annotation.getOaCreator().getOdsId());
     if (currentAnnotationOptional.isEmpty()) {
       log.error("No annotations with id {} found for creator {}", annotation.getOdsId(),
           annotation.getOaCreator().getOdsId());
-      throw new ForbiddenException(annotation.getOdsId(), annotation.getOaCreator().getOdsId());
+      throw new NotFoundException(annotation.getOdsId(), annotation.getOaCreator().getOdsId());
     }
     var currentAnnotation = currentAnnotationOptional.get();
     enrichUpdateAnnotation(annotation, currentAnnotation);

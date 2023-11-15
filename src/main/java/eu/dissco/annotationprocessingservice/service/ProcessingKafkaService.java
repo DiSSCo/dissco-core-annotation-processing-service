@@ -190,7 +190,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return annotationHasher.getAnnotationHash(annotation);
   }
 
-  protected void indexElasticNewAnnotations(List<Annotation> annotations, List<String> idList)
+  private void indexElasticNewAnnotations(List<Annotation> annotations, List<String> idList)
       throws FailedProcessingException {
     BulkResponse bulkResponse = null;
     try {

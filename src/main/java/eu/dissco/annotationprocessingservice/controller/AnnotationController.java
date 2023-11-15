@@ -5,7 +5,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
+import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class AnnotationController {
   public ResponseEntity<Annotation> updateAnnotation(
       @PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
-      throws DataBaseException, FailedProcessingException, ConflictException, ForbiddenException {
+      throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException {
     checkId(prefix, suffix, annotation);
     log.info("Received annotation update request for annotations {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);

@@ -135,7 +135,7 @@ public class HandleComponent {
       var handleNames = new HashMap<UUID, String>();
       var dataNodeArray = jsonResponse.get("data");
       if (!dataNodeArray.isArray()){
-        throw new PidCreationException("UNEXPECTED_MSG + \" Response: {}\", jsonResponse.toPrettyString()");
+        throw new PidCreationException("Unexpected response from handle API. Response: {}\", jsonResponse.toPrettyString()");
       }
       for (var dataNode : dataNodeArray) {
         handleNames.put(

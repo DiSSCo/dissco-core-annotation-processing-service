@@ -21,7 +21,7 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.ForbiddenException;
+import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -238,7 +238,7 @@ class ProcessingWebServiceTest {
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(Optional.empty());
 
     // Then
-    assertThrows(ForbiddenException.class, () -> service.updateAnnotation(annotationRequest));
+    assertThrows(NotFoundException.class, () -> service.updateAnnotation(annotationRequest));
   }
 
   @Test
