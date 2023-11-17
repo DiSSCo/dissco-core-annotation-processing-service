@@ -6,10 +6,9 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationPro
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import eu.dissco.annotationprocessingservice.domain.annotation.ClassValueSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.HasRoi;
-import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 
 import java.security.MessageDigest;
 import java.util.UUID;
@@ -64,8 +63,8 @@ class AnnotationHasherTest {
     @Test
     void hashTestClassValueSelector() {
         // Given
-        var selector = new ClassValueSelector()
-                .withOdsClass("ClassName");
+        var selector = new ClassSelector()
+                .withOaClass("ClassName");
         var expected = UUID.fromString("c0188fcb-9afb-0fba-e926-4cb7aa5097e8");
 
         // When

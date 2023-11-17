@@ -160,10 +160,25 @@
         "oa:value"
       ]
     },
-    "required": [
-      "ods:id",
-      "ods:type"
-    ]
+    "schema.org:aggregateRating": {
+      "type": "object",
+      "properties": {
+        "ods:type": {
+          "type": "string"
+        },
+        "schema.org:ratingCount": {
+          "type": "number"
+        },
+        "schema.org:ratingValue": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "ods:type",
+        "schema.org:ratingCount",
+        "schema.org:ratingValue"
+      ]
+    }
   },
   "required": [
     "rdf:type",
