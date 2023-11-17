@@ -19,24 +19,20 @@ public class SchemaValidatorComponent {
 
   public void validateProcessResult(ProcessResult processResult) throws AnnotationValidationException {
     for (var newAnnotation : processResult.newAnnotations()){
-      validateAnnotation(newAnnotation.annotation());
+      validateAnnotationRequest(newAnnotation.annotation(), true);
     }
     for (var changedAnnotation : processResult.changedAnnotations()){
-      validateAnnotation(changedAnnotation.annotation().annotation());
+      validateAnnotationRequest(changedAnnotation.annotation().annotation(), true);
     }
     for (var equalAnnotation : processResult.equalAnnotations()){
-      validateAnnotation(equalAnnotation);
+      validateAnnotationRequest(equalAnnotation, true);
     }
   }
 
-  public void validateAnnotationRequest(Annotation annotation, boolean isNew) throws AnnotationValidationException {
-    validateId(annotation, isNew);
-    validateAnnotation(annotation);
 
-  }
-
-  private void validateAnnotation(Annotation annotation)
+  public void validateAnnotationRequest(Annotation annotation, boolean doNotIncludeId)
       throws AnnotationValidationException {
+    validateId(annotation, doNotIncludeId);
     var annotationRequest = mapper.valueToTree(annotation);
     var errors = annotationSchema.validate(annotationRequest);
     if (errors.isEmpty()) {
@@ -46,13 +42,13 @@ public class SchemaValidatorComponent {
     throw new AnnotationValidationException();
   }
 
-  private void validateId(Annotation annotation, Boolean isNew)
+  private void validateId(Annotation annotation, Boolean doNotIncludeId)
       throws AnnotationValidationException {
-    if (Boolean.TRUE.equals(isNew) && annotation.getOdsId() != null) {
+    if (Boolean.TRUE.equals(doNotIncludeId) && annotation.getOdsId() != null) {
       log.error( "Attempting overwrite annotation with \"ods:id\" " + annotation.getOdsId());
       throw new AnnotationValidationException();
     }
-    if (Boolean.FALSE.equals(isNew) && annotation.getOdsId() == null) {
+    if (Boolean.FALSE.equals(doNotIncludeId) && annotation.getOdsId() == null) {
       log.error("\"ods:id\" not provided for annotation update");
       throw new AnnotationValidationException();
     }

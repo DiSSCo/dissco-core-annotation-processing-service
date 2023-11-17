@@ -8,7 +8,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationPro
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenGenerator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -53,8 +52,8 @@ class SchemaValidatorComponentTest {
     // Given
     var processResult = new ProcessResult(
         Set.of(givenAnnotationRequest()),
-        Set.of(new UpdatedAnnotation(givenHashedAnnotationAlt(),
-            new HashedAnnotation(givenAnnotationRequest().withOdsId(ID), JOB_ID))),
+        Set.of(new UpdatedAnnotation(givenHashedAnnotation(),
+            new HashedAnnotation(givenAnnotationRequest(), JOB_ID))),
         List.of(new HashedAnnotation(givenAnnotationRequest(), JOB_ID)));
 
     // Then
