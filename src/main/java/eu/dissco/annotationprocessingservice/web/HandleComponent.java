@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,14 +33,21 @@ public class HandleComponent {
   private final WebClient handleClient;
   private final TokenAuthenticator tokenAuthenticator;
 
-  private static final String UNEXPECTED_MSG = "Unexpected response from handle API.";
-
-  public String postHandle(List<JsonNode> request)
+  public List<String> postHandle(List<JsonNode> request)
       throws PidCreationException {
+    var responseJson = sendRequest(request);
+    return getHandleNames(responseJson);
+  }
+
+  public Map<UUID, String> postBatchHandle(List<JsonNode> request) throws PidCreationException {
+    var responseJson = sendRequest(request);
+    return getHandleMap(responseJson);
+  }
+
+  private JsonNode sendRequest(List<JsonNode> request) throws PidCreationException{
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.POST, requestBody, "batch");
-    var responseJson = validateResponse(response);
-    return getHandleName(responseJson);
+    return validateResponse(response);
   }
 
   public void updateHandle(List<JsonNode> request)
@@ -102,12 +113,39 @@ public class HandleComponent {
     }
   }
 
-  private String getHandleName(JsonNode jsonResponse) throws PidCreationException {
+  private List<String> getHandleNames(JsonNode jsonResponse) throws PidCreationException {
     try {
-      return jsonResponse.get("data").get(0).get("id").asText();
+      var handleNames = new ArrayList<String>();
+      var dataNodeArray = jsonResponse.get("data");
+      if (!dataNodeArray.isArray()){
+        throw new PidCreationException("UNEXPECTED_MSG + \" Response: {}\", jsonResponse.toPrettyString()");
+      }
+      for (var dataNode : dataNodeArray) {
+        handleNames.add(dataNode.get("id").asText());
+      }
+      return handleNames;
     } catch (NullPointerException e) {
-      log.error(UNEXPECTED_MSG + " Response: {}", jsonResponse.toPrettyString());
-      throw new PidCreationException(UNEXPECTED_MSG);
+      log.error("Unexpected response from handle API. Response: {}", jsonResponse.toPrettyString());
+      throw new PidCreationException("Unexpected response from handle API.");
+    }
+  }
+
+  private Map<UUID, String> getHandleMap(JsonNode jsonResponse) throws PidCreationException {
+    try {
+      var handleNames = new HashMap<UUID, String>();
+      var dataNodeArray = jsonResponse.get("data");
+      if (!dataNodeArray.isArray()){
+        throw new PidCreationException("Unexpected response from handle API. Response: {}\", jsonResponse.toPrettyString()");
+      }
+      for (var dataNode : dataNodeArray) {
+        handleNames.put(
+            UUID.fromString(dataNode.get("attributes").get("annotationHash").asText()),
+            dataNode.get("id").asText());
+      }
+      return handleNames;
+    } catch (NullPointerException e) {
+      log.error("Unexpected response from handle API. Response: {}", jsonResponse.toPrettyString());
+      throw new PidCreationException("Unexpected response from handle API.");
     }
   }
 }

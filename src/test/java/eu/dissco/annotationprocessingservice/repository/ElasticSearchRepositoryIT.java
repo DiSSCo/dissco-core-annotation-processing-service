@@ -12,6 +12,7 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
+import java.util.List;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -33,7 +34,7 @@ class ElasticSearchRepositoryIT {
 
   private static final DockerImageName ELASTIC_IMAGE = DockerImageName.parse(
       "docker.elastic.co/elasticsearch/elasticsearch").withTag("8.6.1");
-  private static final String ANNOTATION_INDEX = "annotation";
+  private static final String ANNOTATION_INDEX = "annotations";
   private static final String ELASTICSEARCH_USERNAME = "elastic";
   private static final String ELASTICSEARCH_PASSWORD = "s3cret";
   private static final ElasticsearchContainer container = new ElasticsearchContainer(
@@ -98,6 +99,20 @@ class ElasticSearchRepositoryIT {
   }
 
   @Test
+  void testIndexAnnotations() throws IOException {
+    // Given
+    var annotations = List.of(givenAnnotationProcessed(), givenAnnotationProcessed().withOdsId("alt"));
+
+    // When
+    var result = repository.indexAnnotations(annotations);
+
+    // Then
+    assertThat(result.errors()).isFalse();
+    assertThat(result.items().get(0).id()).isEqualTo(ID);
+    assertThat(result.items().get(0).result()).isEqualTo("created");
+  }
+
+  @Test
   void testArchiveAnnotation() throws IOException {
     // Given
     var annotation = givenAnnotationProcessed();
@@ -110,5 +125,19 @@ class ElasticSearchRepositoryIT {
     assertThat(result.result().jsonValue()).isEqualTo("deleted");
   }
 
+  @Test
+  void testArchiveAnnotations() throws IOException {
+    // Given
+    var annotation = givenAnnotationProcessed();
+    repository.indexAnnotations(List.of(annotation));
+
+    // When
+    var result = repository.archiveAnnotations(List.of(ID));
+
+    // Then
+    assertThat(result.errors()).isFalse();
+    assertThat(result.items().get(0).id()).isEqualTo(ID);
+    assertThat(result.items().get(0).result()).isEqualTo("deleted");
+  }
 }
 

@@ -9,8 +9,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
-import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.service.ProcessingService;
+import eu.dissco.annotationprocessingservice.service.ProcessingKafkaService;
+import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +22,7 @@ import org.springframework.http.HttpStatus;
 class AnnotationControllerTest {
 
   @Mock
-  private ProcessingService service;
+  private ProcessingWebService service;
 
   private AnnotationController controller;
 
@@ -35,7 +35,7 @@ class AnnotationControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.createNewAnnotation(givenAnnotationRequest())).willReturn(givenAnnotationProcessed());
+    given(service.persistNewAnnotation(givenAnnotationRequest())).willReturn(givenAnnotationProcessed());
 
     // When
     var result = controller.createAnnotation(givenAnnotationRequest());

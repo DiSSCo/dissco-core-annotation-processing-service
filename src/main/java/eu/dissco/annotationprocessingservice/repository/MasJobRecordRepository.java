@@ -38,8 +38,8 @@ public class MasJobRecordRepository {
           .set(MAS_JOB_RECORD.ANNOTATIONS, JSONB.jsonb(mapper.writeValueAsString(annotations)))
           .where(MAS_JOB_RECORD.JOB_ID.eq(jobId)).execute();
     } catch (JsonProcessingException e) {
-      log.error("Unable to write annotation json node to db");
-      throw new DataBaseException("Unable to write annotation json node to db");
+      log.error("Unable to write annotations json node to db");
+      throw new DataBaseException("Unable to write annotations json node to db");
     }
   }
 

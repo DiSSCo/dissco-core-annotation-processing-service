@@ -6,6 +6,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.mockito.BDDMockito.then;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,13 +17,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class KafkaConsumerServiceTest {
 
   @Mock
-  private ProcessingService processingService;
+  private ProcessingKafkaService processingKafkaService;
 
   private KafkaConsumerService service;
 
   @BeforeEach
   void setup() {
-    service = new KafkaConsumerService(MAPPER, processingService);
+    service = new KafkaConsumerService(MAPPER, processingKafkaService);
   }
 
   @Test
@@ -34,13 +35,13 @@ class KafkaConsumerServiceTest {
     service.getMessages(message);
 
     // Then
-    then(processingService).should().handleMessage(givenAnnotationEvent());
+    then(processingKafkaService).should().handleMessage(givenAnnotationEvent());
   }
 
   private String givenMessage() throws Exception {
-    var annotationNode = MAPPER.valueToTree(givenAnnotationProcessed());
+    var annotationNode = MAPPER.valueToTree(List.of(givenAnnotationProcessed()));
     var messageNode = MAPPER.createObjectNode();
-    messageNode.set("annotation", annotationNode);
+    messageNode.set("annotations", annotationNode);
     messageNode.put("jobId", JOB_ID.toString());
     return MAPPER.writeValueAsString(messageNode);
   }

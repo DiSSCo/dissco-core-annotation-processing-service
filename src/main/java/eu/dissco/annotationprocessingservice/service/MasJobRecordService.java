@@ -7,6 +7,7 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,29 +33,23 @@ public class MasJobRecordService {
     }
   }
 
-  public void markMasJobRecordAsComplete(UUID jobId, String annotationId) {
-    if (jobId == null) {
-      log.trace("Job Id has already been checked");
-      return;
-    }
-    var annotationNode = buildAnnotationNode(annotationId);
+  public void markMasJobRecordAsComplete(UUID jobId, List<String> annotationIds) {
+    var annotationNode = buildAnnotationNode(annotationIds);
     repository.markMasJobRecordAsComplete(jobId, annotationNode);
   }
 
-  private JsonNode buildAnnotationNode(String annotationId) {
-    var annotationNode = mapper.createObjectNode();
-    annotationNode.put("annotationId", annotationId);
+  private JsonNode buildAnnotationNode(List<String> annotationIds) {
     var listNode = mapper.createArrayNode();
-    listNode.add(annotationNode);
+    for (var annotationId : annotationIds) {
+      var annotationNode = mapper.createObjectNode();
+      annotationNode.put("annotationId", annotationId);
+      listNode.add(annotationNode);
+    }
     return listNode;
   }
 
-  public void markMasJobRecordAsFailed(AnnotationEvent event) {
-    if (event.jobId() == null) {
-      log.trace("Job Id has already been checked");
-      return;
-    }
-    repository.markMasJobRecordAsFailed(event.jobId());
+  public void markMasJobRecordAsFailed(UUID jobId) {
+    repository.markMasJobRecordAsFailed(jobId);
   }
 
 }

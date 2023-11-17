@@ -2,3 +2,13 @@
 # Issue: openssl: Incorrect cipher key and IV length processing https://avd.aquasec.com/nvd/cve-2023-5363
 # Solution: Docker image needs an update
 CVE-2023-5363
+
+# Date: November 17, 2023
+# Issue: Another openssl issue
+# Solution: Docker image needs an update
+CVE-2023-5678
+
+# Date: November 17, 2023
+# Issue: Reactor-Netty
+# Solution: Spring needs to update its version from 1.1.12 to 1.1.13
+CVE-2023-34062
