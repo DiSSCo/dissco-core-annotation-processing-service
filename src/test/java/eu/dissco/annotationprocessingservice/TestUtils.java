@@ -9,7 +9,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
 import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
-import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
@@ -120,8 +120,8 @@ public class TestUtils {
         .withOdsType("DigitalSpecimen");
   }
 
-  public static FieldValueSelector givenSelector() {
-    return new FieldValueSelector()
+  public static FieldSelector givenSelector() {
+    return new FieldSelector()
         .withOdsField("ods:specimenName");
   }
 
