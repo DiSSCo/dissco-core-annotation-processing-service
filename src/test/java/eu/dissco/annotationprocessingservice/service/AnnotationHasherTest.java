@@ -6,10 +6,10 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationPro
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.HasRoi;
-import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 
 import java.security.MessageDigest;
 import java.util.UUID;

@@ -102,17 +102,6 @@ public class TestUtils {
         .withOdsAggregateRating(givenAggregationRating());
   }
 
-  public static Annotation givenAnnotationUpdateRequest() {
-    return new Annotation()
-        .withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING)
-        .withOaTarget(givenOaTarget(TARGET_ID))
-        .withDcTermsCreated(CREATED)
-        .withOaCreator(givenCreator(CREATOR))
-        .withOdsAggregateRating(givenAggregationRating())
-        .withOdsId(ID);
-  }
-
   public static Annotation givenAnnotationRequest() {
     return givenAnnotationRequest(TARGET_ID);
   }

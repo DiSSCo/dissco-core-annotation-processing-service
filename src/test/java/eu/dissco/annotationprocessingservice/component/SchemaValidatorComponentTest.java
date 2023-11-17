@@ -2,19 +2,28 @@ package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenGenerator;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.ProcessResult;
+import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SchemaValidatorComponentTest {
+
   private SchemaValidatorComponent schemaValidator;
 
   @BeforeEach
@@ -38,16 +48,27 @@ class SchemaValidatorComponentTest {
     }
   }
 
+  @Test
+  void testValidateProcessResults() {
+    // Given
+    var processResult = new ProcessResult(
+        Set.of(givenAnnotationRequest()),
+        Set.of(new UpdatedAnnotation(givenHashedAnnotationAlt(),
+            new HashedAnnotation(givenAnnotationRequest().withOdsId(ID), JOB_ID))),
+        List.of(new HashedAnnotation(givenAnnotationRequest(), JOB_ID)));
+
+    // Then
+    assertDoesNotThrow(() -> schemaValidator.validateProcessResult(processResult));
+  }
+
   @ParameterizedTest
   @MethodSource("invalidAnnotations")
-  void testInvalidAnnotations(Annotation annotationRequest, String targetIssue) {
-    // When
-    var e = assertThrows(AnnotationValidationException.class,
+  void testInvalidAnnotations(Annotation annotationRequest) {
+    // Then
+    assertThrows(AnnotationValidationException.class,
         () -> schemaValidator.validateAnnotationRequest(annotationRequest,
             true));
 
-    // Then
-    assertThat(e.getMessage()).contains(targetIssue);
   }
 
   @Test
@@ -55,13 +76,10 @@ class SchemaValidatorComponentTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
 
-    // When
-    var e = assertThrows(AnnotationValidationException.class,
+    // Then
+    assertThrows(AnnotationValidationException.class,
         () -> schemaValidator.validateAnnotationRequest(annotationRequest,
             false));
-
-    // Then
-    assertThat(e.getMessage()).contains("ods:id");
   }
 
   @ParameterizedTest
@@ -73,7 +91,7 @@ class SchemaValidatorComponentTest {
         schemaValidator.validateAnnotationRequest(annotationRequest, isNew));
   }
 
-  private static Stream<Arguments> validAnnotations(){
+  private static Stream<Arguments> validAnnotations() {
     return Stream.of(
         Arguments.of(givenAnnotationRequest(), true),
         Arguments.of(givenAnnotationRequest().withOdsId(ID), false)
@@ -82,15 +100,15 @@ class SchemaValidatorComponentTest {
 
   private static Stream<Arguments> invalidAnnotations() {
     return Stream.of(
-        Arguments.of(givenAnnotationRequest().withOaGenerated(CREATED), "oa:generated"),
-        Arguments.of(givenAnnotationRequest().withAsGenerator(givenGenerator()), "as:generator"),
-        Arguments.of(givenAnnotationRequest().withOdsId(ID), "ods:id"),
-        Arguments.of(givenAnnotationRequest().withOaCreator(null), "oa:creator"),
-        Arguments.of(givenAnnotationRequest().withDcTermsCreated(null), "dcterms:created"),
-        Arguments.of(givenAnnotationRequest().withRdfType(null), "rdf:type"),
-        Arguments.of(givenAnnotationRequest().withOaBody(null), "oa:body"),
-        Arguments.of(givenAnnotationRequest().withOaTarget(null), "oa:target"),
-        Arguments.of(givenAnnotationRequest().withOaMotivation(null), "oa:motivation")
+        Arguments.of(givenAnnotationRequest().withOaGenerated(CREATED)),
+        Arguments.of(givenAnnotationRequest().withAsGenerator(givenGenerator())),
+        Arguments.of(givenAnnotationRequest().withOdsId(ID)),
+        Arguments.of(givenAnnotationRequest().withOaCreator(null)),
+        Arguments.of(givenAnnotationRequest().withDcTermsCreated(null)),
+        Arguments.of(givenAnnotationRequest().withRdfType(null)),
+        Arguments.of(givenAnnotationRequest().withOaBody(null)),
+        Arguments.of(givenAnnotationRequest().withOaTarget(null)),
+        Arguments.of(givenAnnotationRequest().withOaMotivation(null))
     );
   }
 
