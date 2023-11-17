@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import co.elastic.clients.elasticsearch._types.Result;
+import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -24,6 +25,7 @@ public abstract class AbstractProcessingService {
   protected final FdoRecordService fdoRecordService;
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
+  protected final SchemaValidatorComponent schemaValidator;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
     annotation

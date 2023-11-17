@@ -1,17 +1,15 @@
-package eu.dissco.annotationprocessingservice.service;
+package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
-import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassValueSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.HasRoi;
-import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 
 import java.security.MessageDigest;
 import java.util.UUID;

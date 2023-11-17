@@ -1,8 +1,11 @@
 package eu.dissco.annotationprocessingservice;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
+import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
@@ -13,7 +16,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldValueSelecto
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
-import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +25,7 @@ import java.util.UUID;
 
 public class TestUtils {
 
-  public static final ObjectMapper MAPPER = new ObjectMapper().findAndRegisterModules();
+  public static final ObjectMapper MAPPER;
 
   public static final String ID = "20.5000.1025/KZL-VC0-ZK2";
   public static final String ID_ALT = "20.5000.1025/ZZZ-YYY-XXX";
@@ -42,6 +44,16 @@ public class TestUtils {
             "annotationId":"20.5000.1025/KZL-VC0-ZK2"
            }]
           """;
+
+  static {
+    var mapper = new ObjectMapper().findAndRegisterModules();
+    SimpleModule dateModule = new SimpleModule();
+    dateModule.addSerializer(Instant.class, new InstantSerializer());
+    dateModule.addDeserializer(Instant.class, new InstantDeserializer());
+    mapper.registerModule(dateModule);
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    MAPPER = mapper.copy();
+  }
 
   public static HashedAnnotation givenHashedAnnotation() {
     return new HashedAnnotation(

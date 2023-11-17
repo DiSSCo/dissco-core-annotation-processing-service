@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.controller;
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -33,7 +34,7 @@ public class AnnotationController {
 
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
-      throws DataBaseException, FailedProcessingException {
+      throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotation creation request");
     var result = processingService.persistNewAnnotation(annotation);
     return ResponseEntity.ok(result);
@@ -43,7 +44,7 @@ public class AnnotationController {
   public ResponseEntity<Annotation> updateAnnotation(
       @PathVariable("prefix") String prefix,
       @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
-      throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException {
+      throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException, AnnotationValidationException {
     checkId(prefix, suffix, annotation);
     log.info("Received annotation update request for annotations {}", annotation.getOdsId());
     var result = processingService.updateAnnotation(annotation);

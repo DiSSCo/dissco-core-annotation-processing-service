@@ -5,18 +5,20 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
-import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,9 +47,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       ElasticSearchRepository elasticRepository,
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
-      MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher) {
+      MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher, SchemaValidatorComponent schemaValidator) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties);
+        applicationProperties, schemaValidator);
     this.masJobRecordService = masJobRecordService;
     this.annotationHasher = annotationHasher;
   }
@@ -68,10 +70,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   public void handleMessage(AnnotationEvent event)
-      throws DataBaseException, FailedProcessingException {
+      throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
     var processResult = processAnnotations(event);
+    schemaValidator.validateProcessResult(processResult);
     var equalIds = processEqualAnnotations(processResult.equalAnnotations());
     var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
     var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());
