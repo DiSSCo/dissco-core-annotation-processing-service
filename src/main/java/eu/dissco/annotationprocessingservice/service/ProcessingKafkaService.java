@@ -73,8 +73,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
+    schemaValidator.validateEvent(event);
     var processResult = processAnnotations(event);
-    schemaValidator.validateProcessResult(processResult);
     var equalIds = processEqualAnnotations(processResult.equalAnnotations());
     var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
     var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());

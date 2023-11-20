@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
@@ -50,14 +51,10 @@ class SchemaValidatorComponentTest {
   @Test
   void testValidateProcessResults() {
     // Given
-    var processResult = new ProcessResult(
-        Set.of(givenAnnotationRequest()),
-        Set.of(new UpdatedAnnotation(givenHashedAnnotation(),
-            new HashedAnnotation(givenAnnotationRequest(), JOB_ID))),
-        List.of(new HashedAnnotation(givenAnnotationRequest(), JOB_ID)));
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID);
 
     // Then
-    assertDoesNotThrow(() -> schemaValidator.validateProcessResult(processResult));
+    assertDoesNotThrow(() -> schemaValidator.validateEvent(event));
   }
 
   @ParameterizedTest

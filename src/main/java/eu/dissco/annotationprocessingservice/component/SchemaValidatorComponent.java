@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
-import eu.dissco.annotationprocessingservice.domain.ProcessResult;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import lombok.RequiredArgsConstructor;
@@ -17,15 +17,9 @@ public class SchemaValidatorComponent {
   private final JsonSchema annotationSchema;
   private final ObjectMapper mapper;
 
-  public void validateProcessResult(ProcessResult processResult) throws AnnotationValidationException {
-    for (var newAnnotation : processResult.newAnnotations()){
-      validateAnnotationRequest(newAnnotation.annotation(), true);
-    }
-    for (var changedAnnotation : processResult.changedAnnotations()){
-      validateAnnotationRequest(changedAnnotation.annotation().annotation(), true);
-    }
-    for (var equalAnnotation : processResult.equalAnnotations()){
-      validateAnnotationRequest(equalAnnotation, true);
+  public void validateEvent(AnnotationEvent event) throws AnnotationValidationException {
+    for (var annotation : event.annotations()){
+      validateAnnotationRequest(annotation, true);
     }
   }
 

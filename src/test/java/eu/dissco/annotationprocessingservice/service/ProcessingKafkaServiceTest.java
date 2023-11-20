@@ -23,8 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.domain.ProcessResult;
-import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
@@ -337,12 +335,7 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).should().publishCreateEvent(newAnnotation);
     then(masJobRecordService).should()
         .markMasJobRecordAsComplete(JOB_ID, List.of(equalId, changedId, ID));
-    then(schemaValidator).should().validateProcessResult(
-        new ProcessResult(
-            Set.of(equalAnnotation),
-            Set.of(new UpdatedAnnotation(changedAnnotationOriginalHashed, new HashedAnnotation(changedAnnotationNew, ANNOTATION_HASH_2))),
-            List.of(new HashedAnnotation(newAnnotation, ANNOTATION_HASH))
-        ));
+    then(schemaValidator).should().validateEvent(event);
   }
 
   @ParameterizedTest
@@ -581,7 +574,7 @@ class ProcessingKafkaServiceTest {
   @Test
   void testSchemaValidationFailed() throws Exception {
     //Given
-    doThrow(AnnotationValidationException.class).when(schemaValidator).validateProcessResult(any());
+    doThrow(AnnotationValidationException.class).when(schemaValidator).validateEvent(any());
 
     // Then
     assertThrows(AnnotationValidationException.class, () -> service.handleMessage(givenAnnotationEvent()));
