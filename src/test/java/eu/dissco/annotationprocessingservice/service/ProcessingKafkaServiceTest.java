@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -21,17 +20,19 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
-import eu.dissco.annotationprocessingservice.service.serviceuitls.AnnotationHasher;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -39,7 +40,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +82,8 @@ class ProcessingKafkaServiceTest {
   private BulkResponse bulkResponse;
   @Mock
   AnnotationHasher annotationHasher;
+  @Mock
+  SchemaValidatorComponent schemaValidator;
   @Captor
   ArgumentCaptor<List<Annotation>> captor;
   private MockedStatic<Instant> mockedStatic;
@@ -94,7 +96,7 @@ class ProcessingKafkaServiceTest {
   void setup() {
     service = new ProcessingKafkaService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        masJobRecordService, annotationHasher);
+        masJobRecordService, annotationHasher, schemaValidator);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -333,6 +335,7 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).should().publishCreateEvent(newAnnotation);
     then(masJobRecordService).should()
         .markMasJobRecordAsComplete(JOB_ID, List.of(equalId, changedId, ID));
+    then(schemaValidator).should().validateEvent(event);
   }
 
   @ParameterizedTest
@@ -566,6 +569,15 @@ class ProcessingKafkaServiceTest {
     then(repository).shouldHaveNoMoreInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
     then(handleComponent).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testSchemaValidationFailed() throws Exception {
+    //Given
+    doThrow(AnnotationValidationException.class).when(schemaValidator).validateEvent(any());
+
+    // Then
+    assertThrows(AnnotationValidationException.class, () -> service.handleMessage(givenAnnotationEvent()));
   }
 
   private void givenBulkResponse() {

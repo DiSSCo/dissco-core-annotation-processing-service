@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.configuration;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
@@ -31,6 +32,7 @@ public class ApplicationConfiguration {
     dateModule.addSerializer(Instant.class, new InstantSerializer());
     dateModule.addDeserializer(Instant.class, new InstantDeserializer());
     mapper.registerModule(dateModule);
+    mapper.setSerializationInclusion(Include.NON_NULL);
     return mapper;
   }
 

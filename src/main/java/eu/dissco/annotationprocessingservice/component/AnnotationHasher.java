@@ -1,4 +1,4 @@
-package eu.dissco.annotationprocessingservice.service.serviceuitls;
+package eu.dissco.annotationprocessingservice.component;
 
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;

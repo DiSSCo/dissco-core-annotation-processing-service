@@ -5,7 +5,9 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -26,12 +28,13 @@ public class ProcessingWebService extends AbstractProcessingService {
   public ProcessingWebService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository, KafkaPublisherService kafkaService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
-      ApplicationProperties applicationProperties) {
+      ApplicationProperties applicationProperties, SchemaValidatorComponent schemaValidator) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties);
+        applicationProperties, schemaValidator);
   }
 
-  public Annotation persistNewAnnotation(Annotation annotation) throws FailedProcessingException {
+  public Annotation persistNewAnnotation(Annotation annotation) throws FailedProcessingException, AnnotationValidationException {
+    schemaValidator.validateAnnotationRequest(annotation, true);
     var id = postHandle(annotation);
     enrichNewAnnotation(annotation, id);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
@@ -42,8 +45,8 @@ public class ProcessingWebService extends AbstractProcessingService {
   }
 
   public Annotation updateAnnotation(Annotation annotation)
-      throws FailedProcessingException, NotFoundException {
-
+      throws FailedProcessingException, NotFoundException, AnnotationValidationException {
+    schemaValidator.validateAnnotationRequest(annotation, false);
     var currentAnnotationOptional = repository.getAnnotationForUser(annotation.getOdsId(),
         annotation.getOaCreator().getOdsId());
     if (currentAnnotationOptional.isEmpty()) {
