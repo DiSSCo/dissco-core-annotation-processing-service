@@ -21,7 +21,8 @@ public class ElasticSearchRepository {
 
   public IndexResponse indexAnnotation(Annotation annotation) throws IOException {
     return client.index(
-        idx -> idx.index(properties.getIndexName()).id(annotation.getOdsId())
+        idx -> idx.index(properties.getIndexName())
+            .id(annotation.getOdsId())
             .document(annotation));
   }
 
