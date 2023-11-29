@@ -39,7 +39,7 @@ public abstract class AbstractProcessingService {
     return new Generator()
         .withOdsId(applicationProperties.getProcessorHandle())
         .withFoafName("Annotation Processing Service")
-        .withOdsType("tool/Software");
+        .withOdsType("oa:SoftwareAgent");
   }
 
   protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation) {
