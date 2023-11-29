@@ -18,7 +18,7 @@ public class Body {
   @JsonProperty("ods:type")
   private String odsType;
   @JsonProperty("oa:value")
-  private List<Object> oaValue;
+  private List<String> oaValue;
   @JsonProperty("dcterms:reference")
   private String dcTermsReference;
   @JsonProperty("ods:score")
@@ -29,7 +29,7 @@ public class Body {
     return this;
   }
 
-  public Body withOaValue(List<Object> oaValue) {
+  public Body withOaValue(List<String> oaValue) {
     this.oaValue = oaValue;
     return this;
   }
