@@ -137,7 +137,7 @@ public class TestUtils {
     return new Generator()
         .withFoafName("Annotation Processing Service")
         .withOdsId("https://hdl.handle.net/anno-process-service-pid")
-        .withOdsType("tool/Software");
+        .withOdsType("oa:SoftwareAgent");
   }
 
   public static AggregateRating givenAggregationRating() {
