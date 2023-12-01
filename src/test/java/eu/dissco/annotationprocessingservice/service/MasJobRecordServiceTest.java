@@ -51,7 +51,16 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testVerifyMasJobIdWeb() throws Exception {
+  void testMarkEmptyMasJobRecordAsComplete(){
+    // When
+    service.markEmptyMasJobRecordAsComplete(JOB_ID);
+
+    // Then
+    then(repository).should().markMasJobRecordAsComplete(JOB_ID, MAPPER.createObjectNode());
+  }
+
+  @Test
+  void testVerifyMasJobIdWeb() {
     // Given
     var annotationEvent = givenAnnotationEvent();
     given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(false);
