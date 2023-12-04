@@ -12,6 +12,9 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,6 +53,27 @@ public abstract class AbstractProcessingService {
         .withAsGenerator(currentAnnotation.getAsGenerator())
         .withOaCreator(currentAnnotation.getOaCreator())
         .withDcTermsCreated(currentAnnotation.getDcTermsCreated());
+  }
+
+  protected static boolean annotationsAreEqual(Annotation currentAnnotation, Annotation annotation) {
+    return currentAnnotation.getOaBody().equals(annotation.getOaBody())
+        && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
+        && currentAnnotation.getOaTarget().equals(annotation.getOaTarget())
+        && (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy()))
+        || (currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null))
+        && (currentAnnotation.getOdsAggregateRating() != null && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
+        || (currentAnnotation.getOdsAggregateRating() == null && annotation.getOdsAggregateRating() == null))
+        && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
+  }
+
+  protected List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {
+    if (currentAnnotations.isEmpty()) {
+      return Collections.emptyList();
+    }
+    var idList = currentAnnotations.stream().map(Annotation::getOdsId).toList();
+    repository.updateLastChecked(idList);
+    log.info("Successfully updated lastChecked for existing annotations: {}", idList);
+    return idList;
   }
 
   public void archiveAnnotation(String id) throws IOException, FailedProcessingException {
