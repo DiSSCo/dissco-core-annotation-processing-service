@@ -23,6 +23,7 @@
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <testcontainers.version>1.19.0</testcontainers.version>
     <sonar.organization>dissco</sonar.organization>
+    <logback.version>1.4.12</logback.version>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <json-schema-validator.version>1.0.87</json-schema-validator.version>
     <sonar.coverage.jacoco.xmlReportPaths>../app-it/target/site/jacoco-aggregate/jacoco.xml

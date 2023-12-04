@@ -38,6 +38,10 @@ public class MasJobRecordService {
     repository.markMasJobRecordAsComplete(jobId, annotationNode);
   }
 
+  public void markEmptyMasJobRecordAsComplete(UUID jobId){
+    repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
+  }
+
   private JsonNode buildAnnotationNode(List<String> annotationIds) {
     var listNode = mapper.createArrayNode();
     for (var annotationId : annotationIds) {

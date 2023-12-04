@@ -47,7 +47,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       ElasticSearchRepository elasticRepository,
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
-      MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher, SchemaValidatorComponent schemaValidator) {
+      MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
+      SchemaValidatorComponent schemaValidator) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator);
     this.masJobRecordService = masJobRecordService;
@@ -59,9 +60,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
         && currentAnnotation.getOaTarget().equals(annotation.getOaTarget())
         && (currentAnnotation.getOaMotivatedBy() != null
-            && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
-            || (currentAnnotation.getOaMotivatedBy() == null
-            && annotation.getOaMotivatedBy() == null))
+        && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
+        || (currentAnnotation.getOaMotivatedBy() == null
+        && annotation.getOaMotivatedBy() == null))
         && (currentAnnotation.getOdsAggregateRating() != null
         && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
         || (currentAnnotation.getOdsAggregateRating() == null
@@ -73,13 +74,18 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
-    schemaValidator.validateEvent(event);
-    var processResult = processAnnotations(event);
-    var equalIds = processEqualAnnotations(processResult.equalAnnotations());
-    var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
-    var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());
-    var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
-    masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList);
+    if (event.annotations().isEmpty()) {
+      log.info("MAS job completed without any annotations");
+      masJobRecordService.markEmptyMasJobRecordAsComplete(event.jobId());
+    } else {
+      schemaValidator.validateEvent(event);
+      var processResult = processAnnotations(event);
+      var equalIds = processEqualAnnotations(processResult.equalAnnotations());
+      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
+      var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());
+      var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
+      masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList);
+    }
   }
 
   private ProcessResult processAnnotations(AnnotationEvent event) {
@@ -130,7 +136,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
     var idMap = postHandles(annotations, jobId);
     var idList = idMap.values().stream().toList();
-    for (var hashedAnnotation : annotations){
+    for (var hashedAnnotation : annotations) {
       enrichNewAnnotation(hashedAnnotation.annotation(), idMap.get(hashedAnnotation.hash()));
     }
     log.info("New ids have been generated for Annotations: {}", idList);

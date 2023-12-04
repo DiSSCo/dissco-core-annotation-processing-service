@@ -133,6 +133,24 @@ class ProcessingKafkaServiceTest {
   }
 
   @Test
+  void testEmptyAnnotations() throws Exception {
+    // Given
+    var event = new AnnotationEvent(Collections.emptyList(), JOB_ID);
+
+    // When
+    service.handleMessage(event);
+
+    // Then
+    then(masJobRecordService).should().markEmptyMasJobRecordAsComplete(JOB_ID);
+    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(repository).shouldHaveNoInteractions();
+    then(fdoRecordService).shouldHaveNoInteractions();
+    then(handleComponent).shouldHaveNoInteractions();
+    then(elasticRepository).shouldHaveNoInteractions();
+  }
+
+
+  @Test
   void testNewMessagePartialElasticFailure() throws Exception {
     // Given
     var annotation = givenAnnotationRequest();
