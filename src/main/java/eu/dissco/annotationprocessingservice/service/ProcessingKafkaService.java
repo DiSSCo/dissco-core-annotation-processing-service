@@ -87,7 +87,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         .filter(ha -> !newAnnotations.contains(ha))
         .collect(Collectors.toMap(HashedAnnotation::hash, ha -> ha));
 
-    int i = 1;
     for (var currentAnnotation : existingAnnotations) {
       var eventAnnotation = equalOrUpdatedAnnotationsMap.get(currentAnnotation.hash());
       if (annotationsAreEqual(currentAnnotation.annotation(), eventAnnotation.annotation())) {
@@ -95,7 +94,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       } else {
         changedAnnotations.add(new UpdatedAnnotation(currentAnnotation, eventAnnotation));
       }
-      i = i +1;
     }
     return new ProcessResult(equalAnnotations, changedAnnotations, newAnnotations);
   }
