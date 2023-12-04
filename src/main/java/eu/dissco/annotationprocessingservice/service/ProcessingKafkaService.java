@@ -55,21 +55,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     this.annotationHasher = annotationHasher;
   }
 
-  private static boolean annotationAreEqual(Annotation currentAnnotation, Annotation annotation) {
-    return currentAnnotation.getOaBody().equals(annotation.getOaBody())
-        && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
-        && currentAnnotation.getOaTarget().equals(annotation.getOaTarget())
-        && (currentAnnotation.getOaMotivatedBy() != null
-        && currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy())
-        || (currentAnnotation.getOaMotivatedBy() == null
-        && annotation.getOaMotivatedBy() == null))
-        && (currentAnnotation.getOdsAggregateRating() != null
-        && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
-        || (currentAnnotation.getOdsAggregateRating() == null
-        && annotation.getOdsAggregateRating() == null))
-        && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
-  }
-
   public void handleMessage(AnnotationEvent event)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotations event of: {}", event);
@@ -104,23 +89,13 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
     for (var currentAnnotation : existingAnnotations) {
       var eventAnnotation = equalOrUpdatedAnnotationsMap.get(currentAnnotation.hash());
-      if (annotationAreEqual(eventAnnotation.annotation(), currentAnnotation.annotation())) {
+      if (annotationsAreEqual(currentAnnotation.annotation(), eventAnnotation.annotation())) {
         equalAnnotations.add(currentAnnotation.annotation());
       } else {
         changedAnnotations.add(new UpdatedAnnotation(currentAnnotation, eventAnnotation));
       }
     }
     return new ProcessResult(equalAnnotations, changedAnnotations, newAnnotations);
-  }
-
-  private List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {
-    if (currentAnnotations.isEmpty()) {
-      return Collections.emptyList();
-    }
-    var idList = currentAnnotations.stream().map(Annotation::getOdsId).toList();
-    repository.updateLastChecked(idList);
-    log.info("Successfully updated lastChecked for existing annotations: {}", idList);
-    return idList;
   }
 
   private List<HashedAnnotation> filterNewAnnotations(Set<HashedAnnotation> allAnnotations,
