@@ -235,6 +235,26 @@ class ProcessingWebServiceTest {
   }
 
   @Test
+  void testUpdateEqualAnnotation() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var currentResult = givenAnnotationProcessed();
+    given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
+        Optional.of(currentResult));
+
+    // When
+    var result = service.updateAnnotation(annotationRequest);
+
+    // Then
+    assertThat(result).isEqualTo(currentResult);
+    then(repository).should().updateLastChecked(List.of(ID));
+    then(fdoRecordService).shouldHaveNoInteractions();
+    then(handleComponent).shouldHaveNoInteractions();
+    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(elasticRepository).shouldHaveNoInteractions();
+  }
+
+  @Test
   void testUpdateAnnotationNotFound() {
     // Given
     var annotationRequest = givenAnnotationRequest().withOdsId(ID);

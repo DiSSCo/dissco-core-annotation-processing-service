@@ -16,6 +16,7 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,10 @@ public class ProcessingWebService extends AbstractProcessingService {
       throw new NotFoundException(annotation.getOdsId(), annotation.getOaCreator().getOdsId());
     }
     var currentAnnotation = currentAnnotationOptional.get();
+    if (annotationsAreEqual(currentAnnotation, annotation)){
+      processEqualAnnotations(Set.of(currentAnnotation));
+      return currentAnnotation;
+    }
     enrichUpdateAnnotation(annotation, currentAnnotation);
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
