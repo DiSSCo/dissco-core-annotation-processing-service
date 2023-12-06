@@ -185,8 +185,7 @@
     "oa:motivation",
     "oa:target",
     "oa:body",
-    "oa:creator",
-    "dcterms:created"
+    "oa:creator"
   ],
   "additionalProperties": false
 }

@@ -24,11 +24,15 @@ public class SchemaValidatorComponent {
   }
 
 
-  public void validateAnnotationRequest(Annotation annotation, boolean doNotIncludeId)
+  public void validateAnnotationRequest(Annotation annotation, boolean isNewAnnotation)
       throws AnnotationValidationException {
-    validateId(annotation, doNotIncludeId);
+    validateId(annotation, isNewAnnotation);
     var annotationRequest = mapper.valueToTree(annotation);
     var errors = annotationSchema.validate(annotationRequest);
+    if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getDcTermsCreated() == null){
+      log.error("Invalid annotation received. Missing dcterms created");
+      throw new AnnotationValidationException();
+    }
     if (errors.isEmpty()) {
       return;
     }
@@ -36,13 +40,13 @@ public class SchemaValidatorComponent {
     throw new AnnotationValidationException();
   }
 
-  private void validateId(Annotation annotation, Boolean doNotIncludeId)
+  private void validateId(Annotation annotation, Boolean isNewAnnotation)
       throws AnnotationValidationException {
-    if (Boolean.TRUE.equals(doNotIncludeId) && annotation.getOdsId() != null) {
+    if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getOdsId() != null) {
       log.error( "Attempting overwrite annotation with \"ods:id\" " + annotation.getOdsId());
       throw new AnnotationValidationException();
     }
-    if (Boolean.FALSE.equals(doNotIncludeId) && annotation.getOdsId() == null) {
+    if (Boolean.FALSE.equals(isNewAnnotation) && annotation.getOdsId() == null) {
       log.error("\"ods:id\" not provided for annotation update");
       throw new AnnotationValidationException();
     }
