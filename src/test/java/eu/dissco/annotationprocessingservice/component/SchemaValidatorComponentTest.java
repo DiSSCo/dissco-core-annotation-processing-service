@@ -78,6 +78,17 @@ class SchemaValidatorComponentTest {
             false));
   }
 
+  @Test
+  void testCreateMissingCreated() {
+    // Given
+    var annotationRequest = givenAnnotationRequest().withDcTermsCreated(null);
+
+    // Then
+    assertThrows(AnnotationValidationException.class,
+        () -> schemaValidator.validateAnnotationRequest(annotationRequest,
+            false));
+  }
+
   @ParameterizedTest
   @MethodSource("validAnnotations")
   void testValidAnnotation(Annotation annotationRequest, Boolean isNew) {

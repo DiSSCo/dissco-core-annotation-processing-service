@@ -29,6 +29,10 @@ public class SchemaValidatorComponent {
     validateId(annotation, doNotIncludeId);
     var annotationRequest = mapper.valueToTree(annotation);
     var errors = annotationSchema.validate(annotationRequest);
+    if (Boolean.TRUE.equals(doNotIncludeId) && annotation.getDcTermsCreated() == null){
+      log.error("Invalid annotation received. Missing dcterms created");
+      throw new AnnotationValidationException();
+    }
     if (errors.isEmpty()) {
       return;
     }
