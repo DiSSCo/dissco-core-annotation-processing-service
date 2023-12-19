@@ -5,7 +5,6 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 
 import org.jooq.Index;
 import org.jooq.OrderField;
@@ -25,6 +24,4 @@ public class Indexes {
 
     public static final Index ANNOTATION_ID_CREATOR_ID_INDEX = Internal.createIndex(DSL.name("annotation_id_creator_id_index"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.ID, Annotation.ANNOTATION.CREATOR_ID }, false);
     public static final Index ANNOTATION_ID_TARGET_ID_INDEX = Internal.createIndex(DSL.name("annotation_id_target_id_index"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.ID, Annotation.ANNOTATION.TARGET_ID }, false);
-    public static final Index MAS_JOB_RECORD_CREATED_IDX = Internal.createIndex(DSL.name("mas_job_record_created_idx"), MasJobRecord.MAS_JOB_RECORD, new OrderField[] { MasJobRecord.MAS_JOB_RECORD.TIME_STARTED }, false);
-    public static final Index MAS_JOB_RECORD_JOB_ID_INDEX = Internal.createIndex(DSL.name("mas_job_record_job_id_index"), MasJobRecord.MAS_JOB_RECORD, new OrderField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, false);
 }

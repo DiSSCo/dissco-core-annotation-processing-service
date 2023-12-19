@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
@@ -135,7 +136,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testGetAnnotationFromHash() {
     // Given
     var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withOdsId("alt id"),
-        JOB_ID);
+        ANNOTATION_HASH_2);
     repository.createAnnotationRecord(List.of(givenHashedAnnotation(), altHashedAnnotation));
 
     // When
@@ -152,7 +153,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(List.of(givenHashedAnnotation()));
 
     // When
-    var result = repository.getAnnotationFromHash(Set.of(JOB_ID));
+    var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH_2));
 
     // Then
     assertThat(result).isEmpty();

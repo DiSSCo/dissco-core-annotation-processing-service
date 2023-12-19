@@ -13,7 +13,7 @@
     <database>
       <name>org.jooq.meta.postgres.PostgresDatabase</name>
       <inputSchema>public</inputSchema>
-      <includes> annotation | mas_job_record </includes>
+      <includes> annotation | mas_job_record_new </includes>
       <forcedTypes>
         <forcedType>
           <name>INSTANT</name>

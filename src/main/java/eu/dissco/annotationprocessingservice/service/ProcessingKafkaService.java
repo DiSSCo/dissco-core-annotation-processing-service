@@ -104,7 +104,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return allAnnotations.stream().filter(ha -> !existingHashes.contains(ha.hash())).toList();
   }
 
-  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, UUID jobId)
+  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId)
       throws FailedProcessingException {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
@@ -128,7 +128,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return idList;
   }
 
-  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, UUID jobId)
+  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {
@@ -141,7 +141,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private List<String> updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
-      UUID jobId)
+      String jobId)
       throws FailedProcessingException {
     if (updatedAnnotations.isEmpty()) {
       return Collections.emptyList();
