@@ -5,6 +5,7 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecordNew;
 
 import java.util.Arrays;
@@ -34,6 +35,11 @@ public class Public extends SchemaImpl {
     public final Annotation ANNOTATION = Annotation.ANNOTATION;
 
     /**
+     * The table <code>public.machine_annotation_services</code>.
+     */
+    public final MachineAnnotationServices MACHINE_ANNOTATION_SERVICES = MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES;
+
+    /**
      * The table <code>public.mas_job_record_new</code>.
      */
     public final MasJobRecordNew MAS_JOB_RECORD_NEW = MasJobRecordNew.MAS_JOB_RECORD_NEW;
@@ -55,6 +61,7 @@ public class Public extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             Annotation.ANNOTATION,
+            MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES,
             MasJobRecordNew.MAS_JOB_RECORD_NEW
         );
     }

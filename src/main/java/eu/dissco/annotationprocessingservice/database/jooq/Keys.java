@@ -5,8 +5,10 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.MachineAnnotationServices;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecordNew;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MachineAnnotationServicesRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordNewRecord;
 
 import org.jooq.TableField;
@@ -27,5 +29,6 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AnnotationRecord> ANNOTATION_PK = Internal.createUniqueKey(Annotation.ANNOTATION, DSL.name("annotation_pk"), new TableField[] { Annotation.ANNOTATION.ID }, true);
+    public static final UniqueKey<MachineAnnotationServicesRecord> MACHINE_ANNOTATION_SERVICES_PKEY = Internal.createUniqueKey(MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES, DSL.name("machine_annotation_services_pkey"), new TableField[] { MachineAnnotationServices.MACHINE_ANNOTATION_SERVICES.ID }, true);
     public static final UniqueKey<MasJobRecordNewRecord> MAS_JOB_RECORD_NEW_PK = Internal.createUniqueKey(MasJobRecordNew.MAS_JOB_RECORD_NEW, DSL.name("mas_job_record_new_pk"), new TableField[] { MasJobRecordNew.MAS_JOB_RECORD_NEW.JOB_ID }, true);
 }
