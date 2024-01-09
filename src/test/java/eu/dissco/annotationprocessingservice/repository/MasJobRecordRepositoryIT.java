@@ -11,8 +11,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD_NEW;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import eu.dissco.annotationprocessingservice.domain.MasJobState;
-import java.util.UUID;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(MasJobState.FAILED);
+    assertThat(result.value2()).isEqualTo(MjrJobState.FAILED);
     assertThat(result.value3()).isNotNull();
   }
 
@@ -67,7 +66,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(MasJobState.COMPLETED);
+    assertThat(result.value2()).isEqualTo(MjrJobState.COMPLETED);
     assertThat(result.value3()).isNotNull();
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
   }
@@ -75,7 +74,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   private void postMjr(String jobId) {
     context.insertInto(MAS_JOB_RECORD_NEW, MAS_JOB_RECORD_NEW.JOB_ID, MAS_JOB_RECORD_NEW.JOB_STATE,
             MAS_JOB_RECORD_NEW.MAS_ID, MAS_JOB_RECORD_NEW.TARGET_ID, MAS_JOB_RECORD_NEW.TIME_STARTED)
-        .values(jobId, MasJobState.SCHEDULED, ID, TARGET_ID, CREATED)
+        .values(jobId, MjrJobState.SCHEDULED, ID, TARGET_ID, CREATED)
         .execute();
   }
 }
