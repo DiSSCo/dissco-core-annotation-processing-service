@@ -76,7 +76,7 @@ class MasJobRecordServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null)));
+        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null, false)));
   }
 
   @Test

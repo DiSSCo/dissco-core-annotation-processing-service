@@ -42,7 +42,8 @@ class KafkaConsumerServiceTest {
     var annotationNode = MAPPER.valueToTree(List.of(givenAnnotationProcessed()));
     var messageNode = MAPPER.createObjectNode();
     messageNode.set("annotations", annotationNode);
-    messageNode.put("jobId", JOB_ID.toString());
+    messageNode.put("jobId", JOB_ID);
+    messageNode.put("allowBatch", false);
     return MAPPER.writeValueAsString(messageNode);
   }
 }

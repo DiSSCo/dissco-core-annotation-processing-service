@@ -135,7 +135,7 @@ class ProcessingKafkaServiceTest {
   @Test
   void testEmptyAnnotations() throws Exception {
     // Given
-    var event = new AnnotationEvent(Collections.emptyList(), JOB_ID);
+    var event = new AnnotationEvent(Collections.emptyList(), JOB_ID, false);
 
     // When
     service.handleMessage(event);
@@ -156,7 +156,7 @@ class ProcessingKafkaServiceTest {
     var annotation = givenAnnotationRequest();
     var secondAnnotation = givenAnnotationRequest()
         .withOaTarget(givenOaTarget("alt target"));
-    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
+    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, false);
     Map<UUID, String> idMap = Map.of(ANNOTATION_HASH, ID, ANNOTATION_HASH_2, ID_ALT);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2);
     given(handleComponent.postBatchHandle(any())).willReturn(idMap);
@@ -339,7 +339,7 @@ class ProcessingKafkaServiceTest {
     given(bulkResponse.errors()).willReturn(false);
 
     var event = new AnnotationEvent(List.of(newAnnotation, changedAnnotationNew, equalAnnotation),
-        JOB_ID);
+        JOB_ID, false);
 
     // When
     service.handleMessage(event);
@@ -454,7 +454,7 @@ class ProcessingKafkaServiceTest {
         .withOaMotivatedBy("science")
         .withOaTarget(givenOaTarget("alt target"));
     var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent, ANNOTATION_HASH_2);
-    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
+    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, false);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(givenHashedAnnotationAlt(), secondAnnotationCurrentHashed));

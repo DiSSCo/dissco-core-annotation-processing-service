@@ -8,6 +8,7 @@ import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.MasInput;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
@@ -102,6 +103,10 @@ public class TestUtils {
         .withOdsAggregateRating(givenAggregationRating());
   }
 
+  public static MasInput givenMasInput(){
+    return new MasInput("Input", "Target");
+  }
+
   public static Annotation givenAnnotationRequest() {
     return givenAnnotationRequest(TARGET_ID);
   }
@@ -153,15 +158,7 @@ public class TestUtils {
   }
 
   public static AnnotationEvent givenAnnotationEvent(Annotation annotation) {
-    return new AnnotationEvent(List.of(annotation), JOB_ID);
-  }
-
-  public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations, List<String> annotationIds){
-    Map<UUID, String> idMap = new HashMap<>();
-    for (int i = 0; i < annotations.size(); i++){
-      idMap.put(ANNOTATION_HASH, annotationIds.get(i));
-    }
-    return idMap;
+    return new AnnotationEvent(List.of(annotation), JOB_ID, false);
   }
 
   public static List<JsonNode> givenPostRequest() throws Exception {

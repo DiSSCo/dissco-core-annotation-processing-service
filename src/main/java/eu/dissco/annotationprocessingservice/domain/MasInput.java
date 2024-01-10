@@ -1,10 +1,5 @@
 package eu.dissco.annotationprocessingservice.domain;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-@Getter
-public record MasInput(String targetField, String inputField) {
+public record MasInput(String inputField, String targetField) {
 
 }

@@ -39,3 +39,29 @@ create table mas_job_record_new
     user_id        text,
     target_type    mjr_target_type
 );
+
+create table machine_annotation_services
+(
+    id                            text                     not null
+        primary key,
+    version                       integer                  not null,
+    name                          varchar                  not null,
+    created                       timestamp with time zone not null,
+    administrator                 text                     not null,
+    container_image               text                     not null,
+    container_image_tag           text                     not null,
+    target_digital_object_filters jsonb,
+    service_description           text,
+    service_state                 text,
+    source_code_repository        text,
+    service_availability          text,
+    code_maintainer               text,
+    code_license                  text,
+    dependencies                  text[],
+    support_contact               text,
+    sla_documentation             text,
+    topicname                     text,
+    maxreplicas                   integer,
+    deleted_on                    timestamp with time zone,
+    mas_input                     jsonb
+);

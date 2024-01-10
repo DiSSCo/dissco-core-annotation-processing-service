@@ -51,7 +51,7 @@ class SchemaValidatorComponentTest {
   @Test
   void testValidateProcessResults() {
     // Given
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID);
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, false);
 
     // Then
     assertDoesNotThrow(() -> schemaValidator.validateEvent(event));
