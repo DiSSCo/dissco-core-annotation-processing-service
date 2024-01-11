@@ -25,10 +25,10 @@ create table annotation
 create type mjr_job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
 create type mjr_target_type as enum ('DIGITAL_SPECIMEN', 'MEDIA_OBJECT');
 
-create table mas_job_record_new
+create table mas_job_record
 (
     job_id         text                     not null
-        constraint mas_job_record_new_pk
+        constraint mas_job_record_pk
             primary key,
     job_state      mjr_job_state            not null,
     mas_id         text                     not null,

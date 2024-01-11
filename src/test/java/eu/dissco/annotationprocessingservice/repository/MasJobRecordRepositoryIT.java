@@ -8,7 +8,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
-import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD_NEW;
+import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
@@ -28,7 +28,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(MAS_JOB_RECORD_NEW).execute();
+    context.truncate(MAS_JOB_RECORD).execute();
   }
 
   @Test
@@ -39,10 +39,10 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.markMasJobRecordAsFailed(JOB_ID);
-    var result = context.select(MAS_JOB_RECORD_NEW.JOB_ID, MAS_JOB_RECORD_NEW.JOB_STATE,
-            MAS_JOB_RECORD_NEW.TIME_COMPLETED)
-        .from(MAS_JOB_RECORD_NEW)
-        .where(MAS_JOB_RECORD_NEW.JOB_ID.eq(JOB_ID))
+    var result = context.select(MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.TIME_COMPLETED)
+        .from(MAS_JOB_RECORD)
+        .where(MAS_JOB_RECORD.JOB_ID.eq(JOB_ID))
         .fetchSingle();
 
     // Then
@@ -59,10 +59,10 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.markMasJobRecordAsComplete(JOB_ID, annotations);
-    var result = context.select(MAS_JOB_RECORD_NEW.JOB_ID, MAS_JOB_RECORD_NEW.JOB_STATE,
-            MAS_JOB_RECORD_NEW.TIME_COMPLETED, MAS_JOB_RECORD_NEW.ANNOTATIONS)
-        .from(MAS_JOB_RECORD_NEW)
-        .where(MAS_JOB_RECORD_NEW.JOB_ID.eq(JOB_ID))
+    var result = context.select(MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.TIME_COMPLETED, MAS_JOB_RECORD.ANNOTATIONS)
+        .from(MAS_JOB_RECORD)
+        .where(MAS_JOB_RECORD.JOB_ID.eq(JOB_ID))
         .fetchSingle();
 
     // Then
@@ -72,8 +72,8 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   }
 
   private void postMjr(String jobId) {
-    context.insertInto(MAS_JOB_RECORD_NEW, MAS_JOB_RECORD_NEW.JOB_ID, MAS_JOB_RECORD_NEW.JOB_STATE,
-            MAS_JOB_RECORD_NEW.MAS_ID, MAS_JOB_RECORD_NEW.TARGET_ID, MAS_JOB_RECORD_NEW.TIME_STARTED)
+    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TIME_STARTED)
         .values(jobId, MjrJobState.SCHEDULED, ID, TARGET_ID, CREATED)
         .execute();
   }
