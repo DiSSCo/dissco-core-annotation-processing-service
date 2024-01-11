@@ -33,12 +33,12 @@ public class MasJobRecordService {
     }
   }
 
-  public void markMasJobRecordAsComplete(UUID jobId, List<String> annotationIds) {
+  public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds) {
     var annotationNode = buildAnnotationNode(annotationIds);
     repository.markMasJobRecordAsComplete(jobId, annotationNode);
   }
 
-  public void markEmptyMasJobRecordAsComplete(UUID jobId){
+  public void markEmptyMasJobRecordAsComplete(String jobId){
     repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
   }
 
@@ -52,7 +52,7 @@ public class MasJobRecordService {
     return listNode;
   }
 
-  public void markMasJobRecordAsFailed(UUID jobId) {
+  public void markMasJobRecordAsFailed(String jobId) {
     repository.markMasJobRecordAsFailed(jobId);
   }
 

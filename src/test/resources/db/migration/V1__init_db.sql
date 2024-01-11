@@ -21,24 +21,22 @@ create table annotation
     annotation_hash  uuid
 );
 
-CREATE
-EXTENSION IF NOT EXISTS "uuid-ossp";
+
+create type mjr_job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
+create type mjr_target_type as enum ('DIGITAL_SPECIMEN', 'MEDIA_OBJECT');
 
 create table mas_job_record
 (
-    job_id         uuid default uuid_generate_v4() not null
+    job_id         text                     not null
         constraint mas_job_record_pk
             primary key,
-    state          text                            not null,
-    creator_id     text                            not null,
-    time_started   timestamp with time zone        not null,
+    job_state      mjr_job_state            not null,
+    mas_id         text                     not null,
+    time_started   timestamp with time zone not null,
     time_completed timestamp with time zone,
     annotations    jsonb,
-    target_id      text                            not null
+    target_id      text                     not null,
+    user_id        text,
+    target_type    mjr_target_type,
+    batch_metadata jsonb
 );
-
-create index mas_job_record_created_idx
-    on mas_job_record (time_started);
-
-create index mas_job_record_job_id_index
-    on mas_job_record (job_id);
