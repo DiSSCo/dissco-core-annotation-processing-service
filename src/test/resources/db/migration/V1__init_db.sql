@@ -37,5 +37,6 @@ create table mas_job_record
     annotations    jsonb,
     target_id      text                     not null,
     user_id        text,
-    target_type    mjr_target_type
+    target_type    mjr_target_type,
+    batch_metadata jsonb
 );
