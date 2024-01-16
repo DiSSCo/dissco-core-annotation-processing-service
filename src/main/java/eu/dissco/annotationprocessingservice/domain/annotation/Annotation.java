@@ -17,6 +17,8 @@ public class Annotation {
 
   @JsonProperty("ods:id")
   private String odsId;
+  @JsonProperty("ods:jobId")
+  String odsJobId;
   @JsonProperty("ods:version")
   private Integer odsVersion;
   @JsonProperty("rdf:type")
@@ -44,6 +46,11 @@ public class Annotation {
 
   public Annotation withOdsId(String odsId) {
     this.odsId = odsId;
+    return this;
+  }
+
+  public Annotation withOdsJobId(String odsJobId) {
+    this.odsJobId = odsJobId;
     return this;
   }
 
