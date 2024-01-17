@@ -8,9 +8,11 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationReq
 import static eu.dissco.annotationprocessingservice.TestUtils.givenGenerator;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.BDDMockito.given;
 
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
+import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -84,6 +86,28 @@ class SchemaValidatorComponentTest {
     assertThrows(AnnotationValidationException.class,
         () -> schemaValidator.validateAnnotationRequest(annotationRequest,
             false));
+  }
+
+  @Test
+  void testJobIdMissing() {
+    // Given
+    var annotationRequest = givenAnnotationRequest().withOdsJobId(null);
+    given(env.matchesProfiles(Profiles.KAFKA)).willReturn(true);
+
+    // Then
+    assertDoesNotThrow(() -> schemaValidator.validateAnnotationRequest(annotationRequest, true));
+  }
+
+  @Test
+  void testJobIdOnWebRequest() {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    given(env.matchesProfiles(Profiles.KAFKA)).willReturn(false);
+    given(env.matchesProfiles(Profiles.WEB)).willReturn(true);
+
+    // Then
+    assertThrows(AnnotationValidationException.class,
+        () -> schemaValidator.validateAnnotationRequest(annotationRequest, true));
   }
 
   @ParameterizedTest
