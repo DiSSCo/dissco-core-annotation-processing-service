@@ -21,8 +21,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
@@ -76,7 +74,7 @@ class MasJobRecordServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null)));
+        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null, null)));
   }
 
   @Test

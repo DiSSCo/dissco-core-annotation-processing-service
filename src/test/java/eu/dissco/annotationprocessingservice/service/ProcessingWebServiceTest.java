@@ -59,6 +59,8 @@ class ProcessingWebServiceTest {
   private ApplicationProperties applicationProperties;
   @Mock
   private SchemaValidatorComponent schemaValidator;
+  @Mock
+  private MasJobRecordService masJobRecordService;
   private MockedStatic<Instant> mockedStatic;
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingWebService service;
@@ -68,7 +70,8 @@ class ProcessingWebServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties, schemaValidator);
+        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        schemaValidator, masJobRecordService);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);

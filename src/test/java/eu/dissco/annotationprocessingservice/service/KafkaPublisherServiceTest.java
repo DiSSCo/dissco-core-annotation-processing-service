@@ -9,6 +9,7 @@ import static org.mockito.BDDMockito.then;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.properties.KafkaConsumerProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,13 +22,15 @@ class KafkaPublisherServiceTest {
 
   @Mock
   private KafkaTemplate<String, String> kafkaTemplate;
+  @Mock
+  private KafkaConsumerProperties consumerProperties;
 
   private KafkaPublisherService service;
 
 
   @BeforeEach
   void setup() {
-    service = new KafkaPublisherService(MAPPER, kafkaTemplate);
+    service = new KafkaPublisherService(MAPPER, kafkaTemplate, consumerProperties);
   }
 
   @Test

@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -10,6 +11,7 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
 import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
@@ -44,6 +46,7 @@ public class TestUtils {
             "annotationId":"20.5000.1025/KZL-VC0-ZK2"
            }]
           """;
+  public static final String HANDLE_PREFIX = "https://hdl.handle.net/";
 
   static {
     var mapper = new ObjectMapper().findAndRegisterModules();
@@ -82,6 +85,7 @@ public class TestUtils {
     return new Annotation()
         .withOdsId(annotationId)
         .withOdsVersion(1)
+        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
         .withOaBody(givenOaBody())
         .withOaMotivation(Motivation.COMMENTING)
         .withOaTarget(givenOaTarget(targetId))
@@ -95,6 +99,7 @@ public class TestUtils {
   public static Annotation givenAnnotationRequest(String targetId) {
     return new Annotation()
         .withOaBody(givenOaBody())
+        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
         .withOaMotivation(Motivation.COMMENTING)
         .withOaTarget(givenOaTarget(targetId))
         .withDcTermsCreated(CREATED)
@@ -118,7 +123,7 @@ public class TestUtils {
     return new Target()
         .withOdsId(targetId)
         .withSelector(givenSelector())
-        .withOdsType("DigitalSpecimen");
+        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
   public static FieldSelector givenSelector() {
@@ -153,7 +158,7 @@ public class TestUtils {
   }
 
   public static AnnotationEvent givenAnnotationEvent(Annotation annotation) {
-    return new AnnotationEvent(List.of(annotation), JOB_ID);
+    return new AnnotationEvent(List.of(annotation), JOB_ID, null);
   }
 
   public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations, List<String> annotationIds){
@@ -282,6 +287,14 @@ public class TestUtils {
           "data": [
             {"id":"20.5000.1025/KZL-VC0-ZK2"}
           ]
+        }
+        """);
+  }
+
+  public static JsonNode givenBatchMetadata() throws JsonProcessingException {
+    return MAPPER.readTree("""
+        {
+          "occurrences[n].location.dwc:country":"Netherlands"
         }
         """);
   }

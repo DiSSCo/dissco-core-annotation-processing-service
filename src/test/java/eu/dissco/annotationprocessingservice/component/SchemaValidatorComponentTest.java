@@ -6,13 +6,11 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenGenerator;
-
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
-import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -29,7 +27,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class SchemaValidatorComponentTest {
@@ -51,7 +48,7 @@ class SchemaValidatorComponentTest {
   @Test
   void testValidateProcessResults() {
     // Given
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID);
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null);
 
     // Then
     assertDoesNotThrow(() -> schemaValidator.validateEvent(event));

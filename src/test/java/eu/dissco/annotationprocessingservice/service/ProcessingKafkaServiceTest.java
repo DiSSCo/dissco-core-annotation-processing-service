@@ -1,6 +1,29 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.*;
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_3;
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PREFIX;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadata;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,10 +43,12 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -32,7 +57,6 @@ import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
-import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -53,13 +77,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.ArgumentCaptor;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessingKafkaServiceTest {
@@ -135,7 +157,7 @@ class ProcessingKafkaServiceTest {
   @Test
   void testEmptyAnnotations() throws Exception {
     // Given
-    var event = new AnnotationEvent(Collections.emptyList(), JOB_ID);
+    var event = new AnnotationEvent(Collections.emptyList(), JOB_ID, null);
 
     // When
     service.handleMessage(event);
@@ -156,9 +178,10 @@ class ProcessingKafkaServiceTest {
     var annotation = givenAnnotationRequest();
     var secondAnnotation = givenAnnotationRequest()
         .withOaTarget(givenOaTarget("alt target"));
-    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
+    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, null);
     Map<UUID, String> idMap = Map.of(ANNOTATION_HASH, ID, ANNOTATION_HASH_2, ID_ALT);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+        .willReturn(ANNOTATION_HASH_2);
     given(handleComponent.postBatchHandle(any())).willReturn(idMap);
     given(repository.getAnnotationFromHash(any())).willReturn(Collections.emptyList());
     givenBulkResponse();
@@ -325,12 +348,14 @@ class ProcessingKafkaServiceTest {
     var equalAnnotationHashed = new HashedAnnotation(
         equalAnnotation.withOdsId(equalId).withOdsVersion(1), ANNOTATION_HASH_3);
 
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+        .willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(changedAnnotationOriginalHashed, equalAnnotationHashed));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(fdoRecordService.buildPatchRollbackHandleRequest(List.of(new HashedAnnotation(changedAnnotationNew,any()))))
-            .willReturn(givenPatchRequest());
+    given(fdoRecordService.buildPatchRollbackHandleRequest(
+        List.of(new HashedAnnotation(changedAnnotationNew, any()))))
+        .willReturn(givenPatchRequest());
     given(fdoRecordService.buildPostHandleRequest(
         List.of(new HashedAnnotation(newAnnotation, any())))).willReturn(
         givenPostRequest());
@@ -339,7 +364,7 @@ class ProcessingKafkaServiceTest {
     given(bulkResponse.errors()).willReturn(false);
 
     var event = new AnnotationEvent(List.of(newAnnotation, changedAnnotationNew, equalAnnotation),
-        JOB_ID);
+        JOB_ID, null);
 
     // When
     service.handleMessage(event);
@@ -453,9 +478,11 @@ class ProcessingKafkaServiceTest {
         .withOdsId(ID_ALT)
         .withOaMotivatedBy("science")
         .withOaTarget(givenOaTarget("alt target"));
-    var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent, ANNOTATION_HASH_2);
-    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH).willReturn(ANNOTATION_HASH_2);
+    var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent,
+        ANNOTATION_HASH_2);
+    var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, null);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+        .willReturn(ANNOTATION_HASH_2);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(givenHashedAnnotationAlt(), secondAnnotationCurrentHashed));
     givenBulkResponse();
@@ -595,7 +622,8 @@ class ProcessingKafkaServiceTest {
     doThrow(AnnotationValidationException.class).when(schemaValidator).validateEvent(any());
 
     // Then
-    assertThrows(AnnotationValidationException.class, () -> service.handleMessage(givenAnnotationEvent()));
+    assertThrows(AnnotationValidationException.class,
+        () -> service.handleMessage(givenAnnotationEvent()));
   }
 
   private void givenBulkResponse() {
@@ -607,6 +635,83 @@ class ProcessingKafkaServiceTest {
     given(negativeResponse.id()).willReturn(ID_ALT);
     given(bulkResponse.errors()).willReturn(true);
     given(bulkResponse.items()).willReturn(List.of(positiveResponse, negativeResponse));
+  }
+
+  @Test
+  void testNewMessageBatchEnabled() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadata());
+    int pageSize = 3;
+    int pageSizePlusOne = pageSize + 1;
+    List<Annotation> batchAnnotations = new ArrayList<>();
+    var idsPageOne = List.of("0", "1", "2");
+    for (int i = 0; i < pageSize; i++) {
+      batchAnnotations.add(new Annotation()
+          .withOaBody(givenOaBody())
+          .withOdsJobId(HANDLE_PREFIX + JOB_ID)
+          .withOaMotivation(Motivation.COMMENTING)
+          .withOaTarget(givenOaTarget(String.valueOf(i)))
+          .withDcTermsCreated(CREATED)
+          .withOaCreator(givenCreator(CREATOR))
+          .withOdsAggregateRating(givenAggregationRating()));
+    }
+    var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+            "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+            "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
+    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+        event.batchMetadata(), 1, pageSizePlusOne)).willReturn(idsPageOne);
+
+    // When
+    service.handleMessage(event);
+
+    // Then
+    then(repository).should().createAnnotationRecord(List.of(givenHashedAnnotation()));
+    then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID));
+    then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
+  }
+
+  @Test
+  void testNewMessageBatchEnabledTwoPages() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadata());
+    int pageSize = 3;
+    int pageSizePlusOne = pageSize + 1;
+    var idsPageOne = List.of("1", "2", "3", "4");
+    var idsPageTwo = List.of("4");
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(handleComponent.postBatchHandle(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
+    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+        event.batchMetadata(), 1, pageSizePlusOne)).willReturn(idsPageOne);
+    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+        event.batchMetadata(), 2, pageSizePlusOne)).willReturn(idsPageTwo);
+
+    // When
+    service.handleMessage(event);
+
+    // Then
+    then(repository).should().createAnnotationRecord(List.of(givenHashedAnnotation()));
+    then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID));
+    then(kafkaPublisherService).should(times(2)).publishBatchAnnotation(any());
   }
 
 }

@@ -2,8 +2,10 @@ package eu.dissco.annotationprocessingservice.service;
 
 import co.elastic.clients.elasticsearch._types.Result;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
+import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -12,6 +14,7 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +32,7 @@ public abstract class AbstractProcessingService {
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
   protected final SchemaValidatorComponent schemaValidator;
+  protected final MasJobRecordService masJobRecordService;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
     annotation
@@ -55,14 +59,18 @@ public abstract class AbstractProcessingService {
         .withDcTermsCreated(currentAnnotation.getDcTermsCreated());
   }
 
-  protected static boolean annotationsAreEqual(Annotation currentAnnotation, Annotation annotation) {
+  protected static boolean annotationsAreEqual(Annotation currentAnnotation,
+      Annotation annotation) {
     return currentAnnotation.getOaBody().equals(annotation.getOaBody())
         && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
         && currentAnnotation.getOaTarget().equals(annotation.getOaTarget())
-        && (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy()))
+        && (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy()
+        .equals(annotation.getOaMotivatedBy()))
         || (currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null))
-        && (currentAnnotation.getOdsAggregateRating() != null && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
-        || (currentAnnotation.getOdsAggregateRating() == null && annotation.getOdsAggregateRating() == null))
+        && (currentAnnotation.getOdsAggregateRating() != null
+        && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
+        || (currentAnnotation.getOdsAggregateRating() == null
+        && annotation.getOdsAggregateRating() == null))
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
@@ -97,6 +105,58 @@ public abstract class AbstractProcessingService {
     } else {
       log.info("Annotation with id: {} is already archived", id);
     }
+  }
+
+  protected void applyBatchAnnotations(AnnotationEvent annotationEvent)
+      throws IOException {
+    boolean moreBatching = true;
+    int pageNumber = 1;
+    var pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
+    var targetType = annotationEvent.annotations().get(0).getOaTarget().getOdsType();
+    while (moreBatching) {
+      var targetIds = elasticRepository.searchByBatchMetadata(targetType,
+          annotationEvent.batchMetadata(), pageNumber, pageSizePlusOne);
+      if (targetIds.size() <= applicationProperties.getBatchPageSize()) {
+        moreBatching = false;
+      }
+      log.info("Successfully identified {} {}s to apply batch annotations to", targetIds.size(),
+          targetType);
+      var annotations = generateBatchAnnotations(annotationEvent.annotations(), targetIds);
+      annotations = moreBatching ? annotations.subList(pageNumber,
+          applicationProperties.getBatchPageSize()) : annotations;
+      var batchEvent = new AnnotationEvent(annotations, annotationEvent.jobId(), null);
+      kafkaService.publishBatchAnnotation(batchEvent);
+      log.info("Successfully published {} batch annotations to queue", targetIds.size());
+      pageNumber = pageNumber + 1;
+
+    }
+  }
+
+  private List<Annotation> generateBatchAnnotations(List<Annotation> baseAnnotations,
+      List<String> targetIds) {
+    var batchAnnotations = new ArrayList<Annotation>();
+    for (var baseAnnotation : baseAnnotations) {
+      batchAnnotations.addAll(
+          targetIds.stream().map(targetId -> copyAnnotation(baseAnnotation, targetId)).toList());
+    }
+    return batchAnnotations;
+  }
+
+  private Annotation copyAnnotation(Annotation annotation, String targetId) {
+    return new Annotation()
+        .withOdsId(null)
+        .withOdsJobId(annotation.getOdsJobId())
+        .withOaMotivation(annotation.getOaMotivation())
+        .withDcTermsCreated(annotation.getDcTermsCreated())
+        .withOaCreator(annotation.getOaCreator())
+        .withOaBody(annotation.getOaBody())
+        .withOdsAggregateRating(annotation.getOdsAggregateRating())
+        .withOaTarget(
+            new Target()
+                .withOdsId(targetId)
+                .withSelector(annotation.getOaTarget().getOaSelector())
+                .withOdsType(annotation.getOaTarget().getOdsType())
+        );
   }
 
 }

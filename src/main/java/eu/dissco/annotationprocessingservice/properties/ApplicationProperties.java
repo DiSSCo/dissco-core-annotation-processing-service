@@ -13,4 +13,7 @@ public class ApplicationProperties {
   @NotBlank
   private String processorHandle;
 
+  @NotBlank
+  private int batchPageSize;
+
 }

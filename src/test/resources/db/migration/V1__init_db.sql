@@ -1,4 +1,4 @@
-create table annotation
+create table annotation_tmp
 (
     id               text                     not null
         constraint annotation_pk
@@ -18,14 +18,15 @@ create table annotation
     last_checked     timestamp with time zone not null,
     aggregate_rating jsonb,
     deleted_on       timestamp with time zone,
-    annotation_hash  uuid
+    annotation_hash  uuid,
+    mjr_job_id       text
 );
 
 
 create type mjr_job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
 create type mjr_target_type as enum ('DIGITAL_SPECIMEN', 'MEDIA_OBJECT');
 
-create table mas_job_record
+create table mas_job_record_tmp
 (
     job_id         text                     not null
         constraint mas_job_record_pk
@@ -38,5 +39,5 @@ create table mas_job_record
     target_id      text                     not null,
     user_id        text,
     target_type    mjr_target_type,
-    batch_metadata jsonb
+    batching_requested boolean              not null
 );

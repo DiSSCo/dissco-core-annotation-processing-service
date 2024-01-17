@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
@@ -18,7 +19,6 @@ import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
-import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,7 +40,6 @@ import org.springframework.stereotype.Service;
 @Profile(Profiles.KAFKA)
 public class ProcessingKafkaService extends AbstractProcessingService {
 
-  private final MasJobRecordService masJobRecordService;
   private final AnnotationHasher annotationHasher;
 
   public ProcessingKafkaService(AnnotationRepository repository,
@@ -50,8 +49,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
       SchemaValidatorComponent schemaValidator) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties, schemaValidator);
-    this.masJobRecordService = masJobRecordService;
+        applicationProperties, schemaValidator, masJobRecordService);
     this.annotationHasher = annotationHasher;
   }
 
@@ -70,6 +68,14 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList);
+      if (event.batchMetadata() != null) {
+        try {
+          applyBatchAnnotations(event);
+        } catch (IOException e) {
+          log.error("An IO Exception has occurred. Unable to process batch annotations", e);
+        }
+
+      }
     }
   }
 

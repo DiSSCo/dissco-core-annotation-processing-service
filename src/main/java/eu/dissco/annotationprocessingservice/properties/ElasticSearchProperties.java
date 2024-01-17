@@ -24,4 +24,10 @@ public class ElasticSearchProperties {
   private String username;
 
   private String password;
+
+  @NotBlank
+  private String digitalSpecimenIndex = "digital-specimen";
+
+  @NotBlank
+  private String digitalMediaObjectIndex = "digital-media-object";
 }

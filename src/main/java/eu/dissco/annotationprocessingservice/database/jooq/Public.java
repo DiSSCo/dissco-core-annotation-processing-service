@@ -4,12 +4,10 @@
 package eu.dissco.annotationprocessingservice.database.jooq;
 
 
-import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
-
+import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationTmp;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecordTmp;
 import java.util.Arrays;
 import java.util.List;
-
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -29,14 +27,14 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
-     * The table <code>public.annotation</code>.
+     * The table <code>public.annotation_tmp</code>.
      */
-    public final Annotation ANNOTATION = Annotation.ANNOTATION;
+    public final AnnotationTmp ANNOTATION_TMP = AnnotationTmp.ANNOTATION_TMP;
 
     /**
-     * The table <code>public.mas_job_record</code>.
+     * The table <code>public.mas_job_record_tmp</code>.
      */
-    public final MasJobRecord MAS_JOB_RECORD = MasJobRecord.MAS_JOB_RECORD;
+    public final MasJobRecordTmp MAS_JOB_RECORD_TMP = MasJobRecordTmp.MAS_JOB_RECORD_TMP;
 
     /**
      * No further instances allowed
@@ -54,8 +52,8 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
-            Annotation.ANNOTATION,
-            MasJobRecord.MAS_JOB_RECORD
+            AnnotationTmp.ANNOTATION_TMP,
+            MasJobRecordTmp.MAS_JOB_RECORD_TMP
         );
     }
 }
