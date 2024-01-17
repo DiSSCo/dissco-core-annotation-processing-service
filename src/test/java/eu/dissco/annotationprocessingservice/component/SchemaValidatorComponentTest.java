@@ -50,6 +50,7 @@ class SchemaValidatorComponentTest {
   @Test
   void testValidateProcessResults() {
     // Given
+    given(env.matchesProfiles(Profiles.KAFKA)).willReturn(true);
     var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null);
 
     // Then
