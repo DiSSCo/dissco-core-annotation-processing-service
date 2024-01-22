@@ -84,7 +84,8 @@ public class ElasticSearchRepository {
     var queries = generateQueries(batchMetadata);
     var index = targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
         : properties.getDigitalMediaObjectIndex();
-    var searchRequest = new SearchRequest.Builder().index(index)
+    var searchRequest = new SearchRequest.Builder()
+        .index(index)
         .query(
             q -> q.bool(b -> b.should(queries).minimumShouldMatch(String.valueOf(queries.size()))))
         .fields(f -> f.field("id"))
@@ -98,6 +99,7 @@ public class ElasticSearchRepository {
   }
 
   private String mapElasticIdsToString(ObjectNode json) {
+    var a =1;
     return json.get("id").asText();
   }
 

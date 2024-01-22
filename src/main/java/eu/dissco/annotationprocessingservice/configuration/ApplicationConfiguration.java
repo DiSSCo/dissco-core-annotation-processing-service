@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import com.jayway.jsonpath.Option;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -58,12 +59,17 @@ public class ApplicationConfiguration {
   }
 
   @Bean
-  public MessageDigest messageDigest(){
+  public MessageDigest messageDigest() {
     try {
       return MessageDigest.getInstance("MD5");
-    } catch (NoSuchAlgorithmException e){
+    } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("Unable to locate MD5 algorithm");
     }
+  }
+
+  @Bean
+  public com.jayway.jsonpath.Configuration jsonPathConfiguration() {
+    return com.jayway.jsonpath.Configuration.builder().options(Option.AS_PATH_LIST).build();
   }
 
 }

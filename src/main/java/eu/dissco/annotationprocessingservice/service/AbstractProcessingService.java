@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import co.elastic.clients.elasticsearch._types.Result;
+import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -131,6 +132,28 @@ public abstract class AbstractProcessingService {
 
     }
   }
+
+  private String getFieldSelector(JsonNode searchResult, String targetValue, String targetField) {
+    var targetFields = List.of(targetField.split("\\."));
+    return null;
+
+
+  }
+
+  private JsonNode getInputValueNode(JsonNode flattenAttributes, List<String> inputFields) {
+    if (inputFields.size() == 1) {
+      return flattenAttributes.get(inputFields.get(0));
+    }
+    var inputField = inputFields.get(0);
+    var subfields = inputFields.subList(1, inputFields.size());
+    if (inputField.contains("[")){
+      inputField = inputField.replaceAll("\\[[^]]*]", "");
+      return getInputValueNode(flattenAttributes.get(inputField).get(0), subfields);
+    }
+    return getInputValueNode(flattenAttributes.get(inputField), subfields);
+  }
+
+
 
   private List<Annotation> generateBatchAnnotations(List<Annotation> baseAnnotations,
       List<String> targetIds) {
