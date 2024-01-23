@@ -26,7 +26,7 @@ create table annotation_tmp
 create type mjr_job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
 create type mjr_target_type as enum ('DIGITAL_SPECIMEN', 'MEDIA_OBJECT');
 
-create table mas_job_record_tmp
+create table mas_job_record
 (
     job_id         text                     not null
         constraint mas_job_record_pk

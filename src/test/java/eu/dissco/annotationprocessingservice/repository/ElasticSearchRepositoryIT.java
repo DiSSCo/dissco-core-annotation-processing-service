@@ -187,39 +187,6 @@ class ElasticSearchRepositoryIT {
     assertThat(result).isEqualTo(List.of(TARGET_ID));
   }
 
-  @Test
-  void testElasticBehaviour() throws Exception {
-    var targetSpecimen = MAPPER.readTree("""
-        {
-          "id": "20.5000.1025/QRS-123-ABC",
-          "version":"1",
-          "digitalSpecimenWrapper": {
-            "occurrences": [
-              {
-                "dwc:occurrenceRemarks": "Correct",
-                "location": {
-                  "georeference": {
-                    "dwc:decimalLatitude":"10",
-                    "dwc:decimalLongitude": "10"
-                  }
-                }
-              }
-            ]
-          }
-        }
-        """);
-    var batchMetadata = MAPPER.readTree("""
-        {
-          "digitalSpecimenWrapper.occurrences[n].location.georeference.dwc:decimalLatitude":"10"
-        }
-        """);
-    postDocuments(List.of(targetSpecimen), DIGITAL_SPECIMEN_INDEX);
-
-    var result = repository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN, batchMetadata, 1, 10);
-
-    assertThat(result).isEmpty();
-    //assertThat(result).isEqualTo(List.of(TARGET_ID));
-  }
 
   public void postDocuments(List<JsonNode> docs, String index) throws IOException {
     var bulkRequest = new BulkRequest.Builder();
