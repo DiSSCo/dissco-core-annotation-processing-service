@@ -18,11 +18,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.testcontainers.shaded.org.apache.commons.lang3.math.NumberUtils;
 import scala.concurrent.impl.FutureConvertersImpl.P;
+
 import static com.jayway.jsonpath.JsonPath.parse;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
@@ -60,7 +63,8 @@ class JacksonTest {
     var parent = targetPath.replaceAll("([^\\.]+$)", "");
     var config = Configuration.builder().options(Option.AS_PATH_LIST).build();
 
-    Filter filter = filter(where(lastKey).is(targetVal)).and(where("['dwc:decimalLatitude']").eq(targetVal));
+    Filter filter = filter(where(lastKey).is(targetVal)).and(
+        where("['dwc:decimalLatitude']").eq(targetVal));
     var targetPathParentFilterable = targetPathParent + "[?]";
     List<String> filtered = using(config).parse(specStr).read(targetPathParentFilterable, filter);
     var expresison = "[?(@['dwc:decimalLatitude'] == 11)]";
@@ -82,36 +86,77 @@ class JacksonTest {
     var splitKeys = targetPath.split("\\.");
     var lastKey = splitKeys[splitKeys.length - 1];
     var targetVal = 11;
-    Filter filter = filter(where(lastKey).is(targetVal)).and(where("['dwc:decimalLatitude']").eq(targetVal));
+    Filter filter = filter(where(lastKey).is(targetVal)).and(
+        where("['dwc:decimalLatitude']").eq(targetVal));
     var targetPathParent = "digitalSpecimenWrapper.occurrences[*].location.georeference[?]";
     List<String> filtered = using(config).parse(specStr).read(targetPathParent, filter);
 
     var annotatedPath = "$..digitalSpecimenWrapper.occurrences[*].annotateTarget";
 
     iterateOverList(filtered, annotatedPath);
-
-
   }
 
-  private void iterateOverList(List<String> correctJsonPaths, String annotatePath) {
-    List<List<Integer>> indexes = new ArrayList<>();
-    var regex = "\\[(.*?)\\]";
-    var indexPattern = Pattern.compile(regex);
-    var annotatePathSubsections = new ArrayList<>(Arrays.asList(annotatePath.split("//.")));
 
-    for (var path : correctJsonPaths){
-      var subsections = new ArrayList<>(Arrays.asList(path.split("//.")));
-      for (var segment : subsections){
-       var matcher = indexPattern.matcher(segment);
-       if (matcher.find()){
+  @Test
+  void testInputToTarget() throws Exception {
+    var config = Configuration.builder().options(Option.AS_PATH_LIST).build();
+    var specimen = givenSpecimen();
+    var specStr = MAPPER.writeValueAsString(specimen);
+    var targetPath = "digitalSpecimenWrapper.occurrences[*].location.georeference.locality";
+    var inputPath = "digitalSpecimenWrapper.occurrences[*].location.georeference.['dwc:decimalLatitude']";
+    var bracketPath = "[digitalSpecimenWrapper][occurrences][*][location.georeference]['dwc:decimalLatitude']";
+
+    var splitKeysInput = inputPath.split("\\.");
+    var splitKeysTarget = targetPath.split("\\.");
+
+    var lastKey = splitKeysInput[splitKeysInput.length - 1];
+    var inputVal = 11;
+    Filter filter = filter(where(lastKey).is(inputVal));
+    var inputPathParent = "digitalSpecimenWrapper.occurrences[*].location.georeference[?]";
+    List<String> filteredBracketNotation = using(config).parse(specStr)
+        .read(inputPathParent, filter);
+    var filtered = filteredBracketNotation.stream().map(this::toDotNotation).toList();
+    iterateOverList(filtered, toDotNotation(targetPath));
+  }
 
 
-       }
+  private String toDotNotation(String jsonPath) {
+    jsonPath = jsonPath.replace("$", "")
+        .replaceAll("\\[(?=\\*])", ".")
+        .replaceAll("\\[(?!\\*])", "")
+        .replace("]", ".")
+        .replace("..", ".")
+        .replace("\'", "");
+    return jsonPath;
+  }
+
+
+  private String iterateOverList(List<String> correctJsonPaths, String annotatePath) {
+    for (var correctJsonPath : correctJsonPaths) {
+      var segments = Arrays.asList(correctJsonPath.split("\\."));
+      var segmentItr = segments.listIterator();
+      while (segmentItr.hasNext()) {
+        var segment = segmentItr.next();
+        if (segmentItr.hasPrevious()){
+          if (NumberUtils.isCreatable(segment)){
+            segmentItr.previous();
+            var fieldName = segmentItr.previous();
+            annotatePath = setIndexOnTargetPath(fieldName, annotatePath, Integer.parseInt(segment));
+            segmentItr.next();
+            segmentItr.next();
+          }
+
+        }
       }
     }
-
+    return annotatePath;
   }
 
+  private String setIndexOnTargetPath(String fieldName, String targetPath, int index){
+    var replaceThis = fieldName + ".*.";
+    var withThis = fieldName + "." + index + ".";
+    return targetPath.replace(replaceThis, withThis);
+  }
 
 
   private JsonNode givenSpecimen() throws JsonProcessingException {
@@ -128,7 +173,8 @@ class JacksonTest {
                     "dwc:decimalLatitude":"11",
                     "dwc:decimalLongitude": "10",
                     "dwc":["1"]
-                  }
+                  },
+                  "locality":"unknown"
                 }
               },
               {
@@ -138,7 +184,8 @@ class JacksonTest {
                   "georeference": {
                     "dwc:decimalLatitude":"10",
                     "dwc:decimalLongitude": "10"
-                  }
+                  },
+                  "locality":"unknown"
                 }
               },
               {
@@ -150,7 +197,8 @@ class JacksonTest {
                     "dwc:decimalLatitude":"11",
                     "dwc:decimalLongitude": "10.1",
                     "test":"hello"
-                  }
+                  },
+                  "locality":"unknown"
                 }
               }
             ]

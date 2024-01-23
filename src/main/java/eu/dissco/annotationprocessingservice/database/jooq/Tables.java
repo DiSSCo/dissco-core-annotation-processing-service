@@ -4,7 +4,7 @@
 package eu.dissco.annotationprocessingservice.database.jooq;
 
 
-import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationTmp;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 
 
@@ -15,9 +15,9 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 public class Tables {
 
     /**
-     * The table <code>public.annotation</code>.
+     * The table <code>public.annotation_tmp</code>.
      */
-    public static final Annotation ANNOTATION = Annotation.ANNOTATION;
+    public static final AnnotationTmp ANNOTATION_TMP = AnnotationTmp.ANNOTATION_TMP;
 
     /**
      * The table <code>public.mas_job_record</code>.
