@@ -100,9 +100,10 @@ class JsonPathComponentTest {
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
         .withSelector(new ClassSelector()
             .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"));
+    // Path is incorrect
     var batchMetadata = MAPPER.readTree("""
         {
-          "digitalSpecimenWrapper.occurrences[*].location.georeference.'dwc:decimalLatitude'":11
+          "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude":11
         }
         """);
 
@@ -131,6 +132,7 @@ class JsonPathComponentTest {
   @Test
   void testBadJsonpathFormat() throws JsonProcessingException {
     // Given
+    // Path is in square bracket notation
     var batchMetadata = MAPPER.readTree("""
         {
           "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']":11

@@ -43,9 +43,9 @@ public class TestUtils {
   public static final UUID ANNOTATION_HASH_3 = UUID.fromString(
       "53502490-24cc-4a93-a1ce-e80f5e77f506");
   public static final String ANNOTATION_JSONB = """
-      [{
-        "annotationId":"20.5000.1025/KZL-VC0-ZK2"
-       }]
+      [
+        "20.5000.1025/KZL-VC0-ZK2"
+       ]
       """;
   public static final String HANDLE_PREFIX = "https://hdl.handle.net/";
 

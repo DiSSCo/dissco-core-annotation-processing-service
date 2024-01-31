@@ -642,7 +642,7 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadataLatitudeSearch(),
-        true);
+        false);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandles(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
@@ -652,6 +652,7 @@ class ProcessingKafkaServiceTest {
             "https://hdl.handle.net/anno-process-service-pid");
     given(applicationProperties.getProcessorHandle()).willReturn(
             "https://hdl.handle.net/anno-process-service-pid");
+    given(masJobRecordService.getBatchingRequest(JOB_ID)).willReturn(true);
 
     // When
     service.handleMessage(event);
@@ -659,8 +660,35 @@ class ProcessingKafkaServiceTest {
     // Then
     then(repository).should().createAnnotationRecord(List.of(givenHashedAnnotation()));
     then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
-    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), true);
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).should().applyBatchAnnotations(event);
+  }
+
+  @Test
+  void testNewMessageBatchEnabledNoMetadata() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, null,
+        false);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(handleComponent.postHandles(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(masJobRecordService.getBatchingRequest(JOB_ID)).willReturn(true);
+
+    // When
+    service.handleMessage(event);
+
+    // Then
+    then(repository).should().createAnnotationRecord(List.of(givenHashedAnnotation()));
+    then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
+    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
+    then(batchAnnotationService).shouldHaveNoInteractions();
   }
 
 }

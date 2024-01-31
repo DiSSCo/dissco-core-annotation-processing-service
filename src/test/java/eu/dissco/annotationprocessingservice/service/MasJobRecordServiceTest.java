@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_JSONB;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
@@ -105,11 +106,29 @@ class MasJobRecordServiceTest {
 
   @Test
   void testMarkMasJobRecordAsCompletedBatchResult(){
+    // Given
+    var existingAnnotations = MAPPER.createArrayNode().add(ID);
+    var newAnnotations = MAPPER.createArrayNode().add(ID_ALT);
+    given(repository.getMasJobRecordAnnotations(JOB_ID)).willReturn(existingAnnotations);
+    var expectedArray = MAPPER.createArrayNode().addAll(existingAnnotations).addAll(newAnnotations);
+
     // When
-    service.markMasJobRecordAsComplete(JOB_ID, Collections.emptyList(), true);
+    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID_ALT), true);
 
     // Then
-    then(repository).shouldHaveNoInteractions();
+    then(repository).should().markMasJobRecordAsComplete(JOB_ID, expectedArray);
+  }
+
+  @Test
+  void testMarkMasJobRecordAsCompletedBatchResultUnexpected(){
+    // Given
+    given(repository.getMasJobRecordAnnotations(JOB_ID)).willReturn(MAPPER.createObjectNode());
+
+    // When
+    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID_ALT), true);
+
+    // Then
+    then(repository).shouldHaveNoMoreInteractions();
   }
 
   @Test

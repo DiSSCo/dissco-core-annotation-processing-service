@@ -72,13 +72,23 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           isBatchResult);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
+      applyBatchAnnotations(event, isBatchResult);
+    }
+  }
+
+  private void applyBatchAnnotations(AnnotationEvent event, boolean isBatchResult) {
+    if (isBatchResult) {
+      return;
+    }
+    if (masJobRecordService.getBatchingRequest(event.jobId())) {
       if (event.batchMetadata() != null) {
         try {
           batchAnnotationService.applyBatchAnnotations(event);
         } catch (IOException | BatchingException e) {
           log.error("Unable to process batch annotations", e);
         }
-
+      } else {
+        log.warn("User requested batching, but MAS did not provide batch metadata. JobId: {}", event.jobId());
       }
     }
   }
@@ -139,7 +149,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return idList;
   }
 
-  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId, boolean isBatchResult)
+  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId,
+      boolean isBatchResult)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {

@@ -2,11 +2,13 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
+import java.lang.reflect.Array;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +36,18 @@ public class MasJobRecordService {
 
   public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds,
       boolean isBatchResult) {
+    var newAnnotationNode = buildAnnotationNode(annotationIds);
     if (!isBatchResult){
-      var annotationNode = buildAnnotationNode(annotationIds);
-      repository.markMasJobRecordAsComplete(jobId, annotationNode);
+      repository.markMasJobRecordAsComplete(jobId, newAnnotationNode);
+    } else {
+      var existingAnnotations = repository.getMasJobRecordAnnotations(jobId);
+      if (existingAnnotations.isArray()){
+        var annotationArray = (ArrayNode) existingAnnotations;
+        annotationArray.addAll(newAnnotationNode);
+        repository.markMasJobRecordAsComplete(jobId, annotationArray);
+      } else {
+        log.warn("Unexpected result from mas job record: {}", existingAnnotations);
+      }
     }
   }
 
@@ -46,13 +57,9 @@ public class MasJobRecordService {
     }
   }
 
-  private JsonNode buildAnnotationNode(List<String> annotationIds) {
+  private ArrayNode buildAnnotationNode(List<String> annotationIds) {
     var listNode = mapper.createArrayNode();
-    for (var annotationId : annotationIds) {
-      var annotationNode = mapper.createObjectNode();
-      annotationNode.put("annotationId", annotationId);
-      listNode.add(annotationNode);
-    }
+    annotationIds.forEach(listNode::add);
     return listNode;
   }
 
@@ -60,6 +67,10 @@ public class MasJobRecordService {
     if (!isBatchResult){
       repository.markMasJobRecordAsFailed(jobId);
     }
+  }
+
+  public boolean getBatchingRequest(String jobId){
+    return repository.getBatchingRequested(jobId);
   }
 
 }

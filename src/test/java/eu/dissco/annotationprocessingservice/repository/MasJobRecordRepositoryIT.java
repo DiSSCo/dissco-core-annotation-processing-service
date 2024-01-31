@@ -72,6 +72,37 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
   }
 
+  @Test
+  void testGetBatchingRequested(){
+    // Given
+    postMjr(JOB_ID);
+
+    // When
+    var result = repository.getBatchingRequested(JOB_ID);
+
+    // Then
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void testGetAnnotations() throws Exception {
+    // Given
+    var expected = MAPPER.createArrayNode().add(ID);
+    var jsonbAnnotation = JSONB.jsonb(MAPPER.writeValueAsString(expected));
+    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
+            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.ANNOTATIONS,  MAS_JOB_RECORD.BATCHING_REQUESTED)
+        .values(JOB_ID, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+            CREATED, jsonbAnnotation, false)
+        .execute();
+
+    // When
+    var result = repository.getMasJobRecordAnnotations(JOB_ID);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
   private void postMjr(String jobId) {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
             MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
