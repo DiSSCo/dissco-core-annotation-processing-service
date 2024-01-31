@@ -71,7 +71,7 @@ public class ElasticSearchRepository {
     var fields = batchMetadata.fields();
     while (fields.hasNext()) {
       var field = fields.next();
-      var key = field.getKey().replaceAll("\\[[^\\]]*\\]", "");
+      var key = field.getKey().replaceAll("\\[[^]]*]", "");
       var val = field.getValue().asText().toLowerCase();
       queries.add(new Query.Builder().term(t -> t.field(key).value(val)).build());
     }
@@ -99,7 +99,6 @@ public class ElasticSearchRepository {
   }
 
   private String mapElasticIdsToString(ObjectNode json) {
-    var a =1;
     return json.get("id").asText();
   }
 

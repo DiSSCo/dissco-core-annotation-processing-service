@@ -38,14 +38,15 @@ public class TestUtils {
   public static final UUID ANNOTATION_HASH = UUID.fromString(
       "596c5cd6-c50e-b944-de80-48c608d2e81e");
 
-  public static final UUID ANNOTATION_HASH_2 = UUID.fromString("f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
-  public static final UUID ANNOTATION_HASH_3 = UUID.fromString("53502490-24cc-4a93-a1ce-e80f5e77f506");
-  public static final String ANNOTATION_JSONB =
-      """
-          [{
-            "annotationId":"20.5000.1025/KZL-VC0-ZK2"
-           }]
-          """;
+  public static final UUID ANNOTATION_HASH_2 = UUID.fromString(
+      "f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
+  public static final UUID ANNOTATION_HASH_3 = UUID.fromString(
+      "53502490-24cc-4a93-a1ce-e80f5e77f506");
+  public static final String ANNOTATION_JSONB = """
+      [{
+        "annotationId":"20.5000.1025/KZL-VC0-ZK2"
+       }]
+      """;
   public static final String HANDLE_PREFIX = "https://hdl.handle.net/";
 
   static {
@@ -59,17 +60,11 @@ public class TestUtils {
   }
 
   public static HashedAnnotation givenHashedAnnotation() {
-    return new HashedAnnotation(
-        givenAnnotationProcessed(),
-        ANNOTATION_HASH
-    );
+    return new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH);
   }
 
   public static HashedAnnotation givenHashedAnnotationAlt() {
-    return new HashedAnnotation(
-        givenAnnotationProcessedAlt(),
-        ANNOTATION_HASH
-    );
+    return new HashedAnnotation(givenAnnotationProcessedAlt(), ANNOTATION_HASH);
   }
 
   public static Annotation givenAnnotationProcessed() {
@@ -82,28 +77,17 @@ public class TestUtils {
 
   public static Annotation givenAnnotationProcessed(String annotationId, String userId,
       String targetId) {
-    return new Annotation()
-        .withOdsId(annotationId)
-        .withOdsVersion(1)
-        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
-        .withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING)
-        .withOaTarget(givenOaTarget(targetId))
-        .withOaCreator(givenCreator(userId))
-        .withDcTermsCreated(CREATED)
-        .withOaGenerated(CREATED)
-        .withAsGenerator(givenGenerator())
-        .withOdsAggregateRating(givenAggregationRating());
+    return new Annotation().withOdsId(annotationId).withOdsVersion(1)
+        .withOdsJobId(HANDLE_PREFIX + JOB_ID).withOaBody(givenOaBody())
+        .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
+        .withOaCreator(givenCreator(userId)).withDcTermsCreated(CREATED).withOaGenerated(CREATED)
+        .withAsGenerator(givenGenerator()).withOdsAggregateRating(givenAggregationRating());
   }
 
   public static Annotation givenAnnotationRequest(String targetId) {
-    return new Annotation()
-        .withOaBody(givenOaBody())
-        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
-        .withOaMotivation(Motivation.COMMENTING)
-        .withOaTarget(givenOaTarget(targetId))
-        .withDcTermsCreated(CREATED)
-        .withOaCreator(givenCreator(CREATOR))
+    return new Annotation().withOaBody(givenOaBody()).withOdsJobId(HANDLE_PREFIX + JOB_ID)
+        .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
+        .withDcTermsCreated(CREATED).withOaCreator(givenCreator(CREATOR))
         .withOdsAggregateRating(givenAggregationRating());
   }
 
@@ -112,44 +96,33 @@ public class TestUtils {
   }
 
   public static Body givenOaBody() {
-    return new Body()
-        .withOdsType("ods:specimenName")
+    return new Body().withOdsType("ods:specimenName")
         .withOaValue(new ArrayList<>(List.of("a comment")))
         .withDcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
         .withOdsScore(0.99);
   }
 
   public static Target givenOaTarget(String targetId) {
-    return new Target()
-        .withOdsId(targetId)
-        .withSelector(givenSelector())
+    return new Target().withOdsId(targetId).withSelector(givenSelector())
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
   public static FieldSelector givenSelector() {
-    return new FieldSelector()
-        .withOdsField("ods:specimenName");
+    return new FieldSelector().withOdsField("ods:specimenName");
   }
 
   public static Creator givenCreator(String userId) {
-    return new Creator()
-        .withFoafName("Test User")
-        .withOdsId(userId)
-        .withOdsType("ORCID");
+    return new Creator().withFoafName("Test User").withOdsId(userId).withOdsType("ORCID");
   }
 
   public static Generator givenGenerator() {
-    return new Generator()
-        .withFoafName("Annotation Processing Service")
+    return new Generator().withFoafName("Annotation Processing Service")
         .withOdsId("https://hdl.handle.net/anno-process-service-pid")
         .withOdsType("oa:SoftwareAgent");
   }
 
   public static AggregateRating givenAggregationRating() {
-    return new AggregateRating()
-        .withRatingValue(0.1)
-        .withOdsType("Score")
-        .withRatingCount(0.2);
+    return new AggregateRating().withRatingValue(0.1).withOdsType("Score").withRatingCount(0.2);
   }
 
 
@@ -161,9 +134,10 @@ public class TestUtils {
     return new AnnotationEvent(List.of(annotation), JOB_ID, null);
   }
 
-  public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations, List<String> annotationIds){
+  public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations,
+      List<String> annotationIds) {
     Map<UUID, String> idMap = new HashMap<>();
-    for (int i = 0; i < annotations.size(); i++){
+    for (int i = 0; i < annotations.size(); i++) {
       idMap.put(ANNOTATION_HASH, annotationIds.get(i));
     }
     return idMap;
@@ -260,24 +234,23 @@ public class TestUtils {
           }
           }
         """);
-    var node2 = MAPPER.readTree(
-        """
-              {
-                "data": {
-                  "type": "annotation",
-                  "attributes": {
-                   "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                   "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                   "issuedForAgent": "https://ror.org/0566bfb96",
-                   "targetPid":"20.5000.1025/QRS-123-ABC",
-                   "targetType":"DigitalSpecimen",
-                   "motivation":"oa:editing",
-                    "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
-                  },
-                  "id":"20.5000.1025/KZL-VC0-ZK2"
-              }
-              }
-            """);
+    var node2 = MAPPER.readTree("""
+          {
+            "data": {
+              "type": "annotation",
+              "attributes": {
+               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "issuedForAgent": "https://ror.org/0566bfb96",
+               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetType":"DigitalSpecimen",
+               "motivation":"oa:editing",
+                "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
+              },
+              "id":"20.5000.1025/KZL-VC0-ZK2"
+          }
+          }
+        """);
     return List.of(node1, node2);
   }
 
@@ -291,12 +264,85 @@ public class TestUtils {
         """);
   }
 
-  public static JsonNode givenBatchMetadata() throws JsonProcessingException {
+  public static JsonNode givenBatchMetadataLatitudeSearch() throws JsonProcessingException {
     return MAPPER.readTree("""
         {
-          "occurrences[n].location.dwc:country":"Netherlands"
+          "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value":11
         }
         """);
   }
 
+  public static JsonNode givenBatchMetadataCountrySearch() throws JsonProcessingException {
+    return MAPPER.readTree("""
+        {
+          "digitalSpecimenWrapper.occurrences[*].location.dwc:country":"Netherlands"
+        }
+        """);
+  }
+
+  public static JsonNode givenElasticDocument() throws JsonProcessingException {
+    return givenElasticDocument("Netherlands", ID);
+  }
+
+  public static JsonNode givenElasticDocument(String country, String id)
+      throws JsonProcessingException {
+    return MAPPER.readTree("""
+        {
+          "id": \"""" + id +
+        """
+        ",
+            "digitalSpecimenWrapper": {
+              "other": ["a", "10"],
+              "occurrences": [
+                {
+                  "dwc:occurrenceRemarks": "Correct",
+                  "annotateTarget":"this",
+                  "location": {
+                    "dwc:country": \"""" + country + """
+            ",
+            "georeference": {
+              "dwc:decimalLatitude": {
+                "dwc:value":11
+              },
+              "dwc:decimalLongitude": "10",
+              "dwc":["1"]
+            },
+            "locality":"known"
+          }
+        },
+        {
+          "dwc:occurrenceRemarks": "Incorrect",
+          "annotateTarget":"this",
+          "location": {
+            "dwc:country": "Unknown",
+            "georeference": {
+              "dwc:decimalLatitude": {
+                "dwc:value":10
+              },
+              "dwc:decimalLongitude": "10"
+            },
+            "locality":"unknown"
+          }
+        },
+        {
+          "dwc:occurrenceRemarks": "Correct",
+          "blah":10,
+          "annotateTarget":"this",
+          "location": {
+            "dwc:country": \"""" + country + """
+             ",
+                  "georeference": {
+                    "dwc:decimalLatitude": {
+                      "dwc:value":11
+                    },
+                    "dwc:decimalLongitude": "10.1",
+                    "test":"hello"
+                  },
+                  "locality":"unknown"
+                }
+              }
+            ]
+          }
+        }""");
+  }
 }

@@ -21,7 +21,7 @@ class AnnotationHasherTest {
     private AnnotationHasher annotationHasher;
 
     @BeforeEach
-    private void setup() {
+    void setup() {
       try {
         this.annotationHasher = new AnnotationHasher(
                 MessageDigest.getInstance("MD5")

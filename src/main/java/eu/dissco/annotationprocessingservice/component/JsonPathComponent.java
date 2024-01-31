@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Filter;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.JsonPathException;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
@@ -14,7 +13,9 @@ import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
 
@@ -24,20 +25,31 @@ import static com.jayway.jsonpath.JsonPath.using;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JsonPathComponent {
 
   private final ObjectMapper mapper;
   private final Configuration jsonPathConfig;
+  private final Pattern lastKeyPattern;
 
-  public List<String> getAnnotationTargetBaths(JsonNode batchMetadata, JsonNode annotatedObject,
+
+  public List<String> getAnnotationTargetPaths(JsonNode batchMetadata, JsonNode annotatedObject,
       Target baseTarget) throws JsonProcessingException, BatchingException {
     var context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
-    var filter = generateFirstFilter(batchMetadata);
-    List<String> correctJsonPaths = context.read(
-        getParentKey(batchMetadata.fields().next().getKey()), filter);
+    var filter = generateFilter(batchMetadata);
+    List<String> correctJsonInputPaths = null;
+    try {
+      correctJsonInputPaths = context.read(
+          getParentKey(batchMetadata.fields().next().getKey()), filter);
+    } catch (JsonPathException e) {
+      log.error("Poorly formatted json path", e);
+      throw new BatchingException();
+    }
+    var correctJsonInputPathsDot = correctJsonInputPaths.stream()
+        .map(this::toDotDelineation).toList();
     var targetPath = getTargetPath(baseTarget);
 
-    return iterateOverList(correctJsonPaths, targetPath);
+    return iterateOverList(correctJsonInputPathsDot, targetPath);
   }
 
   private String getTargetPath(Target baseTarget) throws BatchingException {
@@ -45,59 +57,73 @@ public class JsonPathComponent {
     switch (selectorType) {
       case CLASS_SELECTOR -> {
         var selector = (ClassSelector) (baseTarget.getOaSelector());
-        return toDotNotation(selector.getOaClass());
+        return toDotDelineation(selector.getOaClass());
       }
       case FIELD_SELECTOR -> {
         var selector = (FieldSelector) baseTarget.getOaSelector();
-        return toDotNotation(selector.getOdsField());
+        return toDotDelineation(selector.getOdsField());
       }
       default -> {
-        throw new BatchingException(
-            "Unable to batch annotations with selector type " + selectorType);
+        log.error("Unable to batch annotations with selector type {}", selectorType);
+        throw new BatchingException();
       }
     }
   }
 
-
-  private Filter generateFirstFilter(JsonNode batchMetadata) {
+  private Filter generateFilter(JsonNode batchMetadata) throws BatchingException {
     var fields = batchMetadata.fields();
     var firstField = fields.next();
     var targetField = getLastKey(firstField.getKey());
-    var targetValue = firstField.getValue();
-    return filter(where(targetField).eq(targetValue));
+    var targetValue = firstField.getValue().asText();
+    return filter(where(targetField).is(targetValue));
   }
 
-  private String getLastKey(String jsonPath) {
-    return jsonPath.replaceAll("^(.*)(?=\\.)", "");
+  private String getLastKey(String jsonPath) throws BatchingException {
+    // Get last key of a jsonPath using regex defined in
+    var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
+    if (lastKeyMatcher.find()){
+      return lastKeyMatcher.group().replace("\\.", "");
+    }
+    else {
+      log.error("Unable to parse last key of jsonPath {}", jsonPath);
+      throw new BatchingException();
+    }
   }
 
   String getParentKey(String jsonPath) {
-    return jsonPath.replaceAll("([^\\.]+$)", "") + "[?]";
+    // 1st regex removes last key
+    // 2nd regex removes trailing periods
+    // Finally add [?] to allow filtering
+    return jsonPath
+        .replaceAll(lastKeyPattern.pattern(), "")
+        .replaceAll("[.]+$","")
+        + "[?]";
   }
 
-  private List<String> iterateOverList(List<String> correctJsonPaths, String basePath) {
-    // basePath = targetField/class of the original annotation
-    // In this method, we look at indexes for each correct jsonPath we found
-    // If there is a corresponding list object in the base path, use that index
-    // e.g. if occurrence.1.georef.lattitude is in the correct jsonpath,
-    // and occurrence.3.locality is in the basePath
-    // Then we update "3" to match the correct jsonpath index of "1"
-    // Because in this annotated object, occurrence.1.georef will have the  value that the MAS used to create the annotation
-    // So we need to make sure we're annotating the correct field
+  private List<String> iterateOverList(List<String> correctJsonInputPaths, String baseTargetPath) {
+    /*
+    - `baseTargetPath`: the target field or class of the original annotation
+    - `correctJsonInputPaths`: JSON paths corresponding to input fields that contain the same value used by the annotating MAS to create the original annotation.
+
+    - In this method, we examine the indexes within `correctJsonInputPaths` to construct the target field/class of the new annotation.
+    - For example, if "occurrence.1.georeference.latitude" is a correct input JSON path, it signifies that the value stored at this path is identical to the value used by the MAS to create the original annotation.
+    - If "occurrence.3.locality" is found in the `baseTargetPath` (indicating that it is the field that was annotated), we need to update the index of the occurrence array.
+    - The result will rgwb be "occurrence.3.locality".
+     */
 
     List<String> targetPaths = new ArrayList<>();
-    for (var correctJsonPath : correctJsonPaths) {
-      String annotatePath = basePath;
-      var segments = Arrays.asList(correctJsonPath.split("\\."));
+    for (var correctJsonInputPath : correctJsonInputPaths) {
+      String annotatePath = baseTargetPath;
+      var segments = Arrays.asList(correctJsonInputPath.split("\\."));
       var segmentItr = segments.listIterator();
       while (segmentItr.hasNext()) {
         var segment = segmentItr.next();
         if (segmentItr.hasPrevious() && NumberUtils.isCreatable(segment)) {
-            segmentItr.previous();
-            var fieldName = segmentItr.previous();
-            annotatePath = setIndexOnTargetPath(fieldName, annotatePath, Integer.parseInt(segment));
-            segmentItr.next();
-            segmentItr.next(); // Iterate twice to move counter to correct position
+          segmentItr.previous();
+          var fieldName = segmentItr.previous();
+          annotatePath = setIndexOnTargetPath(fieldName, annotatePath, Integer.parseInt(segment));
+          segmentItr.next();
+          segmentItr.next(); // Iterate twice to move counter to correct position after calling itr.previous()
         }
       }
       targetPaths.add(annotatePath);
@@ -106,16 +132,22 @@ public class JsonPathComponent {
   }
 
   private String setIndexOnTargetPath(String fieldName, String targetPath, int index) {
-    var replaceThis = fieldName + ".*.";
+    // Regex that captures the field name plus next 3 characters (i.e. field name plus index)
+    var replaceThis = "(" + fieldName + ".{3})";
     var withThis = fieldName + "." + index + ".";
-    return targetPath.replace(replaceThis, withThis);
+    return targetPath.replaceAll(replaceThis, withThis);
   }
 
-  private String toDotNotation(String jsonPath) {
+  private String toDotDelineation(String jsonPath) {
+    // Transforms bracket notation to dot notation
+    // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
+    // From: "[field][1][otherField]" or "field[1].otherfield"
+    // To: "field.1.otherField"
+
     jsonPath = jsonPath
         .replace("$", "")
-        .replaceAll("\\[(?=\\*])", ".")
-        .replaceAll("\\[(?!\\*])", "")
+        .replaceAll("\\[(?=\\*|[0-9]])", ".") // Captures [ next to * or 1-9
+        .replaceAll("\\[(?!\\*|[0-9]])", "")  // Captures [ next to all other characters
         .replace("]", ".")
         .replace("..", ".")
         .replace("\'", "");

@@ -6,7 +6,8 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadata;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataCountrySearch;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -166,7 +167,7 @@ class ElasticSearchRepositoryIT {
 
     // When
     var result = repository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
-        givenBatchMetadata(), 1, 10);
+        givenBatchMetadataCountrySearch(), 1, 10);
 
     // Then
     assertThat(result).isEqualTo(List.of(TARGET_ID));
@@ -180,7 +181,7 @@ class ElasticSearchRepositoryIT {
     postDocuments(List.of(targetDocument, altDocument), MEDIA_INDEX);
 
     // When
-    var result = repository.searchByBatchMetadata(AnnotationTargetType.MEDIA_OBJECT, givenBatchMetadata(),
+    var result = repository.searchByBatchMetadata(AnnotationTargetType.MEDIA_OBJECT, givenBatchMetadataCountrySearch(),
         1, 10);
 
     // Then
@@ -197,17 +198,6 @@ class ElasticSearchRepositoryIT {
     }
     client.bulk(bulkRequest.build());
     client.indices().refresh(b -> b.index(index));
-  }
-
-  private JsonNode givenElasticDocument(String country, String id) {
-    var occurrencesNode = MAPPER.createObjectNode()
-        .set("location", MAPPER.createObjectNode()
-            .put("dwc:country", country));
-    var occurrencesNodeArr = MAPPER.createArrayNode().add(occurrencesNode);
-    return MAPPER.createObjectNode()
-        .put("id", id)
-        .put("dwc:institutionName", "National Center")
-        .set("occurrences", occurrencesNodeArr);
   }
 
 }

@@ -14,7 +14,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadata;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
@@ -641,7 +641,7 @@ class ProcessingKafkaServiceTest {
   void testNewMessageBatchEnabled() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadata());
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadataLatitudeSearch());
     int pageSize = 3;
     int pageSizePlusOne = pageSize + 1;
     List<Annotation> batchAnnotations = new ArrayList<>();
@@ -684,7 +684,7 @@ class ProcessingKafkaServiceTest {
   void testNewMessageBatchEnabledTwoPages() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadata());
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadataLatitudeSearch());
     int pageSize = 3;
     int pageSizePlusOne = pageSize + 1;
     var idsPageOne = List.of("1", "2", "3", "4");
