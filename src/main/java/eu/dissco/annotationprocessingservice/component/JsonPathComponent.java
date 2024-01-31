@@ -8,6 +8,8 @@ import com.jayway.jsonpath.Filter;
 import com.jayway.jsonpath.JsonPathException;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
+import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ public class JsonPathComponent {
   private final Pattern lastKeyPattern;
 
 
-  public List<String> getAnnotationTargetPaths(JsonNode batchMetadata, JsonNode annotatedObject,
+  public List<Target> getAnnotationTargets(JsonNode batchMetadata, JsonNode annotatedObject,
       Target baseTarget) throws JsonProcessingException, BatchingException {
     var context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
     var filter = generateFilter(batchMetadata);
@@ -49,7 +51,29 @@ public class JsonPathComponent {
         .map(this::toDotDelineation).toList();
     var targetPath = getTargetPath(baseTarget);
 
-    return iterateOverList(correctJsonInputPathsDot, targetPath);
+    var targetPaths = iterateOverList(correctJsonInputPathsDot, targetPath);
+    return buildOaTargets(targetPaths, baseTarget);
+  }
+
+  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget) {
+    boolean isClassSelector = baseTarget.getOaSelector().getOdsType()
+        .equals(SelectorType.CLASS_SELECTOR);
+    List<Target> newTargets = new ArrayList<>();
+    for (var targetPath : targetPaths) {
+      Selector newSelector = null;
+      if (isClassSelector){
+        newSelector = new ClassSelector()
+            .withOaClass(targetPath);
+      } else {
+        newSelector = new FieldSelector()
+            .withOdsField(targetPath);
+      }
+      newTargets.add(new Target()
+          .withOdsType(baseTarget.getOdsType())
+          .withOdsId(baseTarget.getOdsId())
+          .withSelector(newSelector));
+    }
+    return newTargets;
   }
 
   private String getTargetPath(Target baseTarget) throws BatchingException {
@@ -81,10 +105,9 @@ public class JsonPathComponent {
   private String getLastKey(String jsonPath) throws BatchingException {
     // Get last key of a jsonPath using regex defined in
     var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
-    if (lastKeyMatcher.find()){
+    if (lastKeyMatcher.find()) {
       return lastKeyMatcher.group().replace("\\.", "");
-    }
-    else {
+    } else {
       log.error("Unable to parse last key of jsonPath {}", jsonPath);
       throw new BatchingException();
     }
@@ -96,7 +119,7 @@ public class JsonPathComponent {
     // Finally add [?] to allow filtering
     return jsonPath
         .replaceAll(lastKeyPattern.pattern(), "")
-        .replaceAll("[.]+$","")
+        .replaceAll("[.]+$", "")
         + "[?]";
   }
 
@@ -134,20 +157,19 @@ public class JsonPathComponent {
   private String setIndexOnTargetPath(String fieldName, String targetPath, int index) {
     // Regex that captures the field name plus next 3 characters (i.e. field name plus index)
     var replaceThis = "(" + fieldName + ".{3})";
-    var withThis = fieldName + "." + index + ".";
+    var withThis = fieldName + "[" + index + "].";
     return targetPath.replaceAll(replaceThis, withThis);
   }
 
   private String toDotDelineation(String jsonPath) {
-    // Transforms bracket notation to dot notation
     // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
     // From: "[field][1][otherField]" or "field[1].otherfield"
     // To: "field.1.otherField"
 
     jsonPath = jsonPath
         .replace("$", "")
-        .replaceAll("\\[(?=\\*|[0-9]])", ".") // Captures [ next to * or 1-9
-        .replaceAll("\\[(?!\\*|[0-9]])", "")  // Captures [ next to all other characters
+        .replaceAll("\\[(?=\\*|\\d)", ".") // Captures [ next to * or 1-9
+        .replaceAll("\\[(?!\\*|\\d)", "")  // Captures [ next to all other characters
         .replace("]", ".")
         .replace("..", ".")
         .replace("\'", "");

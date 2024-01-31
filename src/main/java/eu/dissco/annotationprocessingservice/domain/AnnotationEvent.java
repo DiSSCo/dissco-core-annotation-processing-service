@@ -8,7 +8,7 @@ import java.util.List;
 public record AnnotationEvent(
     @NotBlank List<Annotation> annotations,
     @NotBlank String jobId,
-    JsonNode batchMetadata
-) {
+    JsonNode batchMetadata,
+    Boolean isBatchResult) {
 
 }

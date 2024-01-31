@@ -36,7 +36,7 @@ public class TestUtils {
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
-      "596c5cd6-c50e-b944-de80-48c608d2e81e");
+      "00c8e75f-fcac-3012-7210-f5971d2d701f");
 
   public static final UUID ANNOTATION_HASH_2 = UUID.fromString(
       "f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
@@ -103,12 +103,15 @@ public class TestUtils {
   }
 
   public static Target givenOaTarget(String targetId) {
-    return new Target().withOdsId(targetId).withSelector(givenSelector())
+    return new Target()
+        .withOdsId(targetId)
+        .withSelector(givenSelector())
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
   public static FieldSelector givenSelector() {
-    return new FieldSelector().withOdsField("ods:specimenName");
+    return new FieldSelector()
+        .withOdsField("digitalSpecimenWrapper.occurrences[1].locality");
   }
 
   public static Creator givenCreator(String userId) {
@@ -131,7 +134,7 @@ public class TestUtils {
   }
 
   public static AnnotationEvent givenAnnotationEvent(Annotation annotation) {
-    return new AnnotationEvent(List.of(annotation), JOB_ID, null);
+    return new AnnotationEvent(List.of(annotation), JOB_ID, null, null);
   }
 
   public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations,
@@ -173,7 +176,7 @@ public class TestUtils {
                "targetPid":"20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:commenting",
-               "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
+               "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
               }
             }
           }
@@ -189,7 +192,7 @@ public class TestUtils {
                "targetPid":"20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:editing",
-               "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
+               "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
               }
             }
           }
@@ -228,7 +231,7 @@ public class TestUtils {
                 "targetPid":"20.5000.1025/QRS-123-ABC",
                 "targetType":"DigitalSpecimen",
                 "motivation":"oa:commenting",
-                "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
+                "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
               },
             "id":"20.5000.1025/KZL-VC0-ZK2"
           }
@@ -245,7 +248,7 @@ public class TestUtils {
                "targetPid":"20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:editing",
-                "annotationHash":"596c5cd6-c50e-b944-de80-48c608d2e81e"
+                "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
               },
               "id":"20.5000.1025/KZL-VC0-ZK2"
           }
@@ -280,69 +283,77 @@ public class TestUtils {
         """);
   }
 
-  public static JsonNode givenElasticDocument() throws JsonProcessingException {
+  public static JsonNode givenElasticDocument() {
     return givenElasticDocument("Netherlands", ID);
   }
 
-  public static JsonNode givenElasticDocument(String country, String id)
-      throws JsonProcessingException {
-    return MAPPER.readTree("""
-        {
-          "id": \"""" + id +
-        """
-        ",
-            "digitalSpecimenWrapper": {
-              "other": ["a", "10"],
-              "occurrences": [
-                {
-                  "dwc:occurrenceRemarks": "Correct",
-                  "annotateTarget":"this",
-                  "location": {
-                    "dwc:country": \"""" + country + """
-            ",
-            "georeference": {
-              "dwc:decimalLatitude": {
-                "dwc:value":11
+  public static JsonNode givenElasticDocument(String id) {
+    return givenElasticDocument("Netherlands", id);
+  }
+
+  public static JsonNode givenElasticDocument(String country, String id) {
+    try {
+
+      return MAPPER.readTree("""
+          {
+            "id": \"""" + id +
+          """
+              ",
+                  "digitalSpecimenWrapper": {
+                    "other": ["a", "10"],
+                    "occurrences": [
+                      {
+                        "dwc:occurrenceRemarks": "Correct",
+                        "annotateTarget":"this",
+                        "location": {
+                          "dwc:country": \"""" + country + """
+              ",
+              "georeference": {
+                "dwc:decimalLatitude": {
+                  "dwc:value":11
+                },
+                "dwc:decimalLongitude": "10",
+                "dwc":["1"]
               },
-              "dwc:decimalLongitude": "10",
-              "dwc":["1"]
-            },
-            "locality":"known"
-          }
-        },
-        {
-          "dwc:occurrenceRemarks": "Incorrect",
-          "annotateTarget":"this",
-          "location": {
-            "dwc:country": "Unknown",
-            "georeference": {
-              "dwc:decimalLatitude": {
-                "dwc:value":10
+              "locality":"known"
+            }
+          },
+          {
+            "dwc:occurrenceRemarks": "Incorrect",
+            "annotateTarget":"this",
+            "location": {
+              "dwc:country": "Unknown",
+              "georeference": {
+                "dwc:decimalLatitude": {
+                  "dwc:value":10
+                },
+                "dwc:decimalLongitude": "10"
               },
-              "dwc:decimalLongitude": "10"
-            },
-            "locality":"unknown"
-          }
-        },
-        {
-          "dwc:occurrenceRemarks": "Correct",
-          "blah":10,
-          "annotateTarget":"this",
-          "location": {
-            "dwc:country": \"""" + country + """
-             ",
-                  "georeference": {
-                    "dwc:decimalLatitude": {
-                      "dwc:value":11
+              "locality":"unknown"
+            }
+          },
+          {
+            "dwc:occurrenceRemarks": "Correct",
+            "blah":10,
+            "annotateTarget":"this",
+            "location": {
+              "dwc:country": \"""" + country + """
+               ",
+                    "georeference": {
+                      "dwc:decimalLatitude": {
+                        "dwc:value":11
+                      },
+                      "dwc:decimalLongitude": "10.1",
+                      "test":"hello"
                     },
-                    "dwc:decimalLongitude": "10.1",
-                    "test":"hello"
-                  },
-                  "locality":"unknown"
+                    "locality":"unknown"
+                  }
                 }
-              }
-            ]
-          }
-        }""");
+              ]
+            }
+          }""");
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException();
+    }
   }
 }

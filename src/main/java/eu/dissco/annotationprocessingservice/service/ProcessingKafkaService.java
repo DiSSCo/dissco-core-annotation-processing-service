@@ -13,6 +13,7 @@ import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -47,9 +48,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
-      SchemaValidatorComponent schemaValidator) {
+      SchemaValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties, schemaValidator, masJobRecordService);
+        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService);
     this.annotationHasher = annotationHasher;
   }
 
@@ -57,22 +58,25 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
+    var isBatchResult = Boolean.TRUE.equals(event.isBatchResult());
     if (event.annotations().isEmpty()) {
       log.info("MAS job completed without any annotations");
-      masJobRecordService.markEmptyMasJobRecordAsComplete(event.jobId());
+      masJobRecordService.markEmptyMasJobRecordAsComplete(event.jobId(), isBatchResult);
     } else {
       schemaValidator.validateEvent(event);
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
-      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId());
-      var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId());
+      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
+          isBatchResult);
+      var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
+          isBatchResult);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
-      masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList);
+      masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
       if (event.batchMetadata() != null) {
         try {
-          applyBatchAnnotations(event);
-        } catch (IOException e) {
-          log.error("An IO Exception has occurred. Unable to process batch annotations", e);
+          batchAnnotationService.applyBatchAnnotations(event);
+        } catch (IOException | BatchingException e) {
+          log.error("Unable to process batch annotations", e);
         }
 
       }
@@ -110,12 +114,13 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return allAnnotations.stream().filter(ha -> !existingHashes.contains(ha.hash())).toList();
   }
 
-  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId)
+  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId,
+      boolean isBatchResult)
       throws FailedProcessingException {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
     }
-    var idMap = postHandles(annotations, jobId);
+    var idMap = postHandles(annotations, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
     for (var hashedAnnotation : annotations) {
       enrichNewAnnotation(hashedAnnotation.annotation(), idMap.get(hashedAnnotation.hash()));
@@ -128,26 +133,26 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           idList);
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
-      masJobRecordService.markMasJobRecordAsFailed(jobId);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }
     return idList;
   }
 
-  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId)
+  private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId, boolean isBatchResult)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {
-      return handleComponent.postBatchHandle(requestBody);
+      return handleComponent.postHandles(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
-      masJobRecordService.markMasJobRecordAsFailed(jobId);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }
   }
 
   private List<String> updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
-      String jobId)
+      String jobId, boolean isBatchResult)
       throws FailedProcessingException {
     if (updatedAnnotations.isEmpty()) {
       return Collections.emptyList();
@@ -157,7 +162,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       filterUpdatesAndUpdateHandleRecord(updatedAnnotations);
     } catch (PidCreationException e) {
       log.error("Unable to post update for annotations {}", idList, e);
-      masJobRecordService.markMasJobRecordAsFailed(jobId);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }
     updatedAnnotations.forEach(
@@ -170,7 +175,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       indexElasticUpdatedAnnotation(updatedAnnotations);
     } catch (FailedProcessingException e) {
       filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
-      masJobRecordService.markMasJobRecordAsFailed(jobId);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }
     return idList;

@@ -39,7 +39,7 @@ public class HandleComponent {
     return getHandleNames(responseJson);
   }
 
-  public Map<UUID, String> postBatchHandle(List<JsonNode> request) throws PidCreationException {
+  public Map<UUID, String> postHandles(List<JsonNode> request) throws PidCreationException {
     var responseJson = sendRequest(request);
     return getHandleMap(responseJson);
   }

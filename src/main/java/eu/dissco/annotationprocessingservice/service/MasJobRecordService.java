@@ -8,7 +8,6 @@ import eu.dissco.annotationprocessingservice.exception.FailedProcessingException
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -33,13 +32,18 @@ public class MasJobRecordService {
     }
   }
 
-  public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds) {
-    var annotationNode = buildAnnotationNode(annotationIds);
-    repository.markMasJobRecordAsComplete(jobId, annotationNode);
+  public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds,
+      boolean isBatchResult) {
+    if (!isBatchResult){
+      var annotationNode = buildAnnotationNode(annotationIds);
+      repository.markMasJobRecordAsComplete(jobId, annotationNode);
+    }
   }
 
-  public void markEmptyMasJobRecordAsComplete(String jobId){
-    repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
+  public void markEmptyMasJobRecordAsComplete(String jobId, boolean isBatchResult){
+    if (!isBatchResult){
+      repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
+    }
   }
 
   private JsonNode buildAnnotationNode(List<String> annotationIds) {
@@ -52,8 +56,10 @@ public class MasJobRecordService {
     return listNode;
   }
 
-  public void markMasJobRecordAsFailed(String jobId) {
-    repository.markMasJobRecordAsFailed(jobId);
+  public void markMasJobRecordAsFailed(String jobId, boolean isBatchResult) {
+    if (!isBatchResult){
+      repository.markMasJobRecordAsFailed(jobId);
+    }
   }
 
 }

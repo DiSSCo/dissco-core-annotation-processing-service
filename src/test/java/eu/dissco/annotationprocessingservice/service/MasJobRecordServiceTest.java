@@ -9,14 +9,18 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +55,7 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkEmptyMasJobRecordAsComplete(){
     // When
-    service.markEmptyMasJobRecordAsComplete(JOB_ID);
+    service.markEmptyMasJobRecordAsComplete(JOB_ID, false);
 
     // Then
     then(repository).should().markMasJobRecordAsComplete(JOB_ID, MAPPER.createObjectNode());
@@ -74,7 +78,8 @@ class MasJobRecordServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null, null)));
+        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null, null,
+            null)));
   }
 
   @Test
@@ -83,7 +88,7 @@ class MasJobRecordServiceTest {
     var expectedNode = MAPPER.readTree(ANNOTATION_JSONB);
 
     // When
-    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID));
+    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
 
     // Then
     then(repository).should().markMasJobRecordAsComplete(JOB_ID, expectedNode);
@@ -92,10 +97,36 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkMasJobRecordAsFailed() {
     // When
-    service.markMasJobRecordAsFailed(JOB_ID);
+    service.markMasJobRecordAsFailed(JOB_ID, false);
 
     // Then
     then(repository).should().markMasJobRecordAsFailed(JOB_ID);
   }
 
+  @Test
+  void testMarkMasJobRecordAsCompletedBatchResult(){
+    // When
+    service.markMasJobRecordAsComplete(JOB_ID, Collections.emptyList(), true);
+
+    // Then
+    then(repository).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testMarkMasJobRecordAsFailedBatchResult(){
+    // When
+    service.markMasJobRecordAsFailed(JOB_ID, true);
+
+    // Then
+    then(repository).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testMarkEmptyMasJobRecordAsCompletedBatchResult(){
+    // When
+    service.markEmptyMasJobRecordAsComplete(JOB_ID, true);
+
+    // Then
+    then(repository).shouldHaveNoInteractions();
+  }
 }

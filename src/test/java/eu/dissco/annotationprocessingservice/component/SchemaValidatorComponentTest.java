@@ -51,7 +51,7 @@ class SchemaValidatorComponentTest {
   void testValidateProcessResults() {
     // Given
     given(env.matchesProfiles(Profiles.KAFKA)).willReturn(true);
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null);
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null, null);
 
     // Then
     assertDoesNotThrow(() -> schemaValidator.validateEvent(event));

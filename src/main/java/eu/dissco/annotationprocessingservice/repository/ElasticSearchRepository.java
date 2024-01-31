@@ -78,7 +78,7 @@ public class ElasticSearchRepository {
     return queries;
   }
 
-  public List<String> searchByBatchMetadata(AnnotationTargetType targetType, JsonNode batchMetadata,
+  public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType, JsonNode batchMetadata,
       int pageNumber, int pageSize)
       throws IOException {
     var queries = generateQueries(batchMetadata);
@@ -94,13 +94,12 @@ public class ElasticSearchRepository {
         .size(pageSize).build();
     var searchResult = client.search(searchRequest, ObjectNode.class);
     return searchResult.hits().hits().stream()
-        .map(Hit::source).filter(Objects::nonNull)
-        .map(this::mapElasticIdsToString).toList();
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .map(JsonNode.class::cast)
+        .toList();
   }
 
-  private String mapElasticIdsToString(ObjectNode json) {
-    return json.get("id").asText();
-  }
 
   private int getOffset(int pageNumber, int pageSize) {
     int offset = 0;
