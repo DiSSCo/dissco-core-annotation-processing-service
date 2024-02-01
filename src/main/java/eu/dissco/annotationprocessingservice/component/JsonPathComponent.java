@@ -168,11 +168,12 @@ public class JsonPathComponent {
 
     jsonPath = jsonPath
         .replace("$", "")
-        .replaceAll("\\[(?=\\*|\\d)", ".") // Captures [ next to * or 1-9
-        .replaceAll("\\[(?!\\*|\\d)", "")  // Captures [ next to all other characters
+        .replaceAll("\\[(?=[*|\\d])", ".") // Captures [ next to * or 1-9
+        .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters
         .replace("]", ".")
         .replace("..", ".")
-        .replace("\'", "");
+        .replace("'", "")
+        .replaceAll("[.]+$", ""); // Replaces trailing period
     return jsonPath;
   }
 
