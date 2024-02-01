@@ -28,9 +28,6 @@ import org.junit.jupiter.api.Test;
 class JsonPathComponentTest {
 
   private JsonPathComponent jsonPathComponent;
-  private static final List<String> EXPECTED_LOCALITY = List.of(
-      "digitalSpecimenWrapper.occurrences[0].locality",
-      "digitalSpecimenWrapper.occurrences[2].locality");
 
   @BeforeEach
   void init() {
@@ -132,7 +129,6 @@ class JsonPathComponentTest {
   @Test
   void testBadJsonpathFormat() throws JsonProcessingException {
     // Given
-    // Path is in square bracket notation
     var batchMetadata = MAPPER.readTree("""
         {
           "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']":11

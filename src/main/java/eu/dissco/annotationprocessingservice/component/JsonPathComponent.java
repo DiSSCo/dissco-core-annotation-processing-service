@@ -114,13 +114,8 @@ public class JsonPathComponent {
   }
 
   String getParentKey(String jsonPath) {
-    // 1st regex removes last key
-    // 2nd regex removes trailing periods
-    // Finally add [?] to allow filtering
-    return jsonPath
-        .replaceAll(lastKeyPattern.pattern(), "")
-        .replaceAll("[.]+$", "")
-        + "[?]";
+    jsonPath = jsonPath.replaceAll(lastKeyPattern.pattern(), "");
+    return removeTrailingPeriod(jsonPath) + "[?]";
   }
 
   private List<String> iterateOverList(List<String> correctJsonInputPaths, String baseTargetPath) {
@@ -172,9 +167,13 @@ public class JsonPathComponent {
         .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters
         .replace("]", ".")
         .replace("..", ".")
-        .replace("'", "")
-        .replaceAll("[.]+$", ""); // Replaces trailing period
-    return jsonPath;
+        .replace("'", "");
+    return removeTrailingPeriod(jsonPath);
+  }
+
+  private String removeTrailingPeriod(String jsonPath){
+    var jsonPathArray = jsonPath.split("\\.");
+    return String.join(".", jsonPathArray);
   }
 
 }
