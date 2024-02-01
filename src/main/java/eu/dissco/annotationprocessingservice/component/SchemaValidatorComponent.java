@@ -57,7 +57,7 @@ public class SchemaValidatorComponent {
 
   private void validateJobId(Annotation annotation) throws AnnotationValidationException {
     if (env.matchesProfiles(Profiles.KAFKA) && annotation.getOdsJobId() == null) {
-      log.warn("Missing Job Id for MAS annotation");
+      log.warn("Annotation is missing jobId for MAS annotation");
     }
     if (env.matchesProfiles(Profiles.WEB) && annotation.getOdsJobId() != null) {
       log.error("Job Id provided for web annotation");

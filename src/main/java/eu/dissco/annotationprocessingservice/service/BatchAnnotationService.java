@@ -47,7 +47,7 @@ public class BatchAnnotationService {
           targetType);
       var annotations = generateBatchAnnotations(annotationEvent.annotations(),
           annotationEvent.batchMetadata(), annotatedObjects);
-      annotations = moreBatching ? annotations.subList(pageNumber,
+      annotations = moreBatching ? annotations.subList(0,
           applicationProperties.getBatchPageSize()) : annotations;
       var batchEvent = new AnnotationEvent(annotations, annotationEvent.jobId(), null, true);
       kafkaService.publishBatchAnnotation(batchEvent);

@@ -52,10 +52,10 @@ public class JsonPathComponent {
     var targetPath = getTargetPath(baseTarget);
 
     var targetPaths = iterateOverList(correctJsonInputPathsDot, targetPath);
-    return buildOaTargets(targetPaths, baseTarget);
+    return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
   }
 
-  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget) {
+  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget, String newTargetId) {
     boolean isClassSelector = baseTarget.getOaSelector().getOdsType()
         .equals(SelectorType.CLASS_SELECTOR);
     List<Target> newTargets = new ArrayList<>();
@@ -70,7 +70,7 @@ public class JsonPathComponent {
       }
       newTargets.add(new Target()
           .withOdsType(baseTarget.getOdsType())
-          .withOdsId(baseTarget.getOdsId())
+          .withOdsId("https://hdl.handle.net/"+newTargetId)
           .withSelector(newSelector));
     }
     return newTargets;
