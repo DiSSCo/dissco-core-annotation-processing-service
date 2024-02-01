@@ -36,7 +36,7 @@ public class TestUtils {
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
-      "00c8e75f-fcac-3012-7210-f5971d2d701f");
+      "b3dada2d-396b-cab2-665e-125659fc7ae6");
 
   public static final UUID ANNOTATION_HASH_2 = UUID.fromString(
       "f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
@@ -77,15 +77,23 @@ public class TestUtils {
 
   public static Annotation givenAnnotationProcessed(String annotationId, String userId,
       String targetId) {
-    return new Annotation().withOdsId(annotationId).withOdsVersion(1)
-        .withOdsJobId(HANDLE_PREFIX + JOB_ID).withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
-        .withOaCreator(givenCreator(userId)).withDcTermsCreated(CREATED).withOaGenerated(CREATED)
-        .withAsGenerator(givenGenerator()).withOdsAggregateRating(givenAggregationRating());
+    return new Annotation()
+        .withOdsId(annotationId)
+        .withOdsVersion(1)
+        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
+        .withOaBody(givenOaBody())
+        .withOaMotivation(Motivation.COMMENTING)
+        .withOaTarget(givenOaTarget(targetId))
+        .withOaCreator(givenCreator(userId)).
+        withDcTermsCreated(CREATED).withOaGenerated(CREATED)
+        .withAsGenerator(givenGenerator())
+        .withOdsAggregateRating(givenAggregationRating());
   }
 
   public static Annotation givenAnnotationRequest(String targetId) {
-    return new Annotation().withOaBody(givenOaBody()).withOdsJobId(HANDLE_PREFIX + JOB_ID)
+    return new Annotation()
+        .withOaBody(givenOaBody())
+        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
         .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
         .withDcTermsCreated(CREATED).withOaCreator(givenCreator(CREATOR))
         .withOdsAggregateRating(givenAggregationRating());
@@ -104,7 +112,7 @@ public class TestUtils {
 
   public static Target givenOaTarget(String targetId) {
     return new Target()
-        .withOdsId(targetId)
+        .withOdsId(HANDLE_PREFIX + targetId)
         .withSelector(givenSelector())
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN);
   }
@@ -137,15 +145,6 @@ public class TestUtils {
     return new AnnotationEvent(List.of(annotation), JOB_ID, null, null);
   }
 
-  public static Map<UUID, String> givenPostBatchHandleResponse(List<Annotation> annotations,
-      List<String> annotationIds) {
-    Map<UUID, String> idMap = new HashMap<>();
-    for (int i = 0; i < annotations.size(); i++) {
-      idMap.put(ANNOTATION_HASH, annotationIds.get(i));
-    }
-    return idMap;
-  }
-
   public static List<JsonNode> givenPostRequest() throws Exception {
     return List.of(MAPPER.readTree("""
         {
@@ -155,7 +154,7 @@ public class TestUtils {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:commenting"
               }
@@ -173,10 +172,10 @@ public class TestUtils {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:commenting",
-               "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
+               "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               }
             }
           }
@@ -189,10 +188,10 @@ public class TestUtils {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:editing",
-               "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
+               "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               }
             }
           }
@@ -209,7 +208,7 @@ public class TestUtils {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
-                "targetPid":"20.5000.1025/QRS-123-ABC",
+                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
                 "targetType":"DigitalSpecimen",
                 "motivation":"oa:commenting"
             },
@@ -228,10 +227,10 @@ public class TestUtils {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
-                "targetPid":"20.5000.1025/QRS-123-ABC",
+                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
                 "targetType":"DigitalSpecimen",
                 "motivation":"oa:commenting",
-                "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
+                "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               },
             "id":"20.5000.1025/KZL-VC0-ZK2"
           }
@@ -245,10 +244,10 @@ public class TestUtils {
                "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
                "targetType":"DigitalSpecimen",
                "motivation":"oa:editing",
-                "annotationHash":"00c8e75f-fcac-3012-7210-f5971d2d701f"
+                "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               },
               "id":"20.5000.1025/KZL-VC0-ZK2"
           }

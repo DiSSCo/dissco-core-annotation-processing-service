@@ -51,7 +51,7 @@ class AnnotationHasherTest {
                         .withAcXFrac(0.99)
                 );
 
-        var expected = UUID.fromString("12cdd96c-758e-dea3-64ec-5234d3115f0e");
+        var expected = UUID.fromString("a831698e-8bfd-4dbe-51c4-3236d0f2b047");
 
         // When
         var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
@@ -64,8 +64,8 @@ class AnnotationHasherTest {
     void hashTestClassValueSelector() {
         // Given
         var selector = new ClassSelector()
-                .withOaClass("ClassName");
-        var expected = UUID.fromString("c0188fcb-9afb-0fba-e926-4cb7aa5097e8");
+                .withOaClass("ClassName");  //c0188fcb-9afb-0fba-e926-4cb7aa5097e8
+        var expected = UUID.fromString("753ad133-4212-e03b-00e7-b757957901fd");
 
         // When
         var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
