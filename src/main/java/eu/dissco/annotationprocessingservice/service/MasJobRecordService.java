@@ -29,30 +29,22 @@ public class MasJobRecordService {
       log.error("Missing MAS Job ID for event {}", event);
       throw new FailedProcessingException();
     }
-    if (!environment.matchesProfiles(Profiles.KAFKA)){
+    if (!environment.matchesProfiles(Profiles.KAFKA)) {
       throw new UnsupportedOperationException();
     }
   }
 
   public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds,
       boolean isBatchResult) {
-    var newAnnotationNode = buildAnnotationNode(annotationIds);
-    if (!isBatchResult){
-      repository.markMasJobRecordAsComplete(jobId, newAnnotationNode);
-    } else {
-      var existingAnnotations = repository.getMasJobRecordAnnotations(jobId);
-      if (existingAnnotations.isArray()){
-        var annotationArray = (ArrayNode) existingAnnotations;
-        annotationArray.addAll(newAnnotationNode);
-        repository.markMasJobRecordAsComplete(jobId, annotationArray);
-      } else {
-        log.warn("Unexpected result from mas job record: {}", existingAnnotations);
-      }
+    if (isBatchResult) {
+      return;
     }
+    var newAnnotationNode = buildAnnotationNode(annotationIds);
+    repository.markMasJobRecordAsComplete(jobId, newAnnotationNode);
   }
 
-  public void markEmptyMasJobRecordAsComplete(String jobId, boolean isBatchResult){
-    if (!isBatchResult){
+  public void markEmptyMasJobRecordAsComplete(String jobId, boolean isBatchResult) {
+    if (!isBatchResult) {
       repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
     }
   }
@@ -64,12 +56,12 @@ public class MasJobRecordService {
   }
 
   public void markMasJobRecordAsFailed(String jobId, boolean isBatchResult) {
-    if (!isBatchResult){
+    if (!isBatchResult) {
       repository.markMasJobRecordAsFailed(jobId);
     }
   }
 
-  public boolean getBatchingRequest(String jobId){
+  public boolean getBatchingRequest(String jobId) {
     return repository.getBatchingRequested(jobId);
   }
 

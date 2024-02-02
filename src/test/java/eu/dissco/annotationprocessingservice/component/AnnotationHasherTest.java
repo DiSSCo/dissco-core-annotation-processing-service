@@ -64,7 +64,7 @@ class AnnotationHasherTest {
     void hashTestClassValueSelector() {
         // Given
         var selector = new ClassSelector()
-                .withOaClass("ClassName");  //c0188fcb-9afb-0fba-e926-4cb7aa5097e8
+                .withOaClass("ClassName"); 
         var expected = UUID.fromString("753ad133-4212-e03b-00e7-b757957901fd");
 
         // When

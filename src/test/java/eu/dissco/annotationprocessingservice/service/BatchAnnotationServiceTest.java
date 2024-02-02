@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
-import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PREFIX;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
@@ -74,7 +74,7 @@ class BatchAnnotationServiceTest {
     var batchAnnotations = annotatableIds.stream().map(id ->
         new Annotation()
             .withOaBody(givenOaBody())
-            .withOdsJobId(HANDLE_PREFIX + JOB_ID)
+            .withOdsJobId(HANDLE_PROXY + JOB_ID)
             .withOaMotivation(Motivation.COMMENTING)
             .withOaTarget(givenOaTarget(String.valueOf(id)))
             .withDcTermsCreated(CREATED)

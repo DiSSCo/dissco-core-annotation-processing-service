@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.component;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PREFIX;
+import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
@@ -44,16 +45,16 @@ class JsonPathComponentTest {
     // Given
     var expected = List.of(
         new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[0].locality")),
         new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[2].locality")));
 
     var baseTargetClassSelector = new Target()
-        .withOdsId(HANDLE_PREFIX + ID)
+        .withOdsId(DOI_PROXY + ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
         .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[1].locality"));
 
@@ -72,11 +73,11 @@ class JsonPathComponentTest {
     // Given
     var baseTargetClassSelector = givenOaTarget(ID);
     var expected = List.of(new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[0].locality")),
         new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality")));
 
@@ -94,7 +95,7 @@ class JsonPathComponentTest {
       throws JsonProcessingException {
     // Given
     var baseTargetClassSelector = new Target()
-        .withOdsId(HANDLE_PREFIX + ID)
+        .withOdsId(HANDLE_PROXY + ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
         .withSelector(new ClassSelector()
             .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"));

@@ -6,14 +6,14 @@ public enum AnnotationTargetType {
   @JsonProperty("DigitalSpecimen")DIGITAL_SPECIMEN("DigitalSpecimen"),
   @JsonProperty("DigitalMedia")MEDIA_OBJECT("DigitalMedia");
 
-  private final String state;
+  private final String name;
 
-  AnnotationTargetType(String state){
-    this.state = state;
+  AnnotationTargetType(String name){
+    this.name = name;
   }
 
   @Override
   public String toString(){
-    return this.state;
+    return this.name;
   }
 }

@@ -55,13 +55,14 @@ public class JsonPathComponent {
     return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
   }
 
-  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget, String newTargetId) {
+  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget,
+      String newTargetId) {
     boolean isClassSelector = baseTarget.getOaSelector().getOdsType()
         .equals(SelectorType.CLASS_SELECTOR);
     List<Target> newTargets = new ArrayList<>();
     for (var targetPath : targetPaths) {
       Selector newSelector = null;
-      if (isClassSelector){
+      if (isClassSelector) {
         newSelector = new ClassSelector()
             .withOaClass(targetPath);
       } else {
@@ -70,7 +71,7 @@ public class JsonPathComponent {
       }
       newTargets.add(new Target()
           .withOdsType(baseTarget.getOdsType())
-          .withOdsId("https://hdl.handle.net/"+newTargetId)
+          .withOdsId("https://doi.org/" + newTargetId)
           .withSelector(newSelector));
     }
     return newTargets;
@@ -171,7 +172,7 @@ public class JsonPathComponent {
     return removeTrailingPeriod(jsonPath);
   }
 
-  private String removeTrailingPeriod(String jsonPath){
+  private String removeTrailingPeriod(String jsonPath) {
     var jsonPathArray = jsonPath.split("\\.");
     return String.join(".", jsonPathArray);
   }

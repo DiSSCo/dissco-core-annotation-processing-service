@@ -20,9 +20,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class TestUtils {
@@ -47,7 +45,8 @@ public class TestUtils {
         "20.5000.1025/KZL-VC0-ZK2"
        ]
       """;
-  public static final String HANDLE_PREFIX = "https://hdl.handle.net/";
+  public static final String HANDLE_PROXY = "https://hdl.handle.net/";
+  public static final String DOI_PROXY = "https://doi.org/";
 
   static {
     var mapper = new ObjectMapper().findAndRegisterModules();
@@ -80,12 +79,13 @@ public class TestUtils {
     return new Annotation()
         .withOdsId(annotationId)
         .withOdsVersion(1)
-        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
+        .withOdsJobId(HANDLE_PROXY + JOB_ID)
         .withOaBody(givenOaBody())
         .withOaMotivation(Motivation.COMMENTING)
         .withOaTarget(givenOaTarget(targetId))
-        .withOaCreator(givenCreator(userId)).
-        withDcTermsCreated(CREATED).withOaGenerated(CREATED)
+        .withOaCreator(givenCreator(userId))
+        .withDcTermsCreated(CREATED)
+        .withOaGenerated(CREATED)
         .withAsGenerator(givenGenerator())
         .withOdsAggregateRating(givenAggregationRating());
   }
@@ -93,7 +93,7 @@ public class TestUtils {
   public static Annotation givenAnnotationRequest(String targetId) {
     return new Annotation()
         .withOaBody(givenOaBody())
-        .withOdsJobId(HANDLE_PREFIX + JOB_ID)
+        .withOdsJobId(HANDLE_PROXY + JOB_ID)
         .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
         .withDcTermsCreated(CREATED).withOaCreator(givenCreator(CREATOR))
         .withOdsAggregateRating(givenAggregationRating());
@@ -112,7 +112,7 @@ public class TestUtils {
 
   public static Target givenOaTarget(String targetId) {
     return new Target()
-        .withOdsId(HANDLE_PREFIX + targetId)
+        .withOdsId(HANDLE_PROXY + targetId)
         .withSelector(givenSelector())
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN);
   }

@@ -93,6 +93,7 @@ public class ElasticSearchRepository {
         .from(getOffset(pageNumber, pageSize))
         .size(pageSize).build();
     var searchResult = client.search(searchRequest, ObjectNode.class);
+
     return searchResult.hits().hits().stream()
         .map(Hit::source)
         .filter(Objects::nonNull)
