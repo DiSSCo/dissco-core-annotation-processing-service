@@ -50,20 +50,4 @@ public class MasJobRecordRepository {
     }
   }
 
-  public JsonNode getMasJobRecordAnnotations(String jobId){
-    return context.select(MAS_JOB_RECORD.ANNOTATIONS)
-        .from(MAS_JOB_RECORD)
-        .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
-        .fetchOne(this::toJsonNode);
-  }
-
-  private JsonNode toJsonNode(Record1<JSONB> data){
-    try {
-      return mapper.readTree(data.get(MAS_JOB_RECORD.ANNOTATIONS).data());
-    } catch (JsonProcessingException e){
-      log.error("Unable to read annotations", e);
-      throw new DataBaseException("Unable to read annotations from db");
-    }
-  }
-
 }
