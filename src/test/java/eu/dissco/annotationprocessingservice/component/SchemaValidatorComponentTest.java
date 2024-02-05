@@ -102,7 +102,7 @@ class SchemaValidatorComponentTest {
   @Test
   void testJobIdOnWebRequest() {
     // Given
-    var annotationRequest = givenAnnotationRequest();
+    var annotationRequest = givenAnnotationRequest().withOdsJobId(JOB_ID);
     given(env.matchesProfiles(Profiles.KAFKA)).willReturn(false);
     given(env.matchesProfiles(Profiles.WEB)).willReturn(true);
 

@@ -71,16 +71,14 @@ public class TestUtils {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
   }
 
-  public static Annotation givenAnnotationProcessedAlt() {
-    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivation(Motivation.EDITING);
+  public static Annotation givenAnnotationProcessedWeb(){
+    return givenAnnotationProcessedWeb(ID, CREATOR, TARGET_ID);
   }
 
-  public static Annotation givenAnnotationProcessed(String annotationId, String userId,
-      String targetId) {
+  public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId, String targetId){
     return new Annotation()
         .withOdsId(annotationId)
         .withOdsVersion(1)
-        .withOdsJobId(HANDLE_PROXY + JOB_ID)
         .withOaBody(givenOaBody())
         .withOaMotivation(Motivation.COMMENTING)
         .withOaTarget(givenOaTarget(targetId))
@@ -91,10 +89,19 @@ public class TestUtils {
         .withOdsAggregateRating(givenAggregationRating());
   }
 
+  public static Annotation givenAnnotationProcessedAlt() {
+    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivation(Motivation.EDITING);
+  }
+
+  public static Annotation givenAnnotationProcessed(String annotationId, String userId,
+      String targetId) {
+    var annotation = givenAnnotationProcessedWeb(annotationId, userId, targetId);
+    return annotation.withOdsJobId(HANDLE_PROXY + JOB_ID);
+  }
+
   public static Annotation givenAnnotationRequest(String targetId) {
     return new Annotation()
         .withOaBody(givenOaBody())
-        .withOdsJobId(HANDLE_PROXY + JOB_ID)
         .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
         .withDcTermsCreated(CREATED).withOaCreator(givenCreator(CREATOR))
         .withOdsAggregateRating(givenAggregationRating());

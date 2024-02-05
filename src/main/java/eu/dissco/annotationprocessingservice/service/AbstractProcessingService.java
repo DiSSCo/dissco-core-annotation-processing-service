@@ -40,6 +40,11 @@ public abstract class AbstractProcessingService {
         .withOaGenerated(Instant.now());
   }
 
+  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId) {
+    enrichNewAnnotation(annotation, id);
+    annotation.withOdsJobId(applicationProperties.getHandleProxy() + jobId);
+  }
+
   private Generator createGenerator() {
     return new Generator()
         .withOdsId(applicationProperties.getProcessorHandle())
@@ -55,6 +60,12 @@ public abstract class AbstractProcessingService {
         .withAsGenerator(currentAnnotation.getAsGenerator())
         .withOaCreator(currentAnnotation.getOaCreator())
         .withDcTermsCreated(currentAnnotation.getDcTermsCreated());
+  }
+
+  protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation,
+      String jobId) {
+    enrichUpdateAnnotation(annotation, currentAnnotation);
+    annotation.withOdsJobId(jobId);
   }
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,

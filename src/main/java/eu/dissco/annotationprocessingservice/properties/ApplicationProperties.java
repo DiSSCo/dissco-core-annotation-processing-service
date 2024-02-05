@@ -15,6 +15,9 @@ public class ApplicationProperties {
   private String processorHandle;
 
   @NotNull
-  private int batchPageSize=300;
+  private int batchPageSize = 300;
+
+  @NotBlank
+  private String handleProxy = "https://hdl.handle.net/";
 
 }

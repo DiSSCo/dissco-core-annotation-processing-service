@@ -4,6 +4,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_3;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
@@ -141,6 +142,7 @@ class ProcessingKafkaServiceTest {
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getHandleProxy()).willReturn(HANDLE_PROXY);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
 
@@ -649,6 +651,7 @@ class ProcessingKafkaServiceTest {
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
             "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getHandleProxy()).willReturn(HANDLE_PROXY);
     given(applicationProperties.getProcessorHandle()).willReturn(
             "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getBatchingRequest(JOB_ID)).willReturn(true);
@@ -676,6 +679,7 @@ class ProcessingKafkaServiceTest {
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getHandleProxy()).willReturn(HANDLE_PROXY);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getBatchingRequest(JOB_ID)).willReturn(true);

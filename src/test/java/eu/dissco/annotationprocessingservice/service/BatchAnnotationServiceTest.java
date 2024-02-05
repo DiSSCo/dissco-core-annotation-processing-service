@@ -76,7 +76,6 @@ class BatchAnnotationServiceTest {
     var batchAnnotations = annotatableIds.stream().map(id ->
         new Annotation()
             .withOaBody(givenOaBody())
-            .withOdsJobId(HANDLE_PROXY + JOB_ID)
             .withOaMotivation(Motivation.COMMENTING)
             .withOaTarget(givenOaTarget(String.valueOf(id)))
             .withDcTermsCreated(CREATED)
@@ -123,7 +122,6 @@ class BatchAnnotationServiceTest {
     var batchAnnotationsA = annotatableIdsA.stream().map(id ->
         new Annotation()
             .withOaBody(givenOaBody())
-            .withOdsJobId(HANDLE_PROXY + JOB_ID)
             .withOaMotivation(Motivation.COMMENTING)
             .withOaTarget(givenOaTarget(String.valueOf(id)))
             .withDcTermsCreated(CREATED)
@@ -134,7 +132,6 @@ class BatchAnnotationServiceTest {
     var batchAnnotationsB = annotatableIdsB.stream().map(id ->
         new Annotation()
             .withOaBody(annotationBodyB)
-            .withOdsJobId(HANDLE_PROXY + JOB_ID)
             .withOaMotivation(Motivation.COMMENTING)
             .withOaTarget(givenOaTarget(String.valueOf(id)))
             .withDcTermsCreated(CREATED)

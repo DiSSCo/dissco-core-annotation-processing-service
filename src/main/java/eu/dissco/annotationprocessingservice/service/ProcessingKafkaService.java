@@ -88,7 +88,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           log.error("Unable to process batch annotations", e);
         }
       } else {
-        log.warn("User requested batching, but MAS did not provide batch metadata. JobId: {}", event.jobId());
+        log.warn("User requested batching, but MAS did not provide batch metadata. JobId: {}",
+            event.jobId());
       }
     }
   }
@@ -132,9 +133,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
     var idMap = postHandles(annotations, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
-    for (var hashedAnnotation : annotations) {
-      enrichNewAnnotation(hashedAnnotation.annotation(), idMap.get(hashedAnnotation.hash()));
-    }
+    annotations.forEach(p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId));
     log.info("New ids have been generated for Annotations: {}", idList);
     repository.createAnnotationRecord(annotations);
     log.info("Annotations {} has been successfully committed to database", idList);
@@ -177,8 +176,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     updatedAnnotations.forEach(
-        p -> enrichUpdateAnnotation(p.annotation().annotation(),
-            p.currentAnnotation().annotation()));
+        p -> enrichUpdateAnnotation(p.annotation().annotation(), p.currentAnnotation().annotation(),
+            jobId));
+
     repository.createAnnotationRecord(
         updatedAnnotations.stream().map(UpdatedAnnotation::annotation).toList());
     log.info("Annotation: {} has been successfully committed to database", idList);
