@@ -29,7 +29,6 @@ public class SchemaValidatorComponent {
   public void validateAnnotationRequest(Annotation annotation, boolean isNewAnnotation)
       throws AnnotationValidationException {
     validateId(annotation, isNewAnnotation);
-    validateJobId(annotation);
     var annotationRequest = mapper.valueToTree(annotation);
     var errors = annotationSchema.validate(annotationRequest);
     if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getDcTermsCreated() == null) {
@@ -51,16 +50,6 @@ public class SchemaValidatorComponent {
     }
     if (Boolean.FALSE.equals(isNewAnnotation) && annotation.getOdsId() == null) {
       log.error("\"ods:id\" not provided for annotation update");
-      throw new AnnotationValidationException();
-    }
-  }
-
-  private void validateJobId(Annotation annotation) throws AnnotationValidationException {
-    if (env.matchesProfiles(Profiles.KAFKA) && annotation.getOdsJobId() == null) {
-      log.warn("Annotation is missing jobId for MAS annotation");
-    }
-    if (env.matchesProfiles(Profiles.WEB) && annotation.getOdsJobId() != null) {
-      log.error("Job Id provided for web annotation");
       throw new AnnotationValidationException();
     }
   }

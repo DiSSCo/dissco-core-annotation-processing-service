@@ -89,7 +89,6 @@ public class BatchAnnotationService {
     for (var target : targets) {
       newAnnotations.add(new Annotation()
           .withOdsId(null)
-          .withOdsJobId(baseAnnotation.getOdsJobId())
           .withOaMotivation(baseAnnotation.getOaMotivation())
           .withDcTermsCreated(baseAnnotation.getDcTermsCreated())
           .withOaCreator(baseAnnotation.getOaCreator())
