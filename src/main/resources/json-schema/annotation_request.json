@@ -185,7 +185,7 @@
       ]
     },
     "placeInBatch": {
-      "type": "string"
+      "type": "number"
     }
   },
   "required": [

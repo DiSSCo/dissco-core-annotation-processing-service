@@ -104,15 +104,15 @@ class BatchAnnotationServiceTest {
     var annotationBodyB = givenOaBody().withOaValue(List.of("alt value"));
     var annotationTargetB = givenOaTarget(ID_ALT).withOdsType(AnnotationTargetType.MEDIA_OBJECT);
     var batchMetadataA = givenBatchMetadataLatitudeSearch();
-    var batchMetadataB = new BatchMetadata("2",
+    var batchMetadataB = new BatchMetadata(2,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
         "12");
     var batchMetadataList = List.of(batchMetadataA, batchMetadataB);
-    var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch("1");
+    var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch(1);
     var baseAnnotationB = givenAnnotationRequest()
         .withOaBody(annotationBodyB)
         .withOaTarget(annotationTargetB)
-        .withPlaceInBatch("2");
+        .withPlaceInBatch(2);
 
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID, batchMetadataList, false);
 

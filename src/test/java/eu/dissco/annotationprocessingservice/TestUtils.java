@@ -268,24 +268,18 @@ public class TestUtils {
   }
 
   public static BatchMetadata givenBatchMetadataLatitudeSearch() {
-    return new BatchMetadata("1",
+    return new BatchMetadata(1,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
         "11");
   }
 
-  public static BatchMetadata givenBatchMetadataLatitudeSearchSecond() {
-    return new BatchMetadata("2",
-        "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "12");
-  }
-
   public static BatchMetadata givenBatchMetadataCountrySearch() {
-    return new BatchMetadata("1", "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+    return new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
         "Netherlands");
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled(){
-    return new AnnotationEvent(List.of(givenAnnotationRequest().withPlaceInBatch("1")), JOB_ID,
+    return new AnnotationEvent(List.of(givenAnnotationRequest().withPlaceInBatch(1)), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
   }
 

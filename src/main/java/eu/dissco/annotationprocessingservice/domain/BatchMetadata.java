@@ -1,7 +1,7 @@
 package eu.dissco.annotationprocessingservice.domain;
 
 public record BatchMetadata(
-    String placeInBatch,
+    int placeInBatch,
     String inputField,
     String inputValue
 ) {

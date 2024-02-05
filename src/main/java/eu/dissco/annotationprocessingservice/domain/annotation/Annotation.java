@@ -44,7 +44,7 @@ public class Annotation {
   @JsonProperty("schema.org:aggregateRating")
   private AggregateRating odsAggregateRating;
   @JsonProperty("placeInBatch")
-  private String placeInBatch;
+  private int placeInBatch;
 
   public Annotation withOdsId(String odsId) {
     this.odsId = odsId;
@@ -117,7 +117,7 @@ public class Annotation {
     return this;
   }
 
-  public Annotation withPlaceInBatch(String placeInBatch){
+  public Annotation withPlaceInBatch(int placeInBatch){
     this.placeInBatch = placeInBatch;
     return this;
   }

@@ -60,10 +60,10 @@ public class BatchAnnotationService {
     }
   }
 
-  private Annotation getBaseAnnotation(String placeInBatch, List<Annotation> annotations)
+  private Annotation getBaseAnnotation(int placeInBatch, List<Annotation> annotations)
       throws BatchingException {
     for (var annotation : annotations) {
-      if (placeInBatch.equals(annotation.getPlaceInBatch())) {
+      if (placeInBatch == annotation.getPlaceInBatch()) {
         return annotation;
       }
     }

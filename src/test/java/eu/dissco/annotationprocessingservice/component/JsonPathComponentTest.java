@@ -101,7 +101,7 @@ class JsonPathComponentTest {
             .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"));
     // Path is incorrect
     var batchMetadata = new BatchMetadata(
-        "1", "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude", "11");
+        1, "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude", "11");
 
     //Then
     assertThrows(BatchingException.class,
@@ -128,7 +128,7 @@ class JsonPathComponentTest {
   @Test
   void testBadJsonpathFormat() throws JsonProcessingException {
     // Given
-    var batchMetadata = new BatchMetadata("1", "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']", "11");
+    var batchMetadata = new BatchMetadata(1, "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']", "11");
     var baseTargetClassSelector = new Target()
         .withOdsId(ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
