@@ -9,10 +9,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.HasRoi;
-
 import java.security.MessageDigest;
 import java.util.UUID;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

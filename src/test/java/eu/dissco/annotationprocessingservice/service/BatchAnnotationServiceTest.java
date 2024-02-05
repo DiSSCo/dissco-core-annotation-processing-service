@@ -9,7 +9,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
@@ -25,7 +24,6 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.TestUtils;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
