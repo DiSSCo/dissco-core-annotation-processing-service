@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -266,20 +267,26 @@ public class TestUtils {
         """);
   }
 
-  public static JsonNode givenBatchMetadataLatitudeSearch() throws JsonProcessingException {
-    return MAPPER.readTree("""
-        {
-          "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value":11
-        }
-        """);
+  public static BatchMetadata givenBatchMetadataLatitudeSearch() {
+    return new BatchMetadata("1",
+        "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
+        "11");
   }
 
-  public static JsonNode givenBatchMetadataCountrySearch() throws JsonProcessingException {
-    return MAPPER.readTree("""
-        {
-          "digitalSpecimenWrapper.occurrences[*].location.dwc:country":"Netherlands"
-        }
-        """);
+  public static BatchMetadata givenBatchMetadataLatitudeSearchSecond() {
+    return new BatchMetadata("2",
+        "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
+        "12");
+  }
+
+  public static BatchMetadata givenBatchMetadataCountrySearch() {
+    return new BatchMetadata("1", "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+        "Netherlands");
+  }
+
+  public static AnnotationEvent givenAnnotationEventBatchEnabled(){
+    return new AnnotationEvent(List.of(givenAnnotationRequest().withPlaceInBatch("1")), JOB_ID,
+        List.of(givenBatchMetadataLatitudeSearch()), null);
   }
 
   public static JsonNode givenElasticDocument() {

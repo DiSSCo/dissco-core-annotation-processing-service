@@ -43,6 +43,8 @@ public class Annotation {
   private Instant oaGenerated;
   @JsonProperty("schema.org:aggregateRating")
   private AggregateRating odsAggregateRating;
+  @JsonProperty("placeInBatch")
+  private String placeInBatch;
 
   public Annotation withOdsId(String odsId) {
     this.odsId = odsId;
@@ -112,6 +114,11 @@ public class Annotation {
 
   public Annotation withOdsAggregateRating(AggregateRating odsAggregateRating) {
     this.odsAggregateRating = odsAggregateRating;
+    return this;
+  }
+
+  public Annotation withPlaceInBatch(String placeInBatch){
+    this.placeInBatch = placeInBatch;
     return this;
   }
 

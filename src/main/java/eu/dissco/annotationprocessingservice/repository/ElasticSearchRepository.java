@@ -10,11 +10,11 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -66,29 +66,24 @@ public class ElasticSearchRepository {
     return client.bulk(bulkRequest.build());
   }
 
-  private List<Query> generateQueries(JsonNode batchMetadata) {
-    var queries = new ArrayList<Query>();
-    var fields = batchMetadata.fields();
-    while (fields.hasNext()) {
-      var field = fields.next();
-      var key = field.getKey().replaceAll("\\[[^]]*]", "");
-      var val = field.getValue().asText().toLowerCase();
-      queries.add(new Query.Builder().term(t -> t.field(key).value(val)).build());
-    }
-    return queries;
+  private Query generateBatchQuery(BatchMetadata batchMetadata) {
+    var key = batchMetadata.inputField().replaceAll("\\[[^]]*]", "");
+    var val = batchMetadata.inputValue();
+    return new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build();
   }
 
-  public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType, JsonNode batchMetadata,
+  public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType,
+      BatchMetadata batchMetadata,
       int pageNumber, int pageSize)
       throws IOException {
-    var queries = generateQueries(batchMetadata);
-    var index = targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
-        : properties.getDigitalMediaObjectIndex();
+    var query = generateBatchQuery(batchMetadata);
+    var index =
+        targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
+            : properties.getDigitalMediaObjectIndex();
     var searchRequest = new SearchRequest.Builder()
         .index(index)
         .query(
-            q -> q.bool(b -> b.should(queries).minimumShouldMatch(String.valueOf(queries.size()))))
-        .fields(f -> f.field("id"))
+            q -> q.bool(b -> b.must(query)))
         .trackTotalHits(t -> t.enabled(Boolean.TRUE))
         .from(getOffset(pageNumber, pageSize))
         .size(pageSize).build();
