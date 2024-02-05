@@ -15,7 +15,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -67,24 +66,24 @@ public class ElasticSearchRepository {
     return client.bulk(bulkRequest.build());
   }
 
-  private List<Query> generateQueries(BatchMetadata batchMetadata) {
+  private Query generateBatchQuery(BatchMetadata batchMetadata) {
     var key = batchMetadata.inputField().replaceAll("\\[[^]]*]", "");
-    var val = String.valueOf(batchMetadata.inputValue());
-    return List.of(new Query.Builder().term(t -> t.field(key).value(val)).build());
+    var val = batchMetadata.inputValue();
+    return new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build();
   }
 
   public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType,
       BatchMetadata batchMetadata,
       int pageNumber, int pageSize)
       throws IOException {
-    var query = generateQueries(batchMetadata);
+    var query = generateBatchQuery(batchMetadata);
     var index =
         targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
             : properties.getDigitalMediaObjectIndex();
     var searchRequest = new SearchRequest.Builder()
         .index(index)
         .query(
-            q -> q.bool(b -> b.should(query).minimumShouldMatch("1")))
+            q -> q.bool(b -> b.must(query)))
         .trackTotalHits(t -> t.enabled(Boolean.TRUE))
         .from(getOffset(pageNumber, pageSize))
         .size(pageSize).build();

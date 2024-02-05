@@ -284,13 +284,8 @@ public class TestUtils {
         "Netherlands");
   }
 
-  public static AnnotationEvent givenAnnotationEventBatchEnabled(Annotation annotationRequest){
-    return new AnnotationEvent(List.of(annotationRequest), JOB_ID,
-        List.of(givenBatchMetadataLatitudeSearch()), null);
-  }
-
   public static AnnotationEvent givenAnnotationEventBatchEnabled(){
-    return new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID,
+    return new AnnotationEvent(List.of(givenAnnotationRequest().withPlaceInBatch("1")), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
   }
 

@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.controller;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static org.assertj.core.api.Assertions.assertThat;

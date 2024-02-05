@@ -29,13 +29,14 @@ public class BatchAnnotationService {
 
   public void applyBatchAnnotations(AnnotationEvent annotationEvent)
       throws IOException, BatchingException {
-    boolean moreBatching = true;
-    int pageNumber = 1;
     var pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
-    var targetType = annotationEvent.annotations().get(0).getOaTarget().getOdsType();
-    for (var baseAnnotation : annotationEvent.annotations()) {
+    for (var batchMetadata : annotationEvent.batchMetadata()) {
+      boolean moreBatching = true;
+      int pageNumber = 1;
       while (moreBatching) {
-        var batchMetadata = getBatchMetadata(annotationEvent.batchMetadata(), baseAnnotation.getPlaceInBatch());
+        var baseAnnotation = getBaseAnnotation(batchMetadata.placeInBatch(),
+            annotationEvent.annotations());
+        var targetType = baseAnnotation.getOaTarget().getOdsType();
         var annotatedObjects = elasticRepository.searchByBatchMetadata(targetType,
             batchMetadata, pageNumber, pageSizePlusOne);
         if (annotatedObjects.isEmpty()) {
@@ -48,8 +49,7 @@ public class BatchAnnotationService {
         log.info("Successfully identified {} {}s to apply batch annotations to",
             annotatedObjects.size(),
             targetType);
-        var annotations = generateBatchAnnotations(annotationEvent.annotations(),
-            batchMetadata, annotatedObjects);
+        var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata, annotatedObjects);
         annotations = moreBatching ? annotations.subList(0,
             applicationProperties.getBatchPageSize()) : annotations;
         var batchEvent = new AnnotationEvent(annotations, annotationEvent.jobId(), null, true);
@@ -60,11 +60,11 @@ public class BatchAnnotationService {
     }
   }
 
-  private BatchMetadata getBatchMetadata(List<BatchMetadata> batchMetadataList,
-      String placeInBatch) throws BatchingException {
-    for (var batchMetadata : batchMetadataList) {
-      if (batchMetadata.placeInBatch().equals(placeInBatch)) {
-        return batchMetadata;
+  private Annotation getBaseAnnotation(String placeInBatch, List<Annotation> annotations)
+      throws BatchingException {
+    for (var annotation : annotations) {
+      if (placeInBatch.equals(annotation.getPlaceInBatch())) {
+        return annotation;
       }
     }
     log.error("Unable to find batch metadata for annotation with placeInBatch {}",
@@ -72,16 +72,14 @@ public class BatchAnnotationService {
     throw new BatchingException();
   }
 
-  private List<Annotation> generateBatchAnnotations(List<Annotation> baseAnnotations,
+  private List<Annotation> generateBatchAnnotations(Annotation baseAnnotation,
       BatchMetadata batchMetadata, List<JsonNode> annotatedObjects)
       throws BatchingException, JsonProcessingException {
     var batchAnnotations = new ArrayList<Annotation>();
-    for (var baseAnnotation : baseAnnotations) {
-      for (var annotatedObject : annotatedObjects) {
-        var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
-            baseAnnotation.getOaTarget());
-        batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
-      }
+    for (var annotatedObject : annotatedObjects) {
+      var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
+          baseAnnotation.getOaTarget());
+      batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }
     return batchAnnotations;
   }
