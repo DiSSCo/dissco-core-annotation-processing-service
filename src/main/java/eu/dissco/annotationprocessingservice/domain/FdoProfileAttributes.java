@@ -1,5 +1,8 @@
 package eu.dissco.annotationprocessingservice.domain;
 
+import lombok.Getter;
+
+@Getter
 public enum FdoProfileAttributes {
 
   TYPE("type", "annotation"),
@@ -21,11 +24,4 @@ public enum FdoProfileAttributes {
     this.defaultValue = defaultValue;
   }
 
-  public String getAttribute() {
-    return attribute;
-  }
-
-  public String getDefaultValue() {
-    return defaultValue;
-  }
 }

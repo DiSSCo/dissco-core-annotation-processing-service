@@ -14,7 +14,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationPro
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
@@ -641,7 +640,7 @@ class ProcessingKafkaServiceTest {
   void testNewMessageBatchEnabled() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadataLatitudeSearch(),
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, List.of(givenBatchMetadataLatitudeSearch()),
         false);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());

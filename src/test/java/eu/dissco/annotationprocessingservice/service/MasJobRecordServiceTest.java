@@ -10,18 +10,14 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,28 +103,11 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkMasJobRecordAsCompletedBatchResult(){
     // Given
-    var existingAnnotations = MAPPER.createArrayNode().add(ID);
-    var newAnnotations = MAPPER.createArrayNode().add(ID_ALT);
-    given(repository.getMasJobRecordAnnotations(JOB_ID)).willReturn(existingAnnotations);
-    var expectedArray = MAPPER.createArrayNode().addAll(existingAnnotations).addAll(newAnnotations);
-
     // When
     service.markMasJobRecordAsComplete(JOB_ID, List.of(ID_ALT), true);
 
     // Then
-    then(repository).should().markMasJobRecordAsComplete(JOB_ID, expectedArray);
-  }
-
-  @Test
-  void testMarkMasJobRecordAsCompletedBatchResultUnexpected(){
-    // Given
-    given(repository.getMasJobRecordAnnotations(JOB_ID)).willReturn(MAPPER.createObjectNode());
-
-    // When
-    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID_ALT), true);
-
-    // Then
-    then(repository).shouldHaveNoMoreInteractions();
+    then(repository).shouldHaveNoInteractions();
   }
 
   @Test

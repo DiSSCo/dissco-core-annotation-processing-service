@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
@@ -165,10 +164,11 @@ class ElasticSearchRepositoryIT {
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
+    var batchMetadata = givenBatchMetadataCountrySearch();
 
     // When
     var result = repository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
-        givenBatchMetadataCountrySearch(), 1, 10);
+       batchMetadata, 1, 10);
 
     // Then
     assertThat(result).isEqualTo(List.of(targetDocument));

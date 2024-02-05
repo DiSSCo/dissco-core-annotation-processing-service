@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Filter;
 import com.jayway.jsonpath.JsonPathException;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
@@ -35,14 +36,14 @@ public class JsonPathComponent {
   private final Pattern lastKeyPattern;
 
 
-  public List<Target> getAnnotationTargets(JsonNode batchMetadata, JsonNode annotatedObject,
+  public List<Target> getAnnotationTargets(BatchMetadata batchMetadata, JsonNode annotatedObject,
       Target baseTarget) throws JsonProcessingException, BatchingException {
     var context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
     var filter = generateFilter(batchMetadata);
     List<String> correctJsonInputPaths = null;
     try {
       correctJsonInputPaths = context.read(
-          getParentKey(batchMetadata.fields().next().getKey()), filter);
+          getParentKey(batchMetadata.inputField()), filter);
     } catch (JsonPathException e) {
       log.error("Poorly formatted json path", e);
       throw new BatchingException();
@@ -55,13 +56,14 @@ public class JsonPathComponent {
     return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
   }
 
-  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget, String newTargetId) {
+  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget,
+      String newTargetId) {
     boolean isClassSelector = baseTarget.getOaSelector().getOdsType()
         .equals(SelectorType.CLASS_SELECTOR);
     List<Target> newTargets = new ArrayList<>();
     for (var targetPath : targetPaths) {
       Selector newSelector = null;
-      if (isClassSelector){
+      if (isClassSelector) {
         newSelector = new ClassSelector()
             .withOaClass(targetPath);
       } else {
@@ -70,7 +72,7 @@ public class JsonPathComponent {
       }
       newTargets.add(new Target()
           .withOdsType(baseTarget.getOdsType())
-          .withOdsId("https://hdl.handle.net/"+newTargetId)
+          .withOdsId("https://doi.org/" + newTargetId)
           .withSelector(newSelector));
     }
     return newTargets;
@@ -94,11 +96,9 @@ public class JsonPathComponent {
     }
   }
 
-  private Filter generateFilter(JsonNode batchMetadata) throws BatchingException {
-    var fields = batchMetadata.fields();
-    var firstField = fields.next();
-    var targetField = getLastKey(firstField.getKey());
-    var targetValue = firstField.getValue().asText();
+  private Filter generateFilter(BatchMetadata batchMetadata) throws BatchingException {
+    var targetField = getLastKey(batchMetadata.inputField());
+    var targetValue = batchMetadata.inputValue();
     return filter(where(targetField).is(targetValue));
   }
 
@@ -171,7 +171,7 @@ public class JsonPathComponent {
     return removeTrailingPeriod(jsonPath);
   }
 
-  private String removeTrailingPeriod(String jsonPath){
+  private String removeTrailingPeriod(String jsonPath) {
     var jsonPathArray = jsonPath.split("\\.");
     return String.join(".", jsonPathArray);
   }

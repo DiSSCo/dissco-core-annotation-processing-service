@@ -1,14 +1,9 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import co.elastic.clients.elasticsearch._types.Result;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
-
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;

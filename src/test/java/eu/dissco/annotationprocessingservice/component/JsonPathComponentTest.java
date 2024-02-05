@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.component;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PREFIX;
+import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
@@ -12,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
@@ -37,23 +39,22 @@ class JsonPathComponentTest {
     jsonPathComponent = new JsonPathComponent(MAPPER, jsonPathConfiguration, lastKeyMatcher);
   }
 
-
   @Test
   void testGetAnnotationTargetPathsClassSelector()
       throws JsonProcessingException, BatchingException {
     // Given
     var expected = List.of(
         new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[0].locality")),
         new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[2].locality")));
 
     var baseTargetClassSelector = new Target()
-        .withOdsId(HANDLE_PREFIX + ID)
+        .withOdsId(DOI_PROXY + ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
         .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[1].locality"));
 
@@ -72,11 +73,11 @@ class JsonPathComponentTest {
     // Given
     var baseTargetClassSelector = givenOaTarget(ID);
     var expected = List.of(new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[0].locality")),
         new Target()
-            .withOdsId(HANDLE_PREFIX + ID)
+            .withOdsId(DOI_PROXY + ID)
             .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
             .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality")));
 
@@ -94,16 +95,13 @@ class JsonPathComponentTest {
       throws JsonProcessingException {
     // Given
     var baseTargetClassSelector = new Target()
-        .withOdsId(HANDLE_PREFIX + ID)
+        .withOdsId(HANDLE_PROXY + ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
         .withSelector(new ClassSelector()
             .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"));
     // Path is incorrect
-    var batchMetadata = MAPPER.readTree("""
-        {
-          "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude":11
-        }
-        """);
+    var batchMetadata = new BatchMetadata(
+        "1", "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude", "11");
 
     //Then
     assertThrows(BatchingException.class,
@@ -130,11 +128,7 @@ class JsonPathComponentTest {
   @Test
   void testBadJsonpathFormat() throws JsonProcessingException {
     // Given
-    var batchMetadata = MAPPER.readTree("""
-        {
-          "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']":11
-        }
-        """);
+    var batchMetadata = new BatchMetadata("1", "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']", "11");
     var baseTargetClassSelector = new Target()
         .withOdsId(ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)

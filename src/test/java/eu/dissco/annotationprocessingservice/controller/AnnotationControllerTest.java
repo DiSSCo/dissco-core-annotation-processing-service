@@ -9,7 +9,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
-import eu.dissco.annotationprocessingservice.service.ProcessingKafkaService;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
