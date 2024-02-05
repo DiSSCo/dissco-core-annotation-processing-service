@@ -50,7 +50,6 @@ class SchemaValidatorComponentTest {
   @Test
   void testValidateProcessResults() {
     // Given
-    given(env.matchesProfiles(Profiles.KAFKA)).willReturn(true);
     var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null, null);
 
     // Then
@@ -87,28 +86,6 @@ class SchemaValidatorComponentTest {
     assertThrows(AnnotationValidationException.class,
         () -> schemaValidator.validateAnnotationRequest(annotationRequest,
             false));
-  }
-
-  @Test
-  void testJobIdMissing() {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withOdsJobId(null);
-    given(env.matchesProfiles(Profiles.KAFKA)).willReturn(true);
-
-    // Then
-    assertDoesNotThrow(() -> schemaValidator.validateAnnotationRequest(annotationRequest, true));
-  }
-
-  @Test
-  void testJobIdOnWebRequest() {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withOdsJobId(JOB_ID);
-    given(env.matchesProfiles(Profiles.KAFKA)).willReturn(false);
-    given(env.matchesProfiles(Profiles.WEB)).willReturn(true);
-
-    // Then
-    assertThrows(AnnotationValidationException.class,
-        () -> schemaValidator.validateAnnotationRequest(annotationRequest, true));
   }
 
   @ParameterizedTest
