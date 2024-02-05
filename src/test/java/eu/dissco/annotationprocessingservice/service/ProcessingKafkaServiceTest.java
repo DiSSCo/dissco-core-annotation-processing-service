@@ -641,7 +641,7 @@ class ProcessingKafkaServiceTest {
   void testNewMessageBatchEnabled() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, givenBatchMetadataLatitudeSearch(),
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, List.of(givenBatchMetadataLatitudeSearch()),
         false);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());

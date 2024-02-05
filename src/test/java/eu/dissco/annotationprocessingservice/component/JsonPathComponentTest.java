@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
@@ -100,11 +101,8 @@ class JsonPathComponentTest {
         .withSelector(new ClassSelector()
             .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"));
     // Path is incorrect
-    var batchMetadata = MAPPER.readTree("""
-        {
-          "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude":11
-        }
-        """);
+    var batchMetadata = new BatchMetadata(
+        "1", "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude", "11");
 
     //Then
     assertThrows(BatchingException.class,
@@ -131,11 +129,7 @@ class JsonPathComponentTest {
   @Test
   void testBadJsonpathFormat() throws JsonProcessingException {
     // Given
-    var batchMetadata = MAPPER.readTree("""
-        {
-          "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']":11
-        }
-        """);
+    var batchMetadata = new BatchMetadata("1", "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']", 11);
     var baseTargetClassSelector = new Target()
         .withOdsId(ID)
         .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)

@@ -10,6 +10,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
@@ -66,29 +67,24 @@ public class ElasticSearchRepository {
     return client.bulk(bulkRequest.build());
   }
 
-  private List<Query> generateQueries(JsonNode batchMetadata) {
-    var queries = new ArrayList<Query>();
-    var fields = batchMetadata.fields();
-    while (fields.hasNext()) {
-      var field = fields.next();
-      var key = field.getKey().replaceAll("\\[[^]]*]", "");
-      var val = field.getValue().asText().toLowerCase();
-      queries.add(new Query.Builder().term(t -> t.field(key).value(val)).build());
-    }
-    return queries;
+  private List<Query> generateQueries(BatchMetadata batchMetadata) {
+    var key = batchMetadata.inputField().replaceAll("\\[[^]]*]", "");
+    var val = String.valueOf(batchMetadata.inputValue());
+    return List.of(new Query.Builder().term(t -> t.field(key).value(val)).build());
   }
 
-  public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType, JsonNode batchMetadata,
+  public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType,
+      BatchMetadata batchMetadata,
       int pageNumber, int pageSize)
       throws IOException {
-    var queries = generateQueries(batchMetadata);
-    var index = targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
-        : properties.getDigitalMediaObjectIndex();
+    var query = generateQueries(batchMetadata);
+    var index =
+        targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
+            : properties.getDigitalMediaObjectIndex();
     var searchRequest = new SearchRequest.Builder()
         .index(index)
         .query(
-            q -> q.bool(b -> b.should(queries).minimumShouldMatch(String.valueOf(queries.size()))))
-        .fields(f -> f.field("id"))
+            q -> q.bool(b -> b.should(query).minimumShouldMatch("1")))
         .trackTotalHits(t -> t.enabled(Boolean.TRUE))
         .from(getOffset(pageNumber, pageSize))
         .size(pageSize).build();
