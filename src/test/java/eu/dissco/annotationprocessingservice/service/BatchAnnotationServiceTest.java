@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
-import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
@@ -85,7 +84,7 @@ class BatchAnnotationServiceTest {
     var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null, true);
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+    given(elasticRepository.searchByBatchMetadata(
         givenBatchMetadataLatitudeSearch(), 1, pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
@@ -94,6 +93,58 @@ class BatchAnnotationServiceTest {
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
   }
+
+  @Test
+  void testApplyBatchingSinglePageTwoBaseAnnotations() throws Exception {
+    // Given
+    int placeInBatch = 1;
+    var annotationBodyB = givenOaBody().withOaValue(List.of("Alt value"));
+    var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch(placeInBatch);
+    var baseAnnotationB = givenAnnotationRequest().withPlaceInBatch(placeInBatch)
+        .withOaBody(annotationBodyB);
+    var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+        List.of(givenBatchMetadataLatitudeSearch()), null);
+
+    var annotatableIds = List.of("0", "1", "2");
+
+    int pageSize = annotatableIds.size();
+    int pageSizePlusOne = pageSize + 1;
+    var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
+    var batchAnnotationsA = annotatableIds.stream().map(id ->
+        new Annotation()
+            .withOaBody(givenOaBody())
+            .withOaMotivation(Motivation.COMMENTING)
+            .withOaTarget(givenOaTarget(String.valueOf(id)))
+            .withDcTermsCreated(CREATED)
+            .withOaCreator(givenCreator(CREATOR))
+            .withOdsAggregateRating(givenAggregationRating())
+    ).toList();
+    var batchAnnotationsB = annotatableIds.stream().map(id ->
+        new Annotation()
+            .withOaBody(annotationBodyB)
+            .withOaMotivation(Motivation.COMMENTING)
+            .withOaTarget(givenOaTarget(String.valueOf(id)))
+            .withDcTermsCreated(CREATED)
+            .withOaCreator(givenCreator(CREATOR))
+            .withOdsAggregateRating(givenAggregationRating())
+    ).toList();
+
+    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, true);
+    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, true);
+
+    givenJsonPathResponse(annotatableIds);
+    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
+    given(elasticRepository.searchByBatchMetadata(
+        givenBatchMetadataLatitudeSearch(), 1, pageSizePlusOne)).willReturn(elasticDocuments);
+
+    // When
+    batchAnnotationService.applyBatchAnnotations(event);
+
+    // Then
+    then(kafkaPublisherService).should().publishBatchAnnotation(batchEventA);
+    then(kafkaPublisherService).should().publishBatchAnnotation(batchEventB);
+  }
+
 
   @Test
   void testApplyBatchingMultipleBatchMetadata() throws Exception {
@@ -105,7 +156,7 @@ class BatchAnnotationServiceTest {
     var batchMetadataA = givenBatchMetadataLatitudeSearch();
     var batchMetadataB = new BatchMetadata(2,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "12");
+        "12", AnnotationTargetType.DIGITAL_SPECIMEN);
     var batchMetadataList = List.of(batchMetadataA, batchMetadataB);
     var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch(1);
     var baseAnnotationB = givenAnnotationRequest()
@@ -113,7 +164,8 @@ class BatchAnnotationServiceTest {
         .withOaTarget(annotationTargetB)
         .withPlaceInBatch(2);
 
-    var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID, batchMetadataList, false);
+    var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+        batchMetadataList, false);
 
     int pageSize = annotatableIdsA.size();
     int pageSizePlusOne = pageSize + 1;
@@ -143,9 +195,9 @@ class BatchAnnotationServiceTest {
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+    given(elasticRepository.searchByBatchMetadata(
         batchMetadataA, 1, pageSizePlusOne)).willReturn(elasticDocumentsA);
-    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.MEDIA_OBJECT,
+    given(elasticRepository.searchByBatchMetadata(
         batchMetadataB, 1, pageSizePlusOne)).willReturn(elasticDocumentsB);
 
     // When
@@ -159,11 +211,12 @@ class BatchAnnotationServiceTest {
   @Test
   void testApplyBatchAnnotationsMissingPlaceInBatch() {
     // Given
-    given(applicationProperties.getBatchPageSize()).willReturn(10);
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, List.of(givenBatchMetadataLatitudeSearch()), false);
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID,
+        List.of(givenBatchMetadataLatitudeSearch()), false);
 
     // When
-    assertThrows(BatchingException.class, () -> batchAnnotationService.applyBatchAnnotations(event));
+    assertThrows(BatchingException.class,
+        () -> batchAnnotationService.applyBatchAnnotations(event));
   }
 
   @Test
@@ -175,9 +228,9 @@ class BatchAnnotationServiceTest {
     var elasticPageOne = Collections.nCopies(pageSizePlusOne, givenElasticDocument());
     var elasticPageTwo = List.of(givenElasticDocument());
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+    given(elasticRepository.searchByBatchMetadata(
         givenBatchMetadataLatitudeSearch(), 1, pageSizePlusOne)).willReturn(elasticPageOne);
-    given(elasticRepository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
+    given(elasticRepository.searchByBatchMetadata(
         givenBatchMetadataLatitudeSearch(), 2, pageSizePlusOne)).willReturn(elasticPageTwo);
     given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
         List.of(givenOaTarget(ID)));
@@ -194,7 +247,7 @@ class BatchAnnotationServiceTest {
     // Given
     var event = givenAnnotationEventBatchEnabled();
     given(applicationProperties.getBatchPageSize()).willReturn(10);
-    given(elasticRepository.searchByBatchMetadata(any(), any(), anyInt(), anyInt())).willReturn(
+    given(elasticRepository.searchByBatchMetadata(any(), anyInt(), anyInt())).willReturn(
         Collections.emptyList());
 
     // When

@@ -277,12 +277,12 @@ public class TestUtils {
   public static BatchMetadata givenBatchMetadataLatitudeSearch() {
     return new BatchMetadata(1,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "11");
+        "11", AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
   public static BatchMetadata givenBatchMetadataCountrySearch() {
     return new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-        "Netherlands");
+        "Netherlands", AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled(){

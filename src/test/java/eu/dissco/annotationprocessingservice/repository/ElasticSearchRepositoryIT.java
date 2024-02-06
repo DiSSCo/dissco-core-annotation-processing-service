@@ -16,6 +16,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
@@ -167,8 +168,8 @@ class ElasticSearchRepositoryIT {
     var batchMetadata = givenBatchMetadataCountrySearch();
 
     // When
-    var result = repository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN,
-       batchMetadata, 1, 10);
+    var result = repository.searchByBatchMetadata(
+        batchMetadata, 1, 10);
 
     // Then
     assertThat(result).isEqualTo(List.of(targetDocument));
@@ -180,10 +181,11 @@ class ElasticSearchRepositoryIT {
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), MEDIA_INDEX);
+    var batchMetadata = new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+        "Netherlands", AnnotationTargetType.MEDIA_OBJECT);
 
     // When
-    var result = repository.searchByBatchMetadata(AnnotationTargetType.MEDIA_OBJECT, givenBatchMetadataCountrySearch(),
-        1, 10);
+    var result = repository.searchByBatchMetadata(batchMetadata,1, 10);
 
     // Then
     assertThat(result).isEqualTo(List.of(targetDocument));
@@ -195,7 +197,7 @@ class ElasticSearchRepositoryIT {
     postDocuments(List.of(givenElasticDocument("OtherCountry", ID_ALT)), DIGITAL_SPECIMEN_INDEX);
 
     // When
-    var result = repository.searchByBatchMetadata(AnnotationTargetType.DIGITAL_SPECIMEN, givenBatchMetadataCountrySearch(), 1, 10);
+    var result = repository.searchByBatchMetadata(givenBatchMetadataCountrySearch(), 1, 10);
 
     // Then
     assertThat(result).isEmpty();

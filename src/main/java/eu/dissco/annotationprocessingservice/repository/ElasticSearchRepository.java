@@ -72,13 +72,12 @@ public class ElasticSearchRepository {
     return new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build();
   }
 
-  public List<JsonNode> searchByBatchMetadata(AnnotationTargetType targetType,
-      BatchMetadata batchMetadata,
+  public List<JsonNode> searchByBatchMetadata(BatchMetadata batchMetadata,
       int pageNumber, int pageSize)
       throws IOException {
     var query = generateBatchQuery(batchMetadata);
     var index =
-        targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
+        batchMetadata.targetType() == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
             : properties.getDigitalMediaObjectIndex();
     var searchRequest = new SearchRequest.Builder()
         .index(index)

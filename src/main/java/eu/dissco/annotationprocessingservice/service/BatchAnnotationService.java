@@ -29,47 +29,56 @@ public class BatchAnnotationService {
 
   public void applyBatchAnnotations(AnnotationEvent annotationEvent)
       throws IOException, BatchingException {
-    var pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
     for (var batchMetadata : annotationEvent.batchMetadata()) {
-      boolean moreBatching = true;
-      int pageNumber = 1;
-      while (moreBatching) {
-        var baseAnnotation = getBaseAnnotation(batchMetadata.placeInBatch(),
-            annotationEvent.annotations());
-        var targetType = baseAnnotation.getOaTarget().getOdsType();
-        var annotatedObjects = elasticRepository.searchByBatchMetadata(targetType,
-            batchMetadata, pageNumber, pageSizePlusOne);
-        if (annotatedObjects.isEmpty()) {
-          log.info("No annotated objects found. Page number: {}", pageNumber);
-          return;
-        }
-        if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
-          moreBatching = false;
-        }
-        log.info("Successfully identified {} {}s to apply batch annotations to",
-            annotatedObjects.size(),
-            targetType);
-        var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata, annotatedObjects);
+      var baseAnnotations = getBaseAnnotation(batchMetadata.placeInBatch(),
+          annotationEvent.annotations());
+      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent);
+    }
+  }
+
+  private void runBatchForMetadata(List<Annotation> baseAnnotations,
+      BatchMetadata batchMetadata,
+      AnnotationEvent annotationEvent)
+      throws IOException, BatchingException {
+    int pageNumber = 1;
+    int pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
+    boolean moreBatching = true;
+    while (moreBatching) {
+      var annotatedObjects = elasticRepository.searchByBatchMetadata(
+          batchMetadata, pageNumber, pageSizePlusOne);
+      if (annotatedObjects.isEmpty()) {
+        log.info("No annotated objects found. Page number: {}", pageNumber);
+        return;
+      }
+      if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
+        moreBatching = false;
+      }
+      log.info("Successfully identified {} {}s to apply batch annotations to",
+          annotatedObjects.size(),
+          batchMetadata.targetType());
+      for (var baseAnnotation : baseAnnotations) {
+        var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
+            annotatedObjects);
         annotations = moreBatching ? annotations.subList(0,
             applicationProperties.getBatchPageSize()) : annotations;
         var batchEvent = new AnnotationEvent(annotations, annotationEvent.jobId(), null, true);
         kafkaService.publishBatchAnnotation(batchEvent);
         log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
-        pageNumber = pageNumber + 1;
       }
+      pageNumber = pageNumber + 1;
     }
   }
 
-  private Annotation getBaseAnnotation(int placeInBatch, List<Annotation> annotations)
+  private List<Annotation> getBaseAnnotation(int placeInBatch, List<Annotation> annotations)
       throws BatchingException {
-    for (var annotation : annotations) {
-      if (placeInBatch == annotation.getPlaceInBatch()) {
-        return annotation;
-      }
+    var subAnnotations = annotations.stream().filter(p -> p.getPlaceInBatch() == placeInBatch)
+        .toList();
+    if (subAnnotations.isEmpty()) {
+      log.error("Unable to find batch metadata for annotation with placeInBatch {}",
+          placeInBatch);
+      throw new BatchingException();
     }
-    log.error("Unable to find batch metadata for annotation with placeInBatch {}",
-        placeInBatch);
-    throw new BatchingException();
+    return subAnnotations;
   }
 
   private List<Annotation> generateBatchAnnotations(Annotation baseAnnotation,
