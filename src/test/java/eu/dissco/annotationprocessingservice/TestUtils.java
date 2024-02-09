@@ -163,7 +163,7 @@ public class TestUtils {
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
-               "targetType":"DigitalSpecimen",
+               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:commenting"
               }
             }
@@ -181,7 +181,7 @@ public class TestUtils {
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
-               "targetType":"DigitalSpecimen",
+               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:commenting",
                "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               }
@@ -197,7 +197,7 @@ public class TestUtils {
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
-               "targetType":"DigitalSpecimen",
+               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:editing",
                "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               }
@@ -217,7 +217,7 @@ public class TestUtils {
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
-                "targetType":"DigitalSpecimen",
+                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                 "motivation":"oa:commenting"
             },
             "id":"20.5000.1025/KZL-VC0-ZK2"
@@ -236,7 +236,7 @@ public class TestUtils {
                 "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
-                "targetType":"DigitalSpecimen",
+                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                 "motivation":"oa:commenting",
                 "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               },
@@ -253,7 +253,7 @@ public class TestUtils {
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
-               "targetType":"DigitalSpecimen",
+               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:editing",
                 "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
               },
@@ -277,12 +277,12 @@ public class TestUtils {
   public static BatchMetadata givenBatchMetadataLatitudeSearch() {
     return new BatchMetadata(1,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "11", AnnotationTargetType.DIGITAL_SPECIMEN);
+        "11");
   }
 
   public static BatchMetadata givenBatchMetadataCountrySearch() {
     return new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-        "Netherlands", AnnotationTargetType.DIGITAL_SPECIMEN);
+        "Netherlands");
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled(){
@@ -308,13 +308,14 @@ public class TestUtils {
               ",
                   "digitalSpecimenWrapper": {
                     "other": ["a", "10"],
+                    "fieldNum":1,
                     "occurrences": [
                       {
                         "dwc:occurrenceRemarks": "Correct",
                         "annotateTarget":"this",
                         "location": {
                           "dwc:country": \"""" + country + """
-              ",
+",
               "georeference": {
                 "dwc:decimalLatitude": {
                   "dwc:value":11
@@ -345,7 +346,7 @@ public class TestUtils {
             "annotateTarget":"this",
             "location": {
               "dwc:country": \"""" + country + """
-               ",
+",
                     "georeference": {
                       "dwc:decimalLatitude": {
                         "dwc:value":11

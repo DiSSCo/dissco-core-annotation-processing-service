@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -67,17 +68,18 @@ public class ElasticSearchRepository {
   }
 
   private Query generateBatchQuery(BatchMetadata batchMetadata) {
-    var key = batchMetadata.inputField().replaceAll("\\[[^]]*]", "");
+    var key = batchMetadata.inputField().replaceAll("\\[[^]]*]", "") + ".keyword";
     var val = batchMetadata.inputValue();
     return new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build();
   }
 
   public List<JsonNode> searchByBatchMetadata(BatchMetadata batchMetadata,
+      AnnotationTargetType targetType,
       int pageNumber, int pageSize)
       throws IOException {
     var query = generateBatchQuery(batchMetadata);
     var index =
-        batchMetadata.targetType() == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
+        targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
             : properties.getDigitalMediaObjectIndex();
     var searchRequest = new SearchRequest.Builder()
         .index(index)
@@ -94,7 +96,6 @@ public class ElasticSearchRepository {
         .map(JsonNode.class::cast)
         .toList();
   }
-
 
   private int getOffset(int pageNumber, int pageSize) {
     int offset = 0;

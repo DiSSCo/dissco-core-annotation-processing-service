@@ -160,7 +160,7 @@ class ElasticSearchRepositoryIT {
   }
 
   @Test
-  void testByBatchMetadataSpecimen() throws Exception {
+  void searchByBatchMetadata() throws Exception {
     // Given
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
@@ -168,8 +168,24 @@ class ElasticSearchRepositoryIT {
     var batchMetadata = givenBatchMetadataCountrySearch();
 
     // When
-    var result = repository.searchByBatchMetadata(
-        batchMetadata, 1, 10);
+    var result = repository.searchByBatchMetadata(batchMetadata,
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
+
+    // Then
+    assertThat(result).isEqualTo(List.of(targetDocument));
+  }
+
+  @Test
+  void testByBatchMetadataSpecimen() throws Exception {
+    // Given
+    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
+    var altDocument = givenElasticDocument("Netherlands kingdom", ID_ALT);
+    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
+    var batchMetadata = givenBatchMetadataCountrySearch();
+
+    // When
+    var result = repository.searchByBatchMetadata(batchMetadata,
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
 
     // Then
     assertThat(result).isEqualTo(List.of(targetDocument));
@@ -179,13 +195,13 @@ class ElasticSearchRepositoryIT {
   void testByBatchMetadataMedia() throws Exception {
     // Given
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
-    var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
+    var altDocument = givenElasticDocument("Netherlands k", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), MEDIA_INDEX);
-    var batchMetadata = new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-        "Netherlands", AnnotationTargetType.MEDIA_OBJECT);
+    var batchMetadata = givenBatchMetadataCountrySearch();
 
     // When
-    var result = repository.searchByBatchMetadata(batchMetadata,1, 10);
+    var result = repository.searchByBatchMetadata(batchMetadata, AnnotationTargetType.MEDIA_OBJECT,
+        1, 10);
 
     // Then
     assertThat(result).isEqualTo(List.of(targetDocument));
@@ -197,7 +213,8 @@ class ElasticSearchRepositoryIT {
     postDocuments(List.of(givenElasticDocument("OtherCountry", ID_ALT)), DIGITAL_SPECIMEN_INDEX);
 
     // When
-    var result = repository.searchByBatchMetadata(givenBatchMetadataCountrySearch(), 1, 10);
+    var result = repository.searchByBatchMetadata(givenBatchMetadataCountrySearch(),
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
 
     // Then
     assertThat(result).isEmpty();
@@ -213,6 +230,41 @@ class ElasticSearchRepositoryIT {
     }
     client.bulk(bulkRequest.build());
     client.indices().refresh(b -> b.index(index));
+  }
+
+  private JsonNode givenElasticOnlyOneOccurrence() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "id": "20.5000.1025/AAA-BBB-CCC",
+          "digitalSpecimenWrapper": {
+            "fieldNum": 1,
+            "other": [
+              "a",
+              "10"
+            ],
+            "occurrences": [
+              {
+                "dwc:occurrenceRemarks": "Correct",
+                "annotateTarget": "this",
+                "hello":"hello",
+                "location": {
+                  "dwc:country": "netherlands",
+                  "georeference": {
+                    "dwc:decimalLatitude": {
+                      "dwc:value": 11
+                    },
+                    "dwc:decimalLongitude": "10",
+                    "dwc": [
+                      "1"
+                    ]
+                  },
+                  "locality": "known"
+                }
+              }
+            ]
+          }
+        }
+        """);
   }
 
 }

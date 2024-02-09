@@ -62,13 +62,14 @@ public class JsonPathComponent {
         .equals(SelectorType.CLASS_SELECTOR);
     List<Target> newTargets = new ArrayList<>();
     for (var targetPath : targetPaths) {
+      var append = targetPath.contains("digitalSpecimenWrapper") ? "" : "$";
       Selector newSelector = null;
       if (isClassSelector) {
         newSelector = new ClassSelector()
-            .withOaClass(targetPath);
+            .withOaClass(append+targetPath);
       } else {
         newSelector = new FieldSelector()
-            .withOdsField(targetPath);
+            .withOdsField(append+targetPath);
       }
       newTargets.add(new Target()
           .withOdsType(baseTarget.getOdsType())

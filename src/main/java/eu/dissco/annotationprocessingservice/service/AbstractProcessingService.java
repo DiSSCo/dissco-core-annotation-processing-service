@@ -83,6 +83,22 @@ public abstract class AbstractProcessingService {
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
+  protected boolean annotationsAreEqualDebug(Annotation currentAnnotation,
+      Annotation annotation) {
+    var body = currentAnnotation.getOaBody().equals(annotation.getOaBody());
+    var creator = currentAnnotation.getOaCreator().equals(annotation.getOaCreator());
+    var target = currentAnnotation.getOaTarget().equals(annotation.getOaTarget());
+    var other = (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy()
+        .equals(annotation.getOaMotivatedBy()))
+        || (currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null))
+        && (currentAnnotation.getOdsAggregateRating() != null
+        && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
+        || (currentAnnotation.getOdsAggregateRating() == null
+        && annotation.getOdsAggregateRating() == null))
+        && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
+    return body && creator && target && other;
+  }
+
   protected List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {
     if (currentAnnotations.isEmpty()) {
       return Collections.emptyList();
