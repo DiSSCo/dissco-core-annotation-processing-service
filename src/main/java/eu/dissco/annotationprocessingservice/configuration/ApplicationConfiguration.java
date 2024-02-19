@@ -58,12 +58,11 @@ public class ApplicationConfiguration {
   }
 
   @Bean
-  public MessageDigest messageDigest(){
+  public MessageDigest messageDigest() {
     try {
       return MessageDigest.getInstance("MD5");
-    } catch (NoSuchAlgorithmException e){
+    } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("Unable to locate MD5 algorithm");
     }
   }
-
 }

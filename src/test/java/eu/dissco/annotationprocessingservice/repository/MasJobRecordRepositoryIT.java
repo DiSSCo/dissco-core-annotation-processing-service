@@ -12,6 +12,7 @@ import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,10 +72,25 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
   }
 
+  @Test
+  void testGetBatchingRequested(){
+    // Given
+    postMjr(JOB_ID);
+
+    // When
+    var result = repository.getBatchingRequested(JOB_ID);
+
+    // Then
+    assertThat(result).isFalse();
+  }
+
+
   private void postMjr(String jobId) {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
-            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TIME_STARTED)
-        .values(jobId, MjrJobState.SCHEDULED, ID, TARGET_ID, CREATED)
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
+            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED)
+        .values(jobId, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+            CREATED, false)
         .execute();
   }
 }

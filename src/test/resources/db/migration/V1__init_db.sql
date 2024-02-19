@@ -18,7 +18,8 @@ create table annotation
     last_checked     timestamp with time zone not null,
     aggregate_rating jsonb,
     deleted_on       timestamp with time zone,
-    annotation_hash  uuid
+    annotation_hash  uuid,
+    mjr_job_id       text
 );
 
 
@@ -38,5 +39,5 @@ create table mas_job_record
     target_id      text                     not null,
     user_id        text,
     target_type    mjr_target_type,
-    batch_metadata jsonb
+    batching_requested boolean              not null
 );

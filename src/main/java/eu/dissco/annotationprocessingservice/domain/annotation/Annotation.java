@@ -17,6 +17,8 @@ public class Annotation {
 
   @JsonProperty("ods:id")
   private String odsId;
+  @JsonProperty("ods:jobId")
+  String odsJobId;
   @JsonProperty("ods:version")
   private Integer odsVersion;
   @JsonProperty("rdf:type")
@@ -41,9 +43,16 @@ public class Annotation {
   private Instant oaGenerated;
   @JsonProperty("schema.org:aggregateRating")
   private AggregateRating odsAggregateRating;
+  @JsonProperty("placeInBatch")
+  private int placeInBatch;
 
   public Annotation withOdsId(String odsId) {
     this.odsId = odsId;
+    return this;
+  }
+
+  public Annotation withOdsJobId(String odsJobId) {
+    this.odsJobId = odsJobId;
     return this;
   }
 
@@ -105,6 +114,11 @@ public class Annotation {
 
   public Annotation withOdsAggregateRating(AggregateRating odsAggregateRating) {
     this.odsAggregateRating = odsAggregateRating;
+    return this;
+  }
+
+  public Annotation withPlaceInBatch(int placeInBatch){
+    this.placeInBatch = placeInBatch;
     return this;
   }
 

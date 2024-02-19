@@ -29,6 +29,8 @@ public abstract class AbstractProcessingService {
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
   protected final SchemaValidatorComponent schemaValidator;
+  protected final MasJobRecordService masJobRecordService;
+  protected final BatchAnnotationService batchAnnotationService;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
     annotation
@@ -36,6 +38,11 @@ public abstract class AbstractProcessingService {
         .withOdsVersion(1)
         .withAsGenerator(createGenerator())
         .withOaGenerated(Instant.now());
+  }
+
+  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId) {
+    enrichNewAnnotation(annotation, id);
+    annotation.withOdsJobId(applicationProperties.getHandleProxy() + jobId);
   }
 
   private Generator createGenerator() {
@@ -55,14 +62,24 @@ public abstract class AbstractProcessingService {
         .withDcTermsCreated(currentAnnotation.getDcTermsCreated());
   }
 
-  protected static boolean annotationsAreEqual(Annotation currentAnnotation, Annotation annotation) {
+  protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation,
+      String jobId) {
+    enrichUpdateAnnotation(annotation, currentAnnotation);
+    annotation.withOdsJobId(jobId);
+  }
+
+  protected static boolean annotationsAreEqual(Annotation currentAnnotation,
+      Annotation annotation) {
     return currentAnnotation.getOaBody().equals(annotation.getOaBody())
         && currentAnnotation.getOaCreator().equals(annotation.getOaCreator())
         && currentAnnotation.getOaTarget().equals(annotation.getOaTarget())
-        && (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy().equals(annotation.getOaMotivatedBy()))
+        && (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy()
+        .equals(annotation.getOaMotivatedBy()))
         || (currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null))
-        && (currentAnnotation.getOdsAggregateRating() != null && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
-        || (currentAnnotation.getOdsAggregateRating() == null && annotation.getOdsAggregateRating() == null))
+        && (currentAnnotation.getOdsAggregateRating() != null
+        && currentAnnotation.getOdsAggregateRating().equals(annotation.getOdsAggregateRating())
+        || (currentAnnotation.getOdsAggregateRating() == null
+        && annotation.getOdsAggregateRating() == null))
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 

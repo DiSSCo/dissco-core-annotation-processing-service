@@ -2,13 +2,14 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
+import java.lang.reflect.Array;
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
@@ -28,32 +29,40 @@ public class MasJobRecordService {
       log.error("Missing MAS Job ID for event {}", event);
       throw new FailedProcessingException();
     }
-    if (!environment.matchesProfiles(Profiles.KAFKA)){
+    if (!environment.matchesProfiles(Profiles.KAFKA)) {
       throw new UnsupportedOperationException();
     }
   }
 
-  public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds) {
-    var annotationNode = buildAnnotationNode(annotationIds);
-    repository.markMasJobRecordAsComplete(jobId, annotationNode);
-  }
-
-  public void markEmptyMasJobRecordAsComplete(String jobId){
-    repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
-  }
-
-  private JsonNode buildAnnotationNode(List<String> annotationIds) {
-    var listNode = mapper.createArrayNode();
-    for (var annotationId : annotationIds) {
-      var annotationNode = mapper.createObjectNode();
-      annotationNode.put("annotationId", annotationId);
-      listNode.add(annotationNode);
+  public void markMasJobRecordAsComplete(String jobId, List<String> annotationIds,
+      boolean isBatchResult) {
+    if (isBatchResult) {
+      return;
     }
+    var newAnnotationNode = buildAnnotationNode(annotationIds);
+    repository.markMasJobRecordAsComplete(jobId, newAnnotationNode);
+  }
+
+  public void markEmptyMasJobRecordAsComplete(String jobId, boolean isBatchResult) {
+    if (!isBatchResult) {
+      repository.markMasJobRecordAsComplete(jobId, mapper.createObjectNode());
+    }
+  }
+
+  private ArrayNode buildAnnotationNode(List<String> annotationIds) {
+    var listNode = mapper.createArrayNode();
+    annotationIds.forEach(listNode::add);
     return listNode;
   }
 
-  public void markMasJobRecordAsFailed(String jobId) {
-    repository.markMasJobRecordAsFailed(jobId);
+  public void markMasJobRecordAsFailed(String jobId, boolean isBatchResult) {
+    if (!isBatchResult) {
+      repository.markMasJobRecordAsFailed(jobId);
+    }
+  }
+
+  public boolean getBatchingRequest(String jobId) {
+    return repository.getBatchingRequested(jobId);
   }
 
 }

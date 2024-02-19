@@ -4,26 +4,21 @@ import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenGenerator;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.BDDMockito.given;
 
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
+import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.domain.ProcessResult;
-import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +26,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
 class SchemaValidatorComponentTest {
 
   private SchemaValidatorComponent schemaValidator;
+  @Mock
+  private Environment env;
 
   @BeforeEach
   void setup() throws IOException {
@@ -44,14 +43,14 @@ class SchemaValidatorComponentTest {
     try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
         .getResourceAsStream("json-schema/annotation_request.json")) {
       var schema = factory.getSchema(inputStream);
-      schemaValidator = new SchemaValidatorComponent(schema, MAPPER);
+      schemaValidator = new SchemaValidatorComponent(schema, MAPPER, env);
     }
   }
 
   @Test
   void testValidateProcessResults() {
     // Given
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID);
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null, null);
 
     // Then
     assertDoesNotThrow(() -> schemaValidator.validateEvent(event));

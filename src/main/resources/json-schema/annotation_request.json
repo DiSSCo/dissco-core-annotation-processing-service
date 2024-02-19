@@ -178,6 +178,9 @@
         "schema.org:ratingCount",
         "schema.org:ratingValue"
       ]
+    },
+    "placeInBatch": {
+      "type": "number"
     }
   },
   "required": [

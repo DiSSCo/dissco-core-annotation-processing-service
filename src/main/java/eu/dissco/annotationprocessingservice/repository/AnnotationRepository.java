@@ -74,7 +74,8 @@ public class AnnotationRepository {
               mapper.readValue(dbRecord.get(ANNOTATION.GENERATOR).data(), Generator.class))
           .withOaGenerated(dbRecord.get(ANNOTATION.GENERATED))
           .withOdsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
-              AggregateRating.class));
+              AggregateRating.class))
+          .withOdsJobId(dbRecord.get(ANNOTATION.MJR_JOB_ID));
     } catch (JsonProcessingException e) {
       log.error("Failed to get data from database, Unable to parse JSONB to JSON", e);
       throw new DataBaseException(e.getMessage());
@@ -125,7 +126,8 @@ public class AnnotationRepository {
           .set(ANNOTATION.GENERATOR,
               JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
           .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
-          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated());
+          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
+          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobId());
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
@@ -152,7 +154,8 @@ public class AnnotationRepository {
           .set(ANNOTATION.GENERATOR,
               JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
           .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
-          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated());
+          .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
+          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobId());
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());

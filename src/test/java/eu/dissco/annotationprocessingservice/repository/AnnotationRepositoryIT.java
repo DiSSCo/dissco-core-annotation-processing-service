@@ -4,10 +4,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -230,7 +227,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
               mapper.readValue(dbRecord.get(ANNOTATION.GENERATOR).data(), Generator.class))
           .withOaGenerated(dbRecord.get(ANNOTATION.GENERATED))
           .withOdsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
-              AggregateRating.class));
+              AggregateRating.class))
+          .withOdsJobId(dbRecord.get(ANNOTATION.MJR_JOB_ID));
     } catch (JsonProcessingException ignored) {
       return null;
     }

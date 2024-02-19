@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_JSONB;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
@@ -21,8 +22,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
@@ -53,7 +52,7 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkEmptyMasJobRecordAsComplete(){
     // When
-    service.markEmptyMasJobRecordAsComplete(JOB_ID);
+    service.markEmptyMasJobRecordAsComplete(JOB_ID, false);
 
     // Then
     then(repository).should().markMasJobRecordAsComplete(JOB_ID, MAPPER.createObjectNode());
@@ -76,7 +75,8 @@ class MasJobRecordServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null)));
+        () -> service.verifyMasJobId(new AnnotationEvent(List.of(givenAnnotationProcessed()), null, null,
+            null)));
   }
 
   @Test
@@ -85,7 +85,7 @@ class MasJobRecordServiceTest {
     var expectedNode = MAPPER.readTree(ANNOTATION_JSONB);
 
     // When
-    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID));
+    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
 
     // Then
     then(repository).should().markMasJobRecordAsComplete(JOB_ID, expectedNode);
@@ -94,10 +94,37 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkMasJobRecordAsFailed() {
     // When
-    service.markMasJobRecordAsFailed(JOB_ID);
+    service.markMasJobRecordAsFailed(JOB_ID, false);
 
     // Then
     then(repository).should().markMasJobRecordAsFailed(JOB_ID);
   }
 
+  @Test
+  void testMarkMasJobRecordAsCompletedBatchResult(){
+    // Given
+    // When
+    service.markMasJobRecordAsComplete(JOB_ID, List.of(ID_ALT), true);
+
+    // Then
+    then(repository).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testMarkMasJobRecordAsFailedBatchResult(){
+    // When
+    service.markMasJobRecordAsFailed(JOB_ID, true);
+
+    // Then
+    then(repository).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testMarkEmptyMasJobRecordAsCompletedBatchResult(){
+    // When
+    service.markEmptyMasJobRecordAsComplete(JOB_ID, true);
+
+    // Then
+    then(repository).shouldHaveNoInteractions();
+  }
 }

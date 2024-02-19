@@ -93,7 +93,7 @@ public class FdoRecordService {
     attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), DIGITAL_OBJECT_TYPE.getDefaultValue());
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
     attributes.put(TARGET_PID.getAttribute(), annotation.getOaTarget().getOdsId());
-    attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType());
+    attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType().toString());
     attributes.put(MOTIVATION.getAttribute(), annotation.getOaMotivation().toString());
     if (annotationHash!= null) {
       attributes.put(ANNOTATION_HASH.getAttribute(), annotationHash.toString());

@@ -1,14 +1,23 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -56,5 +65,43 @@ public class ElasticSearchRepository {
           ));
     }
     return client.bulk(bulkRequest.build());
+  }
+
+  private Query generateBatchQuery(BatchMetadata batchMetadata) {
+    var key = batchMetadata.inputField().replaceAll("\\[[^]]*]", "") + ".keyword";
+    var val = batchMetadata.inputValue();
+    return new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build();
+  }
+
+  public List<JsonNode> searchByBatchMetadata(BatchMetadata batchMetadata,
+      AnnotationTargetType targetType,
+      int pageNumber, int pageSize)
+      throws IOException {
+    var query = generateBatchQuery(batchMetadata);
+    var index =
+        targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
+            : properties.getDigitalMediaObjectIndex();
+    var searchRequest = new SearchRequest.Builder()
+        .index(index)
+        .query(
+            q -> q.bool(b -> b.must(query)))
+        .trackTotalHits(t -> t.enabled(Boolean.TRUE))
+        .from(getOffset(pageNumber, pageSize))
+        .size(pageSize).build();
+    var searchResult = client.search(searchRequest, ObjectNode.class);
+
+    return searchResult.hits().hits().stream()
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .map(JsonNode.class::cast)
+        .toList();
+  }
+
+  private int getOffset(int pageNumber, int pageSize) {
+    int offset = 0;
+    if (pageNumber > 1) {
+      offset = offset + (pageSize * (pageNumber - 1));
+    }
+    return offset;
   }
 }

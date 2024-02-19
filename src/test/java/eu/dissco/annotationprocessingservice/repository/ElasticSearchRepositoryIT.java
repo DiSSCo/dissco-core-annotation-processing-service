@@ -2,14 +2,22 @@ package eu.dissco.annotationprocessingservice.repository;
 
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
+import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataCountrySearch;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.JsonNode;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
 import java.util.List;
@@ -35,6 +43,8 @@ class ElasticSearchRepositoryIT {
   private static final DockerImageName ELASTIC_IMAGE = DockerImageName.parse(
       "docker.elastic.co/elasticsearch/elasticsearch").withTag("8.6.1");
   private static final String ANNOTATION_INDEX = "annotations";
+  private static final String DIGITAL_SPECIMEN_INDEX = "digital-specimen";
+  private static final String MEDIA_INDEX = "digital-media-object";
   private static final String ELASTICSEARCH_USERNAME = "elastic";
   private static final String ELASTICSEARCH_PASSWORD = "s3cret";
   private static final ElasticsearchContainer container = new ElasticsearchContainer(
@@ -83,7 +93,15 @@ class ElasticSearchRepositoryIT {
 
   @AfterEach
   void clearIndex() throws IOException {
-    client.indices().delete(b -> b.index(ANNOTATION_INDEX));
+    if (client.indices().exists(re -> re.index(DIGITAL_SPECIMEN_INDEX)).value()) {
+      client.indices().delete(b -> b.index(DIGITAL_SPECIMEN_INDEX));
+    }
+    if (client.indices().exists(re -> re.index(ANNOTATION_INDEX)).value()) {
+      client.indices().delete(b -> b.index(ANNOTATION_INDEX));
+    }
+    if (client.indices().exists(re -> re.index(MEDIA_INDEX)).value()) {
+      client.indices().delete(b -> b.index(MEDIA_INDEX));
+    }
   }
 
   @Test
@@ -101,7 +119,8 @@ class ElasticSearchRepositoryIT {
   @Test
   void testIndexAnnotations() throws IOException {
     // Given
-    var annotations = List.of(givenAnnotationProcessed(), givenAnnotationProcessed().withOdsId("alt"));
+    var annotations = List.of(givenAnnotationProcessed(),
+        givenAnnotationProcessed().withOdsId("alt"));
 
     // When
     var result = repository.indexAnnotations(annotations);
@@ -139,5 +158,114 @@ class ElasticSearchRepositoryIT {
     assertThat(result.items().get(0).id()).isEqualTo(ID);
     assertThat(result.items().get(0).result()).isEqualTo("deleted");
   }
+
+  @Test
+  void searchByBatchMetadata() throws Exception {
+    // Given
+    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
+    var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
+    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
+    var batchMetadata = givenBatchMetadataCountrySearch();
+
+    // When
+    var result = repository.searchByBatchMetadata(batchMetadata,
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
+
+    // Then
+    assertThat(result).isEqualTo(List.of(targetDocument));
+  }
+
+  @Test
+  void testByBatchMetadataSpecimen() throws Exception {
+    // Given
+    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
+    var altDocument = givenElasticDocument("Netherlands kingdom", ID_ALT);
+    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
+    var batchMetadata = givenBatchMetadataCountrySearch();
+
+    // When
+    var result = repository.searchByBatchMetadata(batchMetadata,
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
+
+    // Then
+    assertThat(result).isEqualTo(List.of(targetDocument));
+  }
+
+  @Test
+  void testByBatchMetadataMedia() throws Exception {
+    // Given
+    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
+    var altDocument = givenElasticDocument("Netherlands k", ID_ALT);
+    postDocuments(List.of(targetDocument, altDocument), MEDIA_INDEX);
+    var batchMetadata = givenBatchMetadataCountrySearch();
+
+    // When
+    var result = repository.searchByBatchMetadata(batchMetadata, AnnotationTargetType.MEDIA_OBJECT,
+        1, 10);
+
+    // Then
+    assertThat(result).isEqualTo(List.of(targetDocument));
+  }
+
+  @Test
+  void testByBatchNoResults() throws Exception {
+    // Given
+    postDocuments(List.of(givenElasticDocument("OtherCountry", ID_ALT)), DIGITAL_SPECIMEN_INDEX);
+
+    // When
+    var result = repository.searchByBatchMetadata(givenBatchMetadataCountrySearch(),
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+
+  public void postDocuments(List<JsonNode> docs, String index) throws IOException {
+    var bulkRequest = new BulkRequest.Builder();
+    for (var doc : docs) {
+      bulkRequest.operations(op -> op.index(
+          idx -> idx.index(index).id(doc.get("id").asText())
+              .document(doc)));
+    }
+    client.bulk(bulkRequest.build());
+    client.indices().refresh(b -> b.index(index));
+  }
+
+  private JsonNode givenElasticOnlyOneOccurrence() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "id": "20.5000.1025/AAA-BBB-CCC",
+          "digitalSpecimenWrapper": {
+            "fieldNum": 1,
+            "other": [
+              "a",
+              "10"
+            ],
+            "occurrences": [
+              {
+                "dwc:occurrenceRemarks": "Correct",
+                "annotateTarget": "this",
+                "hello":"hello",
+                "location": {
+                  "dwc:country": "netherlands",
+                  "georeference": {
+                    "dwc:decimalLatitude": {
+                      "dwc:value": 11
+                    },
+                    "dwc:decimalLongitude": "10",
+                    "dwc": [
+                      "1"
+                    ]
+                  },
+                  "locality": "known"
+                }
+              }
+            ]
+          }
+        }
+        """);
+  }
+
 }
 

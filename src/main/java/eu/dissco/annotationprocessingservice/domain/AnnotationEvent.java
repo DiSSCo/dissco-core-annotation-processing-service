@@ -5,7 +5,8 @@ import java.util.List;
 
 public record AnnotationEvent(
     List<Annotation> annotations,
-    String jobId
-) {
+    String jobId,
+    List<BatchMetadata> batchMetadata,
+    Boolean isBatchResult) {
 
 }

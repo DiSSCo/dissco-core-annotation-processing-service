@@ -29,12 +29,14 @@ public class ProcessingWebService extends AbstractProcessingService {
   public ProcessingWebService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository, KafkaPublisherService kafkaService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
-      ApplicationProperties applicationProperties, SchemaValidatorComponent schemaValidator) {
+      ApplicationProperties applicationProperties, SchemaValidatorComponent schemaValidator,
+      MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties, schemaValidator);
+        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService);
   }
 
-  public Annotation persistNewAnnotation(Annotation annotation) throws FailedProcessingException, AnnotationValidationException {
+  public Annotation persistNewAnnotation(Annotation annotation)
+      throws FailedProcessingException, AnnotationValidationException {
     schemaValidator.validateAnnotationRequest(annotation, true);
     var id = postHandle(annotation);
     enrichNewAnnotation(annotation, id);
@@ -56,7 +58,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       throw new NotFoundException(annotation.getOdsId(), annotation.getOaCreator().getOdsId());
     }
     var currentAnnotation = currentAnnotationOptional.get();
-    if (annotationsAreEqual(currentAnnotation, annotation)){
+    if (annotationsAreEqual(currentAnnotation, annotation)) {
       processEqualAnnotations(Set.of(currentAnnotation));
       return currentAnnotation;
     }
@@ -191,8 +193,7 @@ public class ProcessingWebService extends AbstractProcessingService {
         rollbackUpdatedAnnotation(currentAnnotation, annotation, true);
         throw new FailedProcessingException();
       }
-    }
-    else {
+    } else {
       rollbackUpdatedAnnotation(currentAnnotation, annotation, false);
       throw new FailedProcessingException();
     }

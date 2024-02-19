@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -28,6 +29,13 @@ public class MasJobRecordRepository {
         .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
         .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
         .execute();
+  }
+
+  public boolean getBatchingRequested(String jobId){
+    return Boolean.TRUE.equals(context.select(MAS_JOB_RECORD.BATCHING_REQUESTED)
+        .from(MAS_JOB_RECORD)
+        .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
+        .fetchSingle(MAS_JOB_RECORD.BATCHING_REQUESTED));
   }
 
   public void markMasJobRecordAsComplete(String jobId, JsonNode annotations) {
