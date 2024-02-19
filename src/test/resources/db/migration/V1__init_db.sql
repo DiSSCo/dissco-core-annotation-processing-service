@@ -1,4 +1,4 @@
-create table annotation_tmp
+create table annotation
 (
     id               text                     not null
         constraint annotation_pk
