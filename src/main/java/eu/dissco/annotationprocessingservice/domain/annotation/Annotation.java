@@ -117,7 +117,7 @@ public class Annotation {
     return this;
   }
 
-  public Annotation withPlaceInBatch(int placeInBatch){
+  public Annotation withPlaceInBatch(Integer placeInBatch){
     this.placeInBatch = placeInBatch;
     return this;
   }
