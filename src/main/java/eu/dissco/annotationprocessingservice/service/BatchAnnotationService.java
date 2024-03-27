@@ -72,16 +72,17 @@ public class BatchAnnotationService {
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)
       throws BatchingException {
     var types = baseAnnotations.stream().map(p -> p.getOaTarget().getOdsType()).distinct().toList();
-    if (types.size() != 1){
-      log.error("Annotations corresponding to the same batch metadata have different types: {}", types);
+    if (types.size() != 1) {
+      log.error("Annotations corresponding to the same batch metadata have different types: {}",
+          types);
       throw new BatchingException();
     }
     return types.get(0);
   }
 
-  private List<Annotation> getBaseAnnotation(int placeInBatch, List<Annotation> annotations)
+  private List<Annotation> getBaseAnnotation(Integer placeInBatch, List<Annotation> annotations)
       throws BatchingException {
-    var subAnnotations = annotations.stream().filter(p -> p.getPlaceInBatch() == placeInBatch)
+    var subAnnotations = annotations.stream().filter(p -> placeInBatch.equals(p.getPlaceInBatch()))
         .toList();
     if (subAnnotations.isEmpty()) {
       log.error("Unable to find batch metadata for annotation with placeInBatch {}",

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 
 @NotNull
 public record BatchMetadata(
-    int placeInBatch,
+    Integer placeInBatch,
     String inputField,
     String inputValue
 ) {
