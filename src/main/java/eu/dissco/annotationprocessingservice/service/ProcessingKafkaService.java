@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.exception.DataAccessException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -135,7 +136,13 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     var idList = idMap.values().stream().toList();
     annotations.forEach(p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId));
     log.info("New ids have been generated for Annotations: {}", idList);
-    repository.createAnnotationRecord(annotations);
+    try {
+      repository.createAnnotationRecord(annotations);
+    } catch (DataAccessException e){
+      log.error("Unable to post new Annotation to DB", e);
+      rollbackHandleCreation(idList);
+      throw new FailedProcessingException();
+    }
     log.info("Annotations {} has been successfully committed to database", idList);
     try {
       indexElasticNewAnnotations(annotations.stream().map(HashedAnnotation::annotation).toList(),
@@ -179,8 +186,14 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         p -> enrichUpdateAnnotation(p.annotation().annotation(), p.currentAnnotation().annotation(),
             jobId));
 
-    repository.createAnnotationRecord(
-        updatedAnnotations.stream().map(UpdatedAnnotation::annotation).toList());
+    try {
+      repository.createAnnotationRecord(
+          updatedAnnotations.stream().map(UpdatedAnnotation::annotation).toList());
+    } catch (DataAccessException e){
+      log.error("Unable to update annotations in database. Rolling back handle updates", e);
+      filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
+      throw new FailedProcessingException();
+    }
     log.info("Annotation: {} has been successfully committed to database", idList);
     try {
       indexElasticUpdatedAnnotation(updatedAnnotations);
@@ -282,7 +295,12 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         log.error("Fatal exception, unable to rollback update for: {}", idList, e);
       }
     }
-    repository.createAnnotationRecord(currentAnnotationsHashed);
+    try {
+      repository.createAnnotationRecord(currentAnnotationsHashed);
+    } catch (DataAccessException e){
+      log.error("Fatal database exception. Unable to rollback annotations to original state");
+    }
+
   }
 
   private void rollbackHandleCreation(List<String> idList) {

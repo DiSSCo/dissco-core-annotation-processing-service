@@ -9,6 +9,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationReq
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
@@ -34,6 +35,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import org.jooq.exception.DataAccessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -358,5 +360,30 @@ class ProcessingWebServiceTest {
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedAlt());
   }
 
+  @Test
+  void testDataAccessExceptionNewAnnotation() throws Exception {
+    var annotationRequest = givenAnnotationRequest();
+    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(any(Annotation.class));
+
+    // When / Then
+    assertThrows(FailedProcessingException.class, () -> service.persistNewAnnotation(annotationRequest));
+    then(handleComponent).should().rollbackHandleCreation(any());
+  }
+
+  @Test
+  void testDataAccessExceptionUpdateAnnotation() throws Exception {
+    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
+        Optional.of(givenAnnotationProcessedAlt()));
+    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(any(Annotation.class));
+
+    // When / Then
+    assertThrows(FailedProcessingException.class, () -> service.updateAnnotation(annotationRequest));
+    then(handleComponent).should().rollbackHandleUpdate(any());
+  }
 
 }

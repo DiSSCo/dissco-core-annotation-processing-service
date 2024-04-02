@@ -70,6 +70,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.jooq.exception.DataAccessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -161,7 +162,6 @@ class ProcessingKafkaServiceTest {
   void testNewMessageIsBatchResult() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, null, true);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandles(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
@@ -750,4 +750,39 @@ class ProcessingKafkaServiceTest {
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
   }
 
+  @Test
+  void testNewMessageDataAccessException() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(handleComponent.postHandles(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getHandleProxy()).willReturn(HANDLE_PROXY);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(anyList());
+
+    // When / Then
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
+    then(handleComponent).should().rollbackHandleCreation(any());
+  }
+
+  @Test
+  void testUpdateMessageDataAccessException() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
+    given(fdoRecordService.buildPatchRollbackHandleRequest(anyList())).willReturn(
+        List.of(givenRollbackCreationRequest()));
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(anyList());
+
+    // When / Then
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
+    then(handleComponent).should().rollbackHandleUpdate(any());
+  }
 }
+
