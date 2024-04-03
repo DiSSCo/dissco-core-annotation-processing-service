@@ -13,6 +13,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,12 +77,13 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   void testGetBatchingRequested(){
     // Given
     postMjr(JOB_ID);
+    var expected = new MasJobRecord(false, null);
 
     // When
-    var result = repository.getBatchingRequested(JOB_ID);
+    var result = repository.getMasJobRecord(JOB_ID);
 
     // Then
-    assertThat(result).isFalse();
+    assertThat(result).isEqualTo(expected);
   }
 
 

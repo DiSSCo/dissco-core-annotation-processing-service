@@ -1,14 +1,13 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
-import java.lang.reflect.Array;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,8 +60,12 @@ public class MasJobRecordService {
     }
   }
 
-  public boolean getBatchingRequest(String jobId) {
-    return repository.getBatchingRequested(jobId);
+  public MasJobRecord getMasJobRecord(String jobId) {
+    return repository.getMasJobRecord(jobId);
+  }
+
+  public void removeTimeoutError(String jobId){
+    repository.removeTimeoutError(jobId);
   }
 
 }
