@@ -11,6 +11,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
@@ -84,6 +85,24 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testRemoveTimeout(){
+    // Given
+    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
+            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
+        .values(JOB_ID, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+            CREATED, false, ErrorCode.TIMEOUT)
+        .execute();
+
+    // When
+    repository.removeTimeoutError(JOB_ID);
+    var result = repository.getMasJobRecord(JOB_ID);
+
+    // Then
+    assertThat(result.error()).isNull();
   }
 
 
