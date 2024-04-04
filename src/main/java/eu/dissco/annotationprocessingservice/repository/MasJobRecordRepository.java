@@ -34,7 +34,7 @@ public class MasJobRecordRepository {
         .execute();
   }
 
-  public MasJobRecord getMasJobRecord(String jobId){
+  public MasJobRecord getMasJobRecord(String jobId) {
     return context.select(MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
         .from(MAS_JOB_RECORD)
         .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
@@ -46,6 +46,7 @@ public class MasJobRecordRepository {
       context.update(MAS_JOB_RECORD).set(MAS_JOB_RECORD.JOB_STATE, MjrJobState.COMPLETED)
           .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
           .set(MAS_JOB_RECORD.ANNOTATIONS, JSONB.jsonb(mapper.writeValueAsString(annotations)))
+          .set(MAS_JOB_RECORD.ERROR, (ErrorCode) null)
           .where(MAS_JOB_RECORD.JOB_ID.eq(jobId)).execute();
     } catch (JsonProcessingException e) {
       log.error("Unable to write annotations json node to db");
@@ -53,14 +54,7 @@ public class MasJobRecordRepository {
     }
   }
 
-  public void removeTimeoutError(String jobId){
-    context.update(MAS_JOB_RECORD)
-        .set(MAS_JOB_RECORD.ERROR, (ErrorCode) null)
-        .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
-        .execute();
-  }
-
-  private MasJobRecord mapToMjr(Record2<Boolean, ErrorCode> mjr){
+  private MasJobRecord mapToMjr(Record2<Boolean, ErrorCode> mjr) {
     return new MasJobRecord(
         Boolean.TRUE.equals(mjr.value1()),
         mjr.value2()

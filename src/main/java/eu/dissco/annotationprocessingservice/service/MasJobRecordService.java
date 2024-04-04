@@ -64,8 +64,4 @@ public class MasJobRecordService {
     return repository.getMasJobRecord(jobId);
   }
 
-  public void removeTimeoutError(String jobId){
-    repository.removeTimeoutError(jobId);
-  }
-
 }

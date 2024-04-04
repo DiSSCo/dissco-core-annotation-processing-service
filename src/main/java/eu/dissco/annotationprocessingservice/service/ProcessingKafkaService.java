@@ -74,10 +74,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
           isBatchResult);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
-      masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
       var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
-      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult);
       checkForTimeoutErrors(masJobRecord.error(), event.jobId());
+      masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
+      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult);
     }
   }
 
@@ -102,7 +102,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   private void checkForTimeoutErrors(ErrorCode errorCode, String jobId){
     if (ErrorCode.TIMEOUT.equals(errorCode)){
       log.warn("MJR {} previously marked as timed out. Removing error.", jobId);
-      masJobRecordService.removeTimeoutError(jobId);
     }
   }
 

@@ -56,14 +56,19 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   @Test
   void testMarkMasJobRecordAsComplete() throws Exception {
     // Given
-    postMjr(JOB_ID);
+    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
+            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
+        .values(JOB_ID, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+            CREATED, false, ErrorCode.TIMEOUT)
+        .execute();
     postMjr(ID_ALT);
     var annotations = MAPPER.readTree(ANNOTATION_JSONB);
 
     // When
     repository.markMasJobRecordAsComplete(JOB_ID, annotations);
     var result = context.select(MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
-            MAS_JOB_RECORD.TIME_COMPLETED, MAS_JOB_RECORD.ANNOTATIONS)
+            MAS_JOB_RECORD.TIME_COMPLETED, MAS_JOB_RECORD.ANNOTATIONS, MAS_JOB_RECORD.ERROR)
         .from(MAS_JOB_RECORD)
         .where(MAS_JOB_RECORD.JOB_ID.eq(JOB_ID))
         .fetchSingle();
@@ -72,6 +77,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     assertThat(result.value2()).isEqualTo(MjrJobState.COMPLETED);
     assertThat(result.value3()).isNotNull();
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
+    assertThat(result.value5()).isNull();
   }
 
   @Test
@@ -86,25 +92,6 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     // Then
     assertThat(result).isEqualTo(expected);
   }
-
-  @Test
-  void testRemoveTimeout(){
-    // Given
-    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
-            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
-            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
-        .values(JOB_ID, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
-            CREATED, false, ErrorCode.TIMEOUT)
-        .execute();
-
-    // When
-    repository.removeTimeoutError(JOB_ID);
-    var result = repository.getMasJobRecord(JOB_ID);
-
-    // Then
-    assertThat(result.error()).isNull();
-  }
-
 
   private void postMjr(String jobId) {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,

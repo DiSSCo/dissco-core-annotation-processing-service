@@ -427,7 +427,7 @@ class ProcessingKafkaServiceTest {
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(new MasJobRecord(false, null));
+    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(new MasJobRecord(false, null ));
 
     // When
     service.handleMessage(givenAnnotationEvent(annotationRequest));
@@ -817,7 +817,6 @@ class ProcessingKafkaServiceTest {
     then(repository).should().createAnnotationRecord(List.of(givenHashedAnnotation()));
     then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
-    then(masJobRecordService).should().removeTimeoutError(JOB_ID);
   }
 }
 
