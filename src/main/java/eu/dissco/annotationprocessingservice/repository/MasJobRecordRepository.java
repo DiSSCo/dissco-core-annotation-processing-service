@@ -6,14 +6,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
-import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
-import org.jooq.Field;
 import org.jooq.JSONB;
 import org.jooq.Record2;
 import org.springframework.stereotype.Repository;
@@ -28,7 +27,7 @@ public class MasJobRecordRepository {
 
   public void markMasJobRecordAsFailed(String jobId) {
     context.update(MAS_JOB_RECORD)
-        .set(MAS_JOB_RECORD.JOB_STATE, MjrJobState.FAILED)
+        .set(MAS_JOB_RECORD.JOB_STATE, JobState.FAILED)
         .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
         .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
         .execute();
@@ -43,7 +42,7 @@ public class MasJobRecordRepository {
 
   public void markMasJobRecordAsComplete(String jobId, JsonNode annotations) {
     try {
-      context.update(MAS_JOB_RECORD).set(MAS_JOB_RECORD.JOB_STATE, MjrJobState.COMPLETED)
+      context.update(MAS_JOB_RECORD).set(MAS_JOB_RECORD.JOB_STATE, JobState.COMPLETED)
           .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
           .set(MAS_JOB_RECORD.ANNOTATIONS, JSONB.jsonb(mapper.writeValueAsString(annotations)))
           .set(MAS_JOB_RECORD.ERROR, (ErrorCode) null)
