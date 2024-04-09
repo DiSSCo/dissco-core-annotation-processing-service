@@ -7,7 +7,7 @@ package eu.dissco.annotationprocessingservice.database.jooq.tables;
 import eu.dissco.annotationprocessingservice.database.jooq.Keys;
 import eu.dissco.annotationprocessingservice.database.jooq.Public;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
-import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
 
@@ -62,7 +62,7 @@ public class MasJobRecord extends TableImpl<MasJobRecordRecord> {
     /**
      * The column <code>public.mas_job_record.job_state</code>.
      */
-    public final TableField<MasJobRecordRecord, MjrJobState> JOB_STATE = createField(DSL.name("job_state"), SQLDataType.VARCHAR.nullable(false).asEnumDataType(eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState.class), this, "");
+    public final TableField<MasJobRecordRecord, JobState> JOB_STATE = createField(DSL.name("job_state"), SQLDataType.VARCHAR.nullable(false).asEnumDataType(eu.dissco.annotationprocessingservice.database.jooq.enums.JobState.class), this, "");
 
     /**
      * The column <code>public.mas_job_record.mas_id</code>.
@@ -110,9 +110,9 @@ public class MasJobRecord extends TableImpl<MasJobRecordRecord> {
     public final TableField<MasJobRecordRecord, ErrorCode> ERROR = createField(DSL.name("error"), SQLDataType.VARCHAR.asEnumDataType(eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode.class), this, "");
 
     /**
-     * The column <code>public.mas_job_record.time_to_live</code>.
+     * The column <code>public.mas_job_record.expires_on</code>.
      */
-    public final TableField<MasJobRecordRecord, Instant> TIME_TO_LIVE = createField(DSL.name("time_to_live"), SQLDataType.INSTANT, this, "");
+    public final TableField<MasJobRecordRecord, Instant> EXPIRES_ON = createField(DSL.name("expires_on"), SQLDataType.INSTANT.nullable(false), this, "");
 
     private MasJobRecord(Name alias, Table<MasJobRecordRecord> aliased) {
         this(alias, aliased, null);
@@ -201,14 +201,14 @@ public class MasJobRecord extends TableImpl<MasJobRecordRecord> {
     // -------------------------------------------------------------------------
 
     @Override
-    public Row12<String, MjrJobState, String, Instant, Instant, JSONB, String, String, MjrTargetType, Boolean, ErrorCode, Instant> fieldsRow() {
+    public Row12<String, JobState, String, Instant, Instant, JSONB, String, String, MjrTargetType, Boolean, ErrorCode, Instant> fieldsRow() {
         return (Row12) super.fieldsRow();
     }
 
     /**
      * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
      */
-    public <U> SelectField<U> mapping(Function12<? super String, ? super MjrJobState, ? super String, ? super Instant, ? super Instant, ? super JSONB, ? super String, ? super String, ? super MjrTargetType, ? super Boolean, ? super ErrorCode, ? super Instant, ? extends U> from) {
+    public <U> SelectField<U> mapping(Function12<? super String, ? super JobState, ? super String, ? super Instant, ? super Instant, ? super JSONB, ? super String, ? super String, ? super MjrTargetType, ? super Boolean, ? super ErrorCode, ? super Instant, ? extends U> from) {
         return convertFrom(Records.mapping(from));
     }
 
@@ -216,7 +216,7 @@ public class MasJobRecord extends TableImpl<MasJobRecordRecord> {
      * Convenience mapping calling {@link SelectField#convertFrom(Class,
      * Function)}.
      */
-    public <U> SelectField<U> mapping(Class<U> toType, Function12<? super String, ? super MjrJobState, ? super String, ? super Instant, ? super Instant, ? super JSONB, ? super String, ? super String, ? super MjrTargetType, ? super Boolean, ? super ErrorCode, ? super Instant, ? extends U> from) {
+    public <U> SelectField<U> mapping(Class<U> toType, Function12<? super String, ? super JobState, ? super String, ? super Instant, ? super Instant, ? super JSONB, ? super String, ? super String, ? super MjrTargetType, ? super Boolean, ? super ErrorCode, ? super Instant, ? extends U> from) {
         return convertFrom(toType, Records.mapping(from));
     }
 }

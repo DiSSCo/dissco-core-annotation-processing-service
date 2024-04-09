@@ -12,7 +12,7 @@ import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
-import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import org.jooq.JSONB;
@@ -49,7 +49,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(MjrJobState.FAILED);
+    assertThat(result.value2()).isEqualTo(JobState.FAILED);
     assertThat(result.value3()).isNotNull();
   }
 
@@ -59,7 +59,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
             MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
             MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
-        .values(JOB_ID, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+        .values(JOB_ID, JobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
             CREATED, false, ErrorCode.TIMEOUT)
         .execute();
     postMjr(ID_ALT);
@@ -74,14 +74,14 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(MjrJobState.COMPLETED);
+    assertThat(result.value2()).isEqualTo(JobState.COMPLETED);
     assertThat(result.value3()).isNotNull();
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
     assertThat(result.value5()).isNull();
   }
 
   @Test
-  void testGetBatchingRequested(){
+  void testGetBatchingRequested() {
     // Given
     postMjr(JOB_ID);
     var expected = new MasJobRecord(false, null);
@@ -97,7 +97,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
             MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
             MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED)
-        .values(jobId, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+        .values(jobId, JobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
             CREATED, false)
         .execute();
   }
