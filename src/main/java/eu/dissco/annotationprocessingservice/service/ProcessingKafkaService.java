@@ -7,8 +7,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -33,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.exception.DataAccessException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -71,16 +74,18 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
           isBatchResult);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
+      var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
+      checkForTimeoutErrors(masJobRecord.error(), event.jobId());
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
-      applyBatchAnnotations(event, isBatchResult);
+      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult);
     }
   }
 
-  private void applyBatchAnnotations(AnnotationEvent event, boolean isBatchResult) {
+  private void applyBatchAnnotations(AnnotationEvent event, boolean batchingRequested, boolean isBatchResult) {
     if (isBatchResult) {
       return;
     }
-    if (masJobRecordService.getBatchingRequest(event.jobId())) {
+    if (batchingRequested) {
       if (event.batchMetadata() != null) {
         try {
           batchAnnotationService.applyBatchAnnotations(event);
@@ -88,11 +93,18 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           log.error("Unable to process batch annotations", e);
         }
       } else {
-        log.warn("User requested batching, but MAS did not provide batch metadata. JobId: {}",
+        log.warn("User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
             event.jobId());
       }
     }
   }
+
+  private void checkForTimeoutErrors(ErrorCode errorCode, String jobId){
+    if (ErrorCode.TIMEOUT.equals(errorCode)){
+      log.warn("MJR {} previously marked as timed out. Removing error.", jobId);
+    }
+  }
+
 
   private ProcessResult processAnnotations(AnnotationEvent event) {
     var equalAnnotations = new HashSet<Annotation>();
@@ -135,7 +147,13 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     var idList = idMap.values().stream().toList();
     annotations.forEach(p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId));
     log.info("New ids have been generated for Annotations: {}", idList);
-    repository.createAnnotationRecord(annotations);
+    try {
+      repository.createAnnotationRecord(annotations);
+    } catch (DataAccessException e){
+      log.error("Unable to post new Annotation to DB", e);
+      rollbackHandleCreation(idList);
+      throw new FailedProcessingException();
+    }
     log.info("Annotations {} has been successfully committed to database", idList);
     try {
       indexElasticNewAnnotations(annotations.stream().map(HashedAnnotation::annotation).toList(),
@@ -179,8 +197,14 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         p -> enrichUpdateAnnotation(p.annotation().annotation(), p.currentAnnotation().annotation(),
             jobId));
 
-    repository.createAnnotationRecord(
-        updatedAnnotations.stream().map(UpdatedAnnotation::annotation).toList());
+    try {
+      repository.createAnnotationRecord(
+          updatedAnnotations.stream().map(UpdatedAnnotation::annotation).toList());
+    } catch (DataAccessException e){
+      log.error("Unable to update annotations in database. Rolling back handle updates", e);
+      filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
+      throw new FailedProcessingException();
+    }
     log.info("Annotation: {} has been successfully committed to database", idList);
     try {
       indexElasticUpdatedAnnotation(updatedAnnotations);
@@ -282,7 +306,12 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         log.error("Fatal exception, unable to rollback update for: {}", idList, e);
       }
     }
-    repository.createAnnotationRecord(currentAnnotationsHashed);
+    try {
+      repository.createAnnotationRecord(currentAnnotationsHashed);
+    } catch (DataAccessException e){
+      log.error("Fatal database exception. Unable to rollback annotations to original state");
+    }
+
   }
 
   private void rollbackHandleCreation(List<String> idList) {
