@@ -8,6 +8,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -15,6 +16,7 @@ import static org.mockito.BDDMockito.then;
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
 import eu.dissco.annotationprocessingservice.repository.MasJobRecordRepository;
@@ -127,4 +129,18 @@ class MasJobRecordServiceTest {
     // Then
     then(repository).shouldHaveNoInteractions();
   }
+
+  @Test
+  void testGetMasJobRecord(){
+    // Given
+    var expected = new MasJobRecord(true, null);
+    given(repository.getMasJobRecord(JOB_ID)).willReturn(expected);
+
+    // When
+    var result = repository.getMasJobRecord(JOB_ID);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
 }

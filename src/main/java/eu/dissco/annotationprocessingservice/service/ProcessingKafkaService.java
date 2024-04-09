@@ -7,8 +7,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -72,16 +74,18 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
           isBatchResult);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
+      var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
+      checkForTimeoutErrors(masJobRecord.error(), event.jobId());
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
-      applyBatchAnnotations(event, isBatchResult);
+      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult);
     }
   }
 
-  private void applyBatchAnnotations(AnnotationEvent event, boolean isBatchResult) {
+  private void applyBatchAnnotations(AnnotationEvent event, boolean batchingRequested, boolean isBatchResult) {
     if (isBatchResult) {
       return;
     }
-    if (masJobRecordService.getBatchingRequest(event.jobId())) {
+    if (batchingRequested) {
       if (event.batchMetadata() != null) {
         try {
           batchAnnotationService.applyBatchAnnotations(event);
@@ -89,11 +93,18 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           log.error("Unable to process batch annotations", e);
         }
       } else {
-        log.warn("User requested batching, but MAS did not provide batch metadata. JobId: {}",
+        log.warn("User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
             event.jobId());
       }
     }
   }
+
+  private void checkForTimeoutErrors(ErrorCode errorCode, String jobId){
+    if (ErrorCode.TIMEOUT.equals(errorCode)){
+      log.warn("MJR {} previously marked as timed out. Removing error.", jobId);
+    }
+  }
+
 
   private ProcessResult processAnnotations(AnnotationEvent event) {
     var equalAnnotations = new HashSet<Annotation>();
