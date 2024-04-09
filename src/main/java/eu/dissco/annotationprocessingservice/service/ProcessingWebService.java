@@ -18,6 +18,7 @@ import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.exception.DataAccessException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +42,13 @@ public class ProcessingWebService extends AbstractProcessingService {
     var id = postHandle(annotation);
     enrichNewAnnotation(annotation, id);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
-    repository.createAnnotationRecord(annotation);
+    try {
+      repository.createAnnotationRecord(annotation);
+    } catch (DataAccessException e) {
+      log.error("Unable to post new Annotation to DB", e);
+      rollbackHandleCreation(annotation);
+      throw new FailedProcessingException();
+    }
     log.info("Annotation: {} has been successfully committed to database", id);
     indexElasticNewAnnotation(annotation, id);
     return annotation;
@@ -69,7 +76,13 @@ public class ProcessingWebService extends AbstractProcessingService {
       log.error("Unable to post update for annotations {}", currentAnnotation.getOdsId(), e);
       throw new FailedProcessingException();
     }
-    repository.createAnnotationRecord(annotation);
+    try {
+      repository.createAnnotationRecord(annotation);
+    } catch (DataAccessException e) {
+      log.error("Unable to post new Annotation to DB", e);
+      filterUpdatesAndRollbackHandleUpdateRecord(currentAnnotation, annotation);
+      throw new FailedProcessingException();
+    }
     log.info("Annotation: {} has been successfully committed to database",
         currentAnnotation.getOdsId());
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
@@ -170,7 +183,13 @@ public class ProcessingWebService extends AbstractProcessingService {
         log.error("Fatal exception, unable to rollback update for: {}", annotation, e);
       }
     }
-    repository.createAnnotationRecord(currentAnnotation);
+    try {
+      repository.createAnnotationRecord(currentAnnotation);
+    } catch (DataAccessException e){
+      log.error("Fatal exception: unable to revert annotation {} to its original state", currentAnnotation.getOdsId(), e);
+      throw new FailedProcessingException();
+    }
+
     filterUpdatesAndRollbackHandleUpdateRecord(currentAnnotation, annotation);
     throw new FailedProcessingException();
   }

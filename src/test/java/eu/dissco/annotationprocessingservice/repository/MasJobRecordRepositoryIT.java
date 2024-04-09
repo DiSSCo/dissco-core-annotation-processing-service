@@ -11,8 +11,10 @@ import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrJobState;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import org.jooq.JSONB;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,49 +49,55 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(MjrJobState.FAILED);
+    assertThat(result.value2()).isEqualTo(JobState.FAILED);
     assertThat(result.value3()).isNotNull();
   }
 
   @Test
   void testMarkMasJobRecordAsComplete() throws Exception {
     // Given
-    postMjr(JOB_ID);
+    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
+            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
+        .values(JOB_ID, JobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+            CREATED, false, ErrorCode.TIMEOUT)
+        .execute();
     postMjr(ID_ALT);
     var annotations = MAPPER.readTree(ANNOTATION_JSONB);
 
     // When
     repository.markMasJobRecordAsComplete(JOB_ID, annotations);
     var result = context.select(MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
-            MAS_JOB_RECORD.TIME_COMPLETED, MAS_JOB_RECORD.ANNOTATIONS)
+            MAS_JOB_RECORD.TIME_COMPLETED, MAS_JOB_RECORD.ANNOTATIONS, MAS_JOB_RECORD.ERROR)
         .from(MAS_JOB_RECORD)
         .where(MAS_JOB_RECORD.JOB_ID.eq(JOB_ID))
         .fetchSingle();
 
     // Then
-    assertThat(result.value2()).isEqualTo(MjrJobState.COMPLETED);
+    assertThat(result.value2()).isEqualTo(JobState.COMPLETED);
     assertThat(result.value3()).isNotNull();
     assertThat(result.value4()).isEqualTo(JSONB.jsonb(ANNOTATION_JSONB));
+    assertThat(result.value5()).isNull();
   }
 
   @Test
-  void testGetBatchingRequested(){
+  void testGetBatchingRequested() {
     // Given
     postMjr(JOB_ID);
+    var expected = new MasJobRecord(false, null);
 
     // When
-    var result = repository.getBatchingRequested(JOB_ID);
+    var result = repository.getMasJobRecord(JOB_ID);
 
     // Then
-    assertThat(result).isFalse();
+    assertThat(result).isEqualTo(expected);
   }
-
 
   private void postMjr(String jobId) {
     context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
             MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
             MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED)
-        .values(jobId, MjrJobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+        .values(jobId, JobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
             CREATED, false)
         .execute();
   }
