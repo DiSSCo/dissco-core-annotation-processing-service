@@ -59,23 +59,24 @@ public class AnnotationRepository {
 
   private Annotation mapAnnotation(Record dbRecord) {
     try {
-      return new Annotation()
-          .withOdsId(dbRecord.get(ANNOTATION.ID))
-          .withRdfType(dbRecord.get(ANNOTATION.TYPE))
-          .withOdsVersion(dbRecord.get(ANNOTATION.VERSION))
-          .withOaMotivation(Motivation.fromString(dbRecord.get(ANNOTATION.MOTIVATION)))
-          .withOaMotivatedBy(dbRecord.get(ANNOTATION.MOTIVATED_BY))
-          .withOaTarget(mapper.readValue(dbRecord.get(ANNOTATION.TARGET).data(), Target.class))
-          .withOaBody(mapper.readValue(dbRecord.get(ANNOTATION.BODY).data(), Body.class))
-          .withOaCreator(mapper.readValue(dbRecord.get(ANNOTATION.CREATOR).data(), Creator.class))
-          .withDcTermsCreated(dbRecord.get(ANNOTATION.CREATED))
-          .withOdsDeletedOn(dbRecord.get(ANNOTATION.DELETED_ON))
-          .withAsGenerator(
+      return Annotation.builder()
+          .odsId(dbRecord.get(ANNOTATION.ID))
+          .rdfType(dbRecord.get(ANNOTATION.TYPE))
+          .odsVersion(dbRecord.get(ANNOTATION.VERSION))
+          .oaMotivation(Motivation.fromString(dbRecord.get(ANNOTATION.MOTIVATION)))
+          .oaMotivatedBy(dbRecord.get(ANNOTATION.MOTIVATED_BY))
+          .oaTarget(mapper.readValue(dbRecord.get(ANNOTATION.TARGET).data(), Target.class))
+          .oaBody(mapper.readValue(dbRecord.get(ANNOTATION.BODY).data(), Body.class))
+          .oaCreator(mapper.readValue(dbRecord.get(ANNOTATION.CREATOR).data(), Creator.class))
+          .dcTermsCreated(dbRecord.get(ANNOTATION.CREATED))
+          .odsDeletedOn(dbRecord.get(ANNOTATION.DELETED_ON))
+          .asGenerator(
               mapper.readValue(dbRecord.get(ANNOTATION.GENERATOR).data(), Generator.class))
-          .withOaGenerated(dbRecord.get(ANNOTATION.GENERATED))
-          .withOdsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
+          .oaGenerated(dbRecord.get(ANNOTATION.GENERATED))
+          .odsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
               AggregateRating.class))
-          .withOdsJobId(dbRecord.get(ANNOTATION.MJR_JOB_ID));
+          .odsJobId(dbRecord.get(ANNOTATION.MJR_JOB_ID))
+          .build();
     } catch (JsonProcessingException e) {
       log.error("Failed to get data from database, Unable to parse JSONB to JSON", e);
       throw new DataBaseException(e.getMessage());

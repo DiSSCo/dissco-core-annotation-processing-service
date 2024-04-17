@@ -76,35 +76,38 @@ public class TestUtils {
   }
 
   public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId, String targetId){
-    return new Annotation()
-        .withOdsId(annotationId)
-        .withOdsVersion(1)
-        .withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING)
-        .withOaTarget(givenOaTarget(targetId))
-        .withOaCreator(givenCreator(userId))
-        .withDcTermsCreated(CREATED)
-        .withOaGenerated(CREATED)
-        .withAsGenerator(givenGenerator())
-        .withOdsAggregateRating(givenAggregationRating());
+    return Annotation.builder()
+        .odsId(annotationId)
+        .odsVersion(1)
+        .oaBody(givenOaBody())
+        .oaMotivation(Motivation.COMMENTING)
+        .oaTarget(givenOaTarget(targetId))
+        .oaCreator(givenCreator(userId))
+        .dcTermsCreated(CREATED)
+        .oaGenerated(CREATED)
+        .asGenerator(givenGenerator())
+        .odsAggregateRating(givenAggregationRating())
+        .build();
   }
 
   public static Annotation givenAnnotationProcessedAlt() {
-    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivation(Motivation.EDITING);
+    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID)
+        .setOaMotivation(Motivation.EDITING);
   }
 
   public static Annotation givenAnnotationProcessed(String annotationId, String userId,
       String targetId) {
-    var annotation = givenAnnotationProcessedWeb(annotationId, userId, targetId);
-    return annotation.withOdsJobId(HANDLE_PROXY + JOB_ID);
+    return givenAnnotationProcessedWeb(annotationId, userId, targetId)
+        .setOdsJobId(HANDLE_PROXY + JOB_ID);
   }
 
   public static Annotation givenAnnotationRequest(String targetId) {
-    return new Annotation()
-        .withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
-        .withDcTermsCreated(CREATED).withOaCreator(givenCreator(CREATOR))
-        .withOdsAggregateRating(givenAggregationRating());
+    return Annotation.builder()
+        .oaBody(givenOaBody())
+        .oaMotivation(Motivation.COMMENTING).oaTarget(givenOaTarget(targetId))
+        .dcTermsCreated(CREATED).oaCreator(givenCreator(CREATOR))
+        .odsAggregateRating(givenAggregationRating())
+        .build();
   }
 
   public static Annotation givenAnnotationRequest() {
@@ -286,7 +289,8 @@ public class TestUtils {
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled(){
-    return new AnnotationEvent(List.of(givenAnnotationRequest().withPlaceInBatch(1)), JOB_ID,
+    return new AnnotationEvent(List.of(givenAnnotationRequest()
+        .setPlaceInBatch(1)), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
   }
 

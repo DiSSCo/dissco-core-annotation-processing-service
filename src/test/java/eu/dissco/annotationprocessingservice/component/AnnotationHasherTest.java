@@ -52,7 +52,7 @@ class AnnotationHasherTest {
         var expected = UUID.fromString("a831698e-8bfd-4dbe-51c4-3236d0f2b047");
 
         // When
-        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
+        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().setOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
 
         // Then
         assertThat(result).isEqualTo(expected);
@@ -66,7 +66,7 @@ class AnnotationHasherTest {
         var expected = UUID.fromString("753ad133-4212-e03b-00e7-b757957901fd");
 
         // When
-        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().withOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
+        var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed().setOaTarget(givenOaTarget(TARGET_ID).withSelector(selector)));
 
         // Then
         assertThat(result).isEqualTo(expected);

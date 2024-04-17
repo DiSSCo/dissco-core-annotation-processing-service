@@ -33,16 +33,15 @@ public abstract class AbstractProcessingService {
   protected final BatchAnnotationService batchAnnotationService;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
-    annotation
-        .withOdsId(id)
-        .withOdsVersion(1)
-        .withAsGenerator(createGenerator())
-        .withOaGenerated(Instant.now());
+    annotation.setOdsId(id)
+        .setOdsVersion(1)
+        .setAsGenerator(createGenerator())
+        .setOaGenerated(Instant.now());
   }
 
   protected void enrichNewAnnotation(Annotation annotation, String id, String jobId) {
     enrichNewAnnotation(annotation, id);
-    annotation.withOdsJobId(applicationProperties.getHandleProxy() + jobId);
+    annotation.setOdsJobId(applicationProperties.getHandleProxy() + jobId);
   }
 
   private Generator createGenerator() {
@@ -53,19 +52,18 @@ public abstract class AbstractProcessingService {
   }
 
   protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation) {
-    annotation
-        .withOdsId(currentAnnotation.getOdsId())
-        .withOdsVersion(currentAnnotation.getOdsVersion() + 1)
-        .withOaGenerated(currentAnnotation.getOaGenerated())
-        .withAsGenerator(currentAnnotation.getAsGenerator())
-        .withOaCreator(currentAnnotation.getOaCreator())
-        .withDcTermsCreated(currentAnnotation.getDcTermsCreated());
+    annotation.setOdsId(currentAnnotation.getOdsId())
+        .setOdsVersion(currentAnnotation.getOdsVersion() + 1)
+        .setOaGenerated(currentAnnotation.getOaGenerated())
+        .setAsGenerator(currentAnnotation.getAsGenerator())
+        .setOaCreator(currentAnnotation.getOaCreator())
+        .setDcTermsCreated(currentAnnotation.getDcTermsCreated());
   }
 
   protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation,
       String jobId) {
     enrichUpdateAnnotation(annotation, currentAnnotation);
-    annotation.withOdsJobId(jobId);
+    annotation.setOdsJobId(jobId);
   }
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,

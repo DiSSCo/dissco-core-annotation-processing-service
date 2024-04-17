@@ -220,7 +220,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotation() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -232,19 +232,19 @@ class ProcessingWebServiceTest {
     var result = service.updateAnnotation(annotationRequest);
 
     // Then
-    assertThat(result).isEqualTo(givenAnnotationProcessedWeb().withOdsVersion(2));
+    assertThat(result).isEqualTo(givenAnnotationProcessedWeb().setOdsVersion(2));
     assertThat(result.getOdsId()).isEqualTo(ID);
     then(fdoRecordService).should().buildPatchRollbackHandleRequest(annotationRequest);
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
-            givenAnnotationProcessedWeb().withOdsVersion(2));
+            givenAnnotationProcessedWeb().setOdsVersion(2));
   }
 
   @Test
   void testUpdateEqualAnnotation() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     var currentResult = givenAnnotationProcessedWeb();
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(currentResult));
@@ -264,7 +264,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationNotFound() {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(Optional.empty());
 
     // Then
@@ -274,7 +274,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationPidException() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -293,7 +293,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationElasticIOException() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
@@ -314,7 +314,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationElasticFailure() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -337,7 +337,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationKafkaFailure() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -346,7 +346,7 @@ class ProcessingWebServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
-            givenAnnotationProcessedWeb().withOdsVersion(2));
+            givenAnnotationProcessedWeb().setOdsVersion(2));
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -375,7 +375,7 @@ class ProcessingWebServiceTest {
 
   @Test
   void testDataAccessExceptionUpdateAnnotation() throws Exception {
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);

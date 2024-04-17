@@ -122,8 +122,8 @@ class FdoRecordServiceTest {
 
   private static Stream<Arguments> handleNeedsUpdate() {
     return Stream.of(
-        Arguments.of(givenAnnotationProcessed().withOaMotivation(Motivation.EDITING)),
-        Arguments.of(givenAnnotationProcessed().withOaTarget(givenOaTarget("different target"))));
+        Arguments.of(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING)),
+        Arguments.of(givenAnnotationProcessed().setOaTarget(givenOaTarget("different target"))));
   }
 
   @ParameterizedTest

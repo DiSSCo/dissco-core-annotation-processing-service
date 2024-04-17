@@ -49,7 +49,7 @@ class KafkaPublisherServiceTest {
     // Given
 
     // When
-    service.publishUpdateEvent(givenAnnotationProcessed().withOaMotivation(Motivation.EDITING),
+    service.publishUpdateEvent(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING),
         givenAnnotationProcessed());
 
     // Then
