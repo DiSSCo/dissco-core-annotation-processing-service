@@ -1,46 +1,19 @@
 package eu.dissco.annotationprocessingservice.domain.annotation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Builder;
+import lombok.Value;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-@ToString
+@Value
+@Builder
 public class HasRoi {
-
   @JsonProperty("ac:xFrac")
-  private double valX;
+  double valX;
   @JsonProperty("ac:yFrac")
-  private double valY;
+  double valY;
   @JsonProperty("ac:widthFrac")
-  private double widthFrac;
+  double widthFrac;
   @JsonProperty("ac:heightFrac")
-  private double heightFrac;
-
-  public HasRoi withAcXFrac(double valX) {
-    this.valX = valX;
-    return this;
-  }
-
-  public HasRoi withAcYFrac(double valY) {
-    this.valY = valY;
-    return this;
-  }
-
-  public HasRoi withAcWidthFrac(double widthFrac) {
-    this.widthFrac = widthFrac;
-    return this;
-  }
-
-  public HasRoi withAcHeightFrac(double heightFrac) {
-    this.heightFrac = heightFrac;
-    return this;
-  }
+  double heightFrac;
 
 }

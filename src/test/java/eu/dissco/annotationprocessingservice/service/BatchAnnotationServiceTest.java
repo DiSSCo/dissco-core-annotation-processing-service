@@ -99,7 +99,7 @@ class BatchAnnotationServiceTest {
   void testApplyBatchingSinglePageTwoBaseAnnotations() throws Exception {
     // Given
     int placeInBatch = 1;
-    var annotationBodyB = givenOaBody().withOaValue(List.of("Alt value"));
+    var annotationBodyB = givenOaBody("Alt value");
     var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(placeInBatch);
     var baseAnnotationB = givenAnnotationRequest().setPlaceInBatch(placeInBatch)
         .setOaBody(annotationBodyB);
@@ -154,7 +154,7 @@ class BatchAnnotationServiceTest {
     int placeInBatch = 1;
     var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(placeInBatch);
     var baseAnnotationB = givenAnnotationRequest().setPlaceInBatch(placeInBatch)
-        .setOaTarget(givenOaTarget(ID_ALT).withOdsType(AnnotationTargetType.MEDIA_OBJECT));
+        .setOaTarget(givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT));
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
 
@@ -173,8 +173,8 @@ class BatchAnnotationServiceTest {
     // Given
     var annotatableIdsA = List.of("0", "1", "2");
     var annotatableIdsB = List.of("3", "4", "5");
-    var annotationBodyB = givenOaBody().withOaValue(List.of("alt value"));
-    var annotationTargetB = givenOaTarget(ID_ALT).withOdsType(AnnotationTargetType.MEDIA_OBJECT);
+    var annotationBodyB = givenOaBody("alt value");
+    var annotationTargetB = givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT);
     var batchMetadataA = givenBatchMetadataLatitudeSearch();
     var batchMetadataB = new BatchMetadata(2,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",

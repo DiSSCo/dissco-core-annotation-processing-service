@@ -45,10 +45,11 @@ public abstract class AbstractProcessingService {
   }
 
   private Generator createGenerator() {
-    return new Generator()
-        .withOdsId(applicationProperties.getProcessorHandle())
-        .withFoafName("Annotation Processing Service")
-        .withOdsType("oa:SoftwareAgent");
+    return Generator.builder()
+        .odsId(applicationProperties.getProcessorHandle())
+        .foafName("Annotation Processing Service")
+        .odsType("oa:SoftwareAgent")
+        .build();
   }
 
   protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation) {

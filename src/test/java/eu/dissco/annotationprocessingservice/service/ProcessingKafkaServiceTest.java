@@ -17,7 +17,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadata
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBodySetType;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
@@ -373,7 +373,7 @@ class ProcessingKafkaServiceTest {
     var newAnnotation = givenAnnotationRequest();
     var changedAnnotationNew = (givenAnnotationRequest().setOaTarget(
         givenOaTarget("changedTarget")))
-        .setOaBody(new Body().withOaValue(List.of("new value")));
+        .setOaBody(Body.builder().oaValue(List.of("new value")).build());
     var changedAnnotationOriginal = (givenAnnotationProcessed().setOaTarget(
         givenOaTarget("changedTarget")).setOdsId(changedId));
     var changedAnnotationOriginalHashed = new HashedAnnotation(
@@ -442,12 +442,12 @@ class ProcessingKafkaServiceTest {
   private static Stream<Arguments> unequalAnnotations() {
     return Stream.of(
         Arguments.of(
-            givenAnnotationProcessed().setOaBody(givenOaBody().withOdsType("differentType"))),
+            givenAnnotationProcessed().setOaBody(givenOaBodySetType("differentType"))),
         Arguments.of(givenAnnotationProcessed().setOaCreator(givenCreator("different creator"))),
         Arguments.of(givenAnnotationProcessed().setOaTarget(givenOaTarget("different target"))),
         Arguments.of(givenAnnotationProcessed().setOaMotivatedBy("different motivated by")),
         Arguments.of(givenAnnotationProcessed().setOdsAggregateRating(
-            givenAggregationRating().withRatingValue(0.99))),
+            givenAggregationRating(0.99))),
         Arguments.of(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING))
     );
   }
