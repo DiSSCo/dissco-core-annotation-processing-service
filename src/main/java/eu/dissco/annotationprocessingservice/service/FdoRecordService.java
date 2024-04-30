@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ANNOTATION_HASH;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.DIGITAL_OBJECT_TYPE;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.MOTIVATION;
@@ -90,7 +89,6 @@ public class FdoRecordService {
   private JsonNode generateAttributes(Annotation annotation, UUID annotationHash) {
     var attributes = mapper.createObjectNode();
     attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
-    attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), DIGITAL_OBJECT_TYPE.getDefaultValue());
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
     attributes.put(TARGET_PID.getAttribute(), annotation.getOaTarget().getOdsId());
     attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType().toString());
