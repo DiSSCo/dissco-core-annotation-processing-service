@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ANNOTATION_HASH;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.MOTIVATION;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TARGET_PID;
@@ -29,6 +28,8 @@ public class FdoRecordService {
   private static final String ATTRIBUTES = "attributes";
   private static final String DATA = "data";
   private static final String ID = "id";
+  private static final String FDO_TYPE = "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f";
+  private static final String ISSUED_FOR_AGENT_ROR = "https://ror.org/0566bfb96";
 
   public List<JsonNode> buildPostHandleRequest(Annotation annotation) {
     return List.of(buildSinglePostHandleRequest(annotation, null));
@@ -46,7 +47,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation, annotationHash);
-    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
+    data.put(TYPE.getAttribute(), FDO_TYPE);
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);
     return request;
@@ -68,7 +69,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation, annotationHash);
-    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
+    data.put(TYPE.getAttribute(), FDO_TYPE);
     data.set(ATTRIBUTES, attributes);
     data.put(ID, annotation.getOdsId());
     request.set(DATA, data);
@@ -88,8 +89,7 @@ public class FdoRecordService {
 
   private JsonNode generateAttributes(Annotation annotation, UUID annotationHash) {
     var attributes = mapper.createObjectNode();
-    attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
-    attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
+    attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT_ROR);
     attributes.put(TARGET_PID.getAttribute(), annotation.getOaTarget().getOdsId());
     attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType().toString());
     attributes.put(MOTIVATION.getAttribute(), annotation.getOaMotivation().toString());
