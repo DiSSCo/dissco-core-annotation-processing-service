@@ -80,7 +80,7 @@ class SchemaValidatorComponentTest {
   @Test
   void testCreateMissingCreated() {
     // Given
-    var annotationRequest = givenAnnotationRequest().withDcTermsCreated(null);
+    var annotationRequest = givenAnnotationRequest().setDcTermsCreated(null);
 
     // Then
     assertThrows(AnnotationValidationException.class,
@@ -100,21 +100,21 @@ class SchemaValidatorComponentTest {
   private static Stream<Arguments> validAnnotations() {
     return Stream.of(
         Arguments.of(givenAnnotationRequest(), true),
-        Arguments.of(givenAnnotationRequest().withOdsId(ID), false)
+        Arguments.of(givenAnnotationRequest().setOdsId(ID), false)
     );
   }
 
   private static Stream<Arguments> invalidAnnotations() {
     return Stream.of(
-        Arguments.of(givenAnnotationRequest().withOaGenerated(CREATED)),
-        Arguments.of(givenAnnotationRequest().withAsGenerator(givenGenerator())),
-        Arguments.of(givenAnnotationRequest().withOdsId(ID)),
-        Arguments.of(givenAnnotationRequest().withOaCreator(null)),
-        Arguments.of(givenAnnotationRequest().withDcTermsCreated(null)),
-        Arguments.of(givenAnnotationRequest().withRdfType(null)),
-        Arguments.of(givenAnnotationRequest().withOaBody(null)),
-        Arguments.of(givenAnnotationRequest().withOaTarget(null)),
-        Arguments.of(givenAnnotationRequest().withOaMotivation(null))
+        Arguments.of(givenAnnotationRequest().setOaGenerated(CREATED)),
+        Arguments.of(givenAnnotationRequest().setAsGenerator(givenGenerator())),
+        Arguments.of(givenAnnotationRequest().setOdsId(ID)),
+        Arguments.of(givenAnnotationRequest().setOaCreator(null)),
+        Arguments.of(givenAnnotationRequest().setDcTermsCreated(null)),
+        Arguments.of(givenAnnotationRequest().setRdfType(null)),
+        Arguments.of(givenAnnotationRequest().setOaBody(null)),
+        Arguments.of(givenAnnotationRequest().setOaTarget(null)),
+        Arguments.of(givenAnnotationRequest().setOaMotivation(null))
     );
   }
 

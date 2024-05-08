@@ -107,15 +107,14 @@ public class BatchAnnotationService {
   private List<Annotation> copyAnnotation(Annotation baseAnnotation, List<Target> targets) {
     ArrayList<Annotation> newAnnotations = new ArrayList<>();
     for (var target : targets) {
-      newAnnotations.add(new Annotation()
-          .withOdsId(null)
-          .withOaMotivation(baseAnnotation.getOaMotivation())
-          .withDcTermsCreated(baseAnnotation.getDcTermsCreated())
-          .withOaCreator(baseAnnotation.getOaCreator())
-          .withOaBody(baseAnnotation.getOaBody())
-          .withOdsAggregateRating(baseAnnotation.getOdsAggregateRating())
-          .withOaTarget(target
-          ));
+      newAnnotations.add(Annotation.builder()
+          .odsId(null)
+          .oaMotivation(baseAnnotation.getOaMotivation())
+          .dcTermsCreated(baseAnnotation.getDcTermsCreated())
+          .oaCreator(baseAnnotation.getOaCreator())
+          .oaBody(baseAnnotation.getOaBody())
+          .odsAggregateRating(baseAnnotation.getOdsAggregateRating())
+          .oaTarget(target).build());
     }
     return newAnnotations;
   }

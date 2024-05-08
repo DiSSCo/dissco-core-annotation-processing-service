@@ -18,6 +18,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -76,35 +77,38 @@ public class TestUtils {
   }
 
   public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId, String targetId){
-    return new Annotation()
-        .withOdsId(annotationId)
-        .withOdsVersion(1)
-        .withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING)
-        .withOaTarget(givenOaTarget(targetId))
-        .withOaCreator(givenCreator(userId))
-        .withDcTermsCreated(CREATED)
-        .withOaGenerated(CREATED)
-        .withAsGenerator(givenGenerator())
-        .withOdsAggregateRating(givenAggregationRating());
+    return Annotation.builder()
+        .odsId(annotationId)
+        .odsVersion(1)
+        .oaBody(givenOaBody())
+        .oaMotivation(Motivation.COMMENTING)
+        .oaTarget(givenOaTarget(targetId))
+        .oaCreator(givenCreator(userId))
+        .dcTermsCreated(CREATED)
+        .oaGenerated(CREATED)
+        .asGenerator(givenGenerator())
+        .odsAggregateRating(givenAggregationRating())
+        .build();
   }
 
   public static Annotation givenAnnotationProcessedAlt() {
-    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID).withOaMotivation(Motivation.EDITING);
+    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID)
+        .setOaMotivation(Motivation.EDITING);
   }
 
   public static Annotation givenAnnotationProcessed(String annotationId, String userId,
       String targetId) {
-    var annotation = givenAnnotationProcessedWeb(annotationId, userId, targetId);
-    return annotation.withOdsJobId(HANDLE_PROXY + JOB_ID);
+    return givenAnnotationProcessedWeb(annotationId, userId, targetId)
+        .setOdsJobId(HANDLE_PROXY + JOB_ID);
   }
 
   public static Annotation givenAnnotationRequest(String targetId) {
-    return new Annotation()
-        .withOaBody(givenOaBody())
-        .withOaMotivation(Motivation.COMMENTING).withOaTarget(givenOaTarget(targetId))
-        .withDcTermsCreated(CREATED).withOaCreator(givenCreator(CREATOR))
-        .withOdsAggregateRating(givenAggregationRating());
+    return Annotation.builder()
+        .oaBody(givenOaBody())
+        .oaMotivation(Motivation.COMMENTING).oaTarget(givenOaTarget(targetId))
+        .dcTermsCreated(CREATED).oaCreator(givenCreator(CREATOR))
+        .odsAggregateRating(givenAggregationRating())
+        .build();
   }
 
   public static Annotation givenAnnotationRequest() {
@@ -112,17 +116,45 @@ public class TestUtils {
   }
 
   public static Body givenOaBody() {
-    return new Body().withOdsType("ods:specimenName")
-        .withOaValue(new ArrayList<>(List.of("a comment")))
-        .withDcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
-        .withOdsScore(0.99);
+    return givenOaBody("a comment");
+  }
+
+  public static Body givenOaBodySetType(String type) {
+    return Body.builder()
+        .odsType(type)
+        .oaValue(new ArrayList<>(List.of("a comment")))
+        .dcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .odsScore(0.99)
+        .build();
+  }
+
+  public static Body givenOaBody(String value) {
+    return Body.builder()
+        .odsType("ods:specimenName")
+        .oaValue(new ArrayList<>(List.of(value)))
+        .dcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .odsScore(0.99)
+        .build();
   }
 
   public static Target givenOaTarget(String targetId) {
-    return new Target()
-        .withOdsId(HANDLE_PROXY + targetId)
-        .withSelector(givenSelector())
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN);
+    return givenOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
+  }
+
+  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType) {
+    return Target.builder()
+        .odsId(HANDLE_PROXY + targetId)
+        .oaSelector(givenSelector())
+        .odsType(targetType)
+        .build();
+  }
+
+  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType, Selector selector) {
+    return Target.builder()
+        .odsId(HANDLE_PROXY + targetId)
+        .oaSelector(selector)
+        .odsType(targetType)
+        .build();
   }
 
   public static FieldSelector givenSelector() {
@@ -131,17 +163,31 @@ public class TestUtils {
   }
 
   public static Creator givenCreator(String userId) {
-    return new Creator().withFoafName("Test User").withOdsId(userId).withOdsType("ORCID");
+    return Creator.builder()
+        .foafName("Test User")
+        .odsId(userId)
+        .odsType("ORCID")
+        .build();
   }
 
   public static Generator givenGenerator() {
-    return new Generator().withFoafName("Annotation Processing Service")
-        .withOdsId("https://hdl.handle.net/anno-process-service-pid")
-        .withOdsType("oa:SoftwareAgent");
+    return Generator.builder()
+        .foafName("Annotation Processing Service")
+        .odsId("https://hdl.handle.net/anno-process-service-pid")
+        .odsType("oa:SoftwareAgent")
+        .build();
   }
 
   public static AggregateRating givenAggregationRating() {
-    return new AggregateRating().withRatingValue(0.1).withOdsType("Score").withRatingCount(0.2);
+    return givenAggregationRating(0.1);
+  }
+
+  public static AggregateRating givenAggregationRating(double ratingValue) {
+    return AggregateRating.builder()
+        .ratingValue(ratingValue)
+        .odsType("Score")
+        .ratingCount(0.2)
+        .build();
   }
 
 
@@ -286,7 +332,8 @@ public class TestUtils {
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled(){
-    return new AnnotationEvent(List.of(givenAnnotationRequest().withPlaceInBatch(1)), JOB_ID,
+    return new AnnotationEvent(List.of(givenAnnotationRequest()
+        .setPlaceInBatch(1)), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
   }
 
