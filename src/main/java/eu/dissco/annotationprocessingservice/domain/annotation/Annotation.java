@@ -2,17 +2,13 @@ package eu.dissco.annotationprocessingservice.domain.annotation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.Accessors;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-@ToString
+@Data
+@Accessors(chain = true)
+@Builder
 public class Annotation {
 
   @JsonProperty("ods:id")
@@ -22,6 +18,7 @@ public class Annotation {
   @JsonProperty("ods:version")
   private Integer odsVersion;
   @JsonProperty("rdf:type")
+  @Builder.Default
   private String rdfType = "Annotation";
   @JsonProperty("oa:motivation")
   private Motivation oaMotivation;
@@ -45,82 +42,5 @@ public class Annotation {
   private AggregateRating odsAggregateRating;
   @JsonProperty("placeInBatch")
   private Integer placeInBatch;
-
-  public Annotation withOdsId(String odsId) {
-    this.odsId = odsId;
-    return this;
-  }
-
-  public Annotation withOdsJobId(String odsJobId) {
-    this.odsJobId = odsJobId;
-    return this;
-  }
-
-  public Annotation withOdsVersion(int odsVersion) {
-    this.odsVersion = odsVersion;
-    return this;
-  }
-
-  public Annotation withRdfType(String rdfType) {
-    this.rdfType = rdfType;
-    return this;
-  }
-
-  public Annotation withOaMotivation(Motivation oaMotivation) {
-    this.oaMotivation = oaMotivation;
-    return this;
-  }
-
-  public Annotation withOaMotivatedBy(String oaMotivatedBy) {
-    this.oaMotivatedBy = oaMotivatedBy;
-    return this;
-  }
-
-  public Annotation withOaTarget(Target oaTarget) {
-    this.oaTarget = oaTarget;
-    return this;
-  }
-
-  public Annotation withOaBody(Body oaBody) {
-    this.oaBody = oaBody;
-    return this;
-  }
-
-  public Annotation withOaCreator(Creator oaCreator) {
-    this.oaCreator = oaCreator;
-    return this;
-  }
-
-  public Annotation withDcTermsCreated(Instant dcTermsCreated) {
-    this.dcTermsCreated = dcTermsCreated;
-    return this;
-  }
-
-  public Annotation withOdsDeletedOn(Instant odsDeletedOn) {
-    this.odsDeletedOn = odsDeletedOn;
-    return this;
-  }
-
-  public Annotation withAsGenerator(Generator asGenerator) {
-    this.asGenerator = asGenerator;
-    return this;
-  }
-
-
-  public Annotation withOaGenerated(Instant oaGenerated) {
-    this.oaGenerated = oaGenerated;
-    return this;
-  }
-
-  public Annotation withOdsAggregateRating(AggregateRating odsAggregateRating) {
-    this.odsAggregateRating = odsAggregateRating;
-    return this;
-  }
-
-  public Annotation withPlaceInBatch(Integer placeInBatch){
-    this.placeInBatch = placeInBatch;
-    return this;
-  }
-
 
 }

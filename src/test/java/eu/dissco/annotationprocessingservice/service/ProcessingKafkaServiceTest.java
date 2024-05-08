@@ -17,7 +17,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadata
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBodySetType;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
@@ -210,7 +210,7 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotation = givenAnnotationRequest();
     var secondAnnotation = givenAnnotationRequest()
-        .withOaTarget(givenOaTarget("alt target"));
+        .setOaTarget(givenOaTarget("alt target"));
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, null, null);
     Map<UUID, String> idMap = Map.of(ANNOTATION_HASH, ID, ANNOTATION_HASH_2, ID_ALT);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
@@ -371,16 +371,16 @@ class ProcessingKafkaServiceTest {
     String changedId = "changedId";
     var equalId = "equalId";
     var newAnnotation = givenAnnotationRequest();
-    var changedAnnotationNew = (givenAnnotationRequest().withOaTarget(
+    var changedAnnotationNew = (givenAnnotationRequest().setOaTarget(
         givenOaTarget("changedTarget")))
-        .withOaBody(new Body().withOaValue(List.of("new value")));
-    var changedAnnotationOriginal = (givenAnnotationProcessed().withOaTarget(
-        givenOaTarget("changedTarget")).withOdsId(changedId));
+        .setOaBody(Body.builder().oaValue(List.of("new value")).build());
+    var changedAnnotationOriginal = (givenAnnotationProcessed().setOaTarget(
+        givenOaTarget("changedTarget")).setOdsId(changedId));
     var changedAnnotationOriginalHashed = new HashedAnnotation(
         changedAnnotationOriginal, ANNOTATION_HASH_2);
-    var equalAnnotation = givenAnnotationRequest().withOaTarget(givenOaTarget("equalTarget"));
+    var equalAnnotation = givenAnnotationRequest().setOaTarget(givenOaTarget("equalTarget"));
     var equalAnnotationHashed = new HashedAnnotation(
-        equalAnnotation.withOdsId(equalId).withOdsVersion(1), ANNOTATION_HASH_3);
+        equalAnnotation.setOdsId(equalId).setOdsVersion(1), ANNOTATION_HASH_3);
 
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
@@ -442,13 +442,13 @@ class ProcessingKafkaServiceTest {
   private static Stream<Arguments> unequalAnnotations() {
     return Stream.of(
         Arguments.of(
-            givenAnnotationProcessed().withOaBody(givenOaBody().withOdsType("differentType"))),
-        Arguments.of(givenAnnotationProcessed().withOaCreator(givenCreator("different creator"))),
-        Arguments.of(givenAnnotationProcessed().withOaTarget(givenOaTarget("different target"))),
-        Arguments.of(givenAnnotationProcessed().withOaMotivatedBy("different motivated by")),
-        Arguments.of(givenAnnotationProcessed().withOdsAggregateRating(
-            givenAggregationRating().withRatingValue(0.99))),
-        Arguments.of(givenAnnotationProcessed().withOaMotivation(Motivation.EDITING))
+            givenAnnotationProcessed().setOaBody(givenOaBodySetType("differentType"))),
+        Arguments.of(givenAnnotationProcessed().setOaCreator(givenCreator("different creator"))),
+        Arguments.of(givenAnnotationProcessed().setOaTarget(givenOaTarget("different target"))),
+        Arguments.of(givenAnnotationProcessed().setOaMotivatedBy("different motivated by")),
+        Arguments.of(givenAnnotationProcessed().setOdsAggregateRating(
+            givenAggregationRating(0.99))),
+        Arguments.of(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING))
     );
   }
 
@@ -508,13 +508,13 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotation = givenAnnotationRequest();
     var secondAnnotation = givenAnnotationProcessed()
-        .withOdsId(ID_ALT)
-        .withOaMotivatedBy("nature")
-        .withOaTarget(givenOaTarget("alt target"));
+        .setOdsId(ID_ALT)
+        .setOaMotivatedBy("nature")
+        .setOaTarget(givenOaTarget("alt target"));
     var secondAnnotationCurrent = givenAnnotationProcessed()
-        .withOdsId(ID_ALT)
-        .withOaMotivatedBy("science")
-        .withOaTarget(givenOaTarget("alt target"));
+        .setOdsId(ID_ALT)
+        .setOaMotivatedBy("science")
+        .setOaTarget(givenOaTarget("alt target"));
     var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent,
         ANNOTATION_HASH_2);
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, null, null);
@@ -549,7 +549,7 @@ class ProcessingKafkaServiceTest {
   @Test
   void testHandleUpdateMessageKafkaException() throws Exception {
     // Given
-    var annotation = givenAnnotationRequest().withOdsId(ID);
+    var annotation = givenAnnotationRequest().setOdsId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
@@ -578,7 +578,7 @@ class ProcessingKafkaServiceTest {
   @Test
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
@@ -599,7 +599,7 @@ class ProcessingKafkaServiceTest {
     then(masJobRecordService).should().markMasJobRecordAsFailed(any(), eq(false));
     then(fdoRecordService).should(times(2))
         .buildPatchRollbackHandleRequest(
-            List.of(new HashedAnnotation(annotationRequest.withOdsVersion(2), ANNOTATION_HASH)));
+            List.of(new HashedAnnotation(annotationRequest.setOdsVersion(2), ANNOTATION_HASH)));
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotations(anyList());

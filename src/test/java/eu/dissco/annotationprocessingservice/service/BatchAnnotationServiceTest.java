@@ -73,13 +73,14 @@ class BatchAnnotationServiceTest {
     int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
     var batchAnnotations = annotatableIds.stream().map(id ->
-        new Annotation()
-            .withOaBody(givenOaBody())
-            .withOaMotivation(Motivation.COMMENTING)
-            .withOaTarget(givenOaTarget(String.valueOf(id)))
-            .withDcTermsCreated(CREATED)
-            .withOaCreator(givenCreator(CREATOR))
-            .withOdsAggregateRating(givenAggregationRating())
+        Annotation.builder()
+            .oaBody(givenOaBody())
+            .oaMotivation(Motivation.COMMENTING)
+            .oaTarget(givenOaTarget(String.valueOf(id)))
+            .dcTermsCreated(CREATED)
+            .oaCreator(givenCreator(CREATOR))
+            .odsAggregateRating(givenAggregationRating())
+            .build()
     ).toList();
     var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null, true);
     givenJsonPathResponse(annotatableIds);
@@ -98,10 +99,10 @@ class BatchAnnotationServiceTest {
   void testApplyBatchingSinglePageTwoBaseAnnotations() throws Exception {
     // Given
     int placeInBatch = 1;
-    var annotationBodyB = givenOaBody().withOaValue(List.of("Alt value"));
-    var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch(placeInBatch);
-    var baseAnnotationB = givenAnnotationRequest().withPlaceInBatch(placeInBatch)
-        .withOaBody(annotationBodyB);
+    var annotationBodyB = givenOaBody("Alt value");
+    var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(placeInBatch);
+    var baseAnnotationB = givenAnnotationRequest().setPlaceInBatch(placeInBatch)
+        .setOaBody(annotationBodyB);
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
 
@@ -111,22 +112,24 @@ class BatchAnnotationServiceTest {
     int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
     var batchAnnotationsA = annotatableIds.stream().map(id ->
-        new Annotation()
-            .withOaBody(givenOaBody())
-            .withOaMotivation(Motivation.COMMENTING)
-            .withOaTarget(givenOaTarget(String.valueOf(id)))
-            .withDcTermsCreated(CREATED)
-            .withOaCreator(givenCreator(CREATOR))
-            .withOdsAggregateRating(givenAggregationRating())
+        Annotation.builder()
+            .oaBody(givenOaBody())
+            .oaMotivation(Motivation.COMMENTING)
+            .oaTarget(givenOaTarget(String.valueOf(id)))
+            .dcTermsCreated(CREATED)
+            .oaCreator(givenCreator(CREATOR))
+            .odsAggregateRating(givenAggregationRating())
+            .build()
     ).toList();
     var batchAnnotationsB = annotatableIds.stream().map(id ->
-        new Annotation()
-            .withOaBody(annotationBodyB)
-            .withOaMotivation(Motivation.COMMENTING)
-            .withOaTarget(givenOaTarget(String.valueOf(id)))
-            .withDcTermsCreated(CREATED)
-            .withOaCreator(givenCreator(CREATOR))
-            .withOdsAggregateRating(givenAggregationRating())
+        Annotation.builder()
+            .oaBody(annotationBodyB)
+            .oaMotivation(Motivation.COMMENTING)
+            .oaTarget(givenOaTarget(String.valueOf(id)))
+            .dcTermsCreated(CREATED)
+            .oaCreator(givenCreator(CREATOR))
+            .odsAggregateRating(givenAggregationRating())
+            .build()
     ).toList();
 
     var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, true);
@@ -149,9 +152,9 @@ class BatchAnnotationServiceTest {
   void testApplyBatchingTwoBaseAnnotationsTypeMismatch() {
     // Given
     int placeInBatch = 1;
-    var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch(placeInBatch);
-    var baseAnnotationB = givenAnnotationRequest().withPlaceInBatch(placeInBatch)
-        .withOaTarget(givenOaTarget(ID_ALT).withOdsType(AnnotationTargetType.MEDIA_OBJECT));
+    var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(placeInBatch);
+    var baseAnnotationB = givenAnnotationRequest().setPlaceInBatch(placeInBatch)
+        .setOaTarget(givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT));
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenBatchMetadataLatitudeSearch()), null);
 
@@ -170,18 +173,18 @@ class BatchAnnotationServiceTest {
     // Given
     var annotatableIdsA = List.of("0", "1", "2");
     var annotatableIdsB = List.of("3", "4", "5");
-    var annotationBodyB = givenOaBody().withOaValue(List.of("alt value"));
-    var annotationTargetB = givenOaTarget(ID_ALT).withOdsType(AnnotationTargetType.MEDIA_OBJECT);
+    var annotationBodyB = givenOaBody("alt value");
+    var annotationTargetB = givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT);
     var batchMetadataA = givenBatchMetadataLatitudeSearch();
     var batchMetadataB = new BatchMetadata(2,
         "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
         "12");
     var batchMetadataList = List.of(batchMetadataA, batchMetadataB);
-    var baseAnnotationA = givenAnnotationRequest().withPlaceInBatch(1);
+    var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(1);
     var baseAnnotationB = givenAnnotationRequest()
-        .withOaBody(annotationBodyB)
-        .withOaTarget(annotationTargetB)
-        .withPlaceInBatch(2);
+        .setOaBody(annotationBodyB)
+        .setOaTarget(annotationTargetB)
+        .setPlaceInBatch(2);
 
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         batchMetadataList, false);
@@ -191,23 +194,25 @@ class BatchAnnotationServiceTest {
     var elasticDocumentsA = annotatableIdsA.stream().map(TestUtils::givenElasticDocument).toList();
     var elasticDocumentsB = annotatableIdsB.stream().map(TestUtils::givenElasticDocument).toList();
     var batchAnnotationsA = annotatableIdsA.stream().map(id ->
-        new Annotation()
-            .withOaBody(givenOaBody())
-            .withOaMotivation(Motivation.COMMENTING)
-            .withOaTarget(givenOaTarget(String.valueOf(id)))
-            .withDcTermsCreated(CREATED)
-            .withOaCreator(givenCreator(CREATOR))
-            .withOdsAggregateRating(givenAggregationRating())
+        Annotation.builder()
+            .oaBody(givenOaBody())
+            .oaMotivation(Motivation.COMMENTING)
+            .oaTarget(givenOaTarget(String.valueOf(id)))
+            .dcTermsCreated(CREATED)
+            .oaCreator(givenCreator(CREATOR))
+            .odsAggregateRating(givenAggregationRating())
+            .build()
     ).toList();
 
     var batchAnnotationsB = annotatableIdsB.stream().map(id ->
-        new Annotation()
-            .withOaBody(annotationBodyB)
-            .withOaMotivation(Motivation.COMMENTING)
-            .withOaTarget(givenOaTarget(String.valueOf(id)))
-            .withDcTermsCreated(CREATED)
-            .withOaCreator(givenCreator(CREATOR))
-            .withOdsAggregateRating(givenAggregationRating())
+        Annotation.builder()
+            .oaBody(annotationBodyB)
+            .oaMotivation(Motivation.COMMENTING)
+            .oaTarget(givenOaTarget(String.valueOf(id)))
+            .dcTermsCreated(CREATED)
+            .oaCreator(givenCreator(CREATOR))
+            .odsAggregateRating(givenAggregationRating())
+            .build()
     ).toList();
     var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, true);
     var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, true);

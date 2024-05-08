@@ -55,19 +55,22 @@ class JsonPathComponentTest {
       throws JsonProcessingException, BatchingException {
     // Given
     var expected = List.of(
-        new Target()
-            .withOdsId(DOI_PROXY + ID)
-            .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[0].locality")),
-        new Target()
-            .withOdsId(DOI_PROXY + ID)
-            .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[2].locality")));
+        Target.builder()
+            .odsId(DOI_PROXY + ID)
+            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+            .oaSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[0].locality"))
+            .build(),
+        Target.builder()
+            .odsId(DOI_PROXY + ID)
+            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+            .oaSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[2].locality"))
+            .build());
 
-    var baseTargetClassSelector = new Target()
-        .withOdsId(DOI_PROXY + ID)
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .withSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[1].locality"));
+    var baseTargetClassSelector = Target.builder()
+        .odsId(DOI_PROXY + ID)
+        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+        .oaSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[1].locality"))
+        .build();
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(givenBatchMetadataLatitudeSearch(),
@@ -83,14 +86,16 @@ class JsonPathComponentTest {
       throws JsonProcessingException, BatchingException {
     // Given
     var baseTargetClassSelector = givenOaTarget(ID);
-    var expected = List.of(new Target()
-            .withOdsId(DOI_PROXY + ID)
-            .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[0].locality")),
-        new Target()
-            .withOdsId(DOI_PROXY + ID)
-            .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality")));
+    var expected = List.of(Target.builder()
+            .odsId(DOI_PROXY + ID)
+            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+            .oaSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[0].locality"))
+            .build(),
+        Target.builder()
+            .odsId(DOI_PROXY + ID)
+            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+            .oaSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality"))
+            .build());
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(givenBatchMetadataLatitudeSearch(),
@@ -166,11 +171,12 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetPathsBadBatchMetadata() {
     // Given
-    var baseTargetClassSelector = new Target()
-        .withOdsId(HANDLE_PROXY + ID)
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .withSelector(new ClassSelector()
-            .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"));
+    var baseTargetClassSelector = Target.builder()
+        .odsId(HANDLE_PROXY + ID)
+        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+        .oaSelector(new ClassSelector()
+            .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"))
+        .build();
     // Path is incorrect
     var batchMetadata = new BatchMetadata(
         1, "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude", "11");
@@ -185,10 +191,11 @@ class JsonPathComponentTest {
   @Test
   void testBadSelectorType() {
     // Given
-    var baseTargetClassSelector = new Target()
-        .withOdsId(ID)
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .withSelector(new FragmentSelector());
+    var baseTargetClassSelector = Target.builder()
+        .odsId(ID)
+        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+        .oaSelector(new FragmentSelector())
+        .build();
 
     // When
     assertThrows(BatchingException.class, () ->

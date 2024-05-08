@@ -1,5 +1,9 @@
 package eu.dissco.annotationprocessingservice.component;
 
+import static com.jayway.jsonpath.Criteria.where;
+import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.JsonPath.using;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -117,10 +121,11 @@ public class JsonPathComponent {
         newSelector = new FieldSelector()
             .withOdsField(append + targetPath);
       }
-      newTargets.add(new Target()
-          .withOdsType(baseTarget.getOdsType())
-          .withOdsId("https://doi.org/" + newTargetId)
-          .withSelector(newSelector));
+      newTargets.add(Target.builder()
+          .odsType(baseTarget.getOdsType())
+          .odsId("https://doi.org/" + newTargetId)
+          .oaSelector(newSelector)
+          .build());
     }
     return newTargets;
   }
