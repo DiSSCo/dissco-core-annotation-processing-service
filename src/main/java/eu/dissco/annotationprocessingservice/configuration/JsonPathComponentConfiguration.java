@@ -10,10 +10,12 @@ public class JsonPathComponentConfiguration {
 
   @Bean
   public com.jayway.jsonpath.Configuration jsonPathConfiguration() {
-    return com.jayway.jsonpath.Configuration.builder().options(Option.AS_PATH_LIST).build();
+    return com.jayway.jsonpath.Configuration.builder()
+        .options(Option.AS_PATH_LIST, Option.SUPPRESS_EXCEPTIONS, Option.ALWAYS_RETURN_LIST)
+        .build();
   }
 
-  @Bean
+  @Bean("lastKey")
   Pattern lastKeyPattern(){
     // [^.]+(?=\.$) -> If string ends in a period, selects text between second last and last period ("a.AA.", AA is selected)
     // ([^.]+$) -> Selects text from last period to end of string ("a.AA", AA is selected)
