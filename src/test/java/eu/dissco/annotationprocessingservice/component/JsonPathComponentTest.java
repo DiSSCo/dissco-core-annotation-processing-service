@@ -1,10 +1,11 @@
 package eu.dissco.annotationprocessingservice.component;
 
+import static com.jayway.jsonpath.Criteria.where;
+import static com.jayway.jsonpath.Filter.filter;
+import static com.jayway.jsonpath.JsonPath.using;
 import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
-import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataCountryAndContinent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
@@ -24,9 +25,10 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,12 +41,12 @@ class JsonPathComponentTest {
   private JsonPathComponent jsonPathComponent;
   Pattern lastKeyMatcher = Pattern.compile("[^.]+(?=\\.$)|([^.]+$)");
   private GreatestCommonSubstringComponent substringComponent;
+  Configuration jsonPathConfiguration = Configuration.builder()
+      .options(Option.AS_PATH_LIST, Option.SUPPRESS_EXCEPTIONS, Option.ALWAYS_RETURN_LIST)
+      .build();
 
   @BeforeEach
   void init() {
-    var jsonPathConfiguration = Configuration.builder()
-        .options(Option.AS_PATH_LIST, Option.SUPPRESS_EXCEPTIONS, Option.ALWAYS_RETURN_LIST)
-        .build();
     substringComponent = new GreatestCommonSubstringComponent();
     jsonPathComponent = new JsonPathComponent(MAPPER, jsonPathConfiguration, lastKeyMatcher,
         substringComponent);
@@ -107,32 +109,14 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetPathsFieldSelectorExtended() throws Exception {
-    // Given
-    var baseTargetClassSelector = givenOaTarget(ID);
-    var expected = List.of(new Target()
-        .withOdsId(DOI_PROXY + ID)
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[0].locality")));
-
-    // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(
-        givenBatchMetadataCountryAndContinent("Netherlands", "Europe"),
-        givenElasticDocument("Netherlands", ID),
-        baseTargetClassSelector);
-
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
-
-  @Test
   void testGetAnnotationTargetPathsFieldSelectorExtendedDifferentLevels() throws Exception {
     // Given
     var baseTargetClassSelector = givenOaTarget(ID);
-    var expected = List.of(new Target()
-        .withOdsId(DOI_PROXY + ID)
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .withSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality")));
+    var expected = List.of(Target.builder()
+        .odsId(DOI_PROXY + ID)
+        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+        .oaSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality"))
+        .build());
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
             "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
@@ -150,42 +134,6 @@ class JsonPathComponentTest {
 
     // Then
     assertThat(result).isEqualTo(expected);
-  }
-
-  @Test
-  void testGetAnnotationTargetPathsFieldSelectorExtendedEmpty() throws Exception {
-    // Given
-    var baseTargetClassSelector = givenOaTarget(ID);
-    var searchDoc = givenElasticDocument("Netherlands", ID);
-
-    // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(
-        givenBatchMetadataCountryAndContinent("Netherlands", "Error"),
-        givenElasticDocument("Netherlands", ID),
-        baseTargetClassSelector);
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  void testGetAnnotationTargetPathsBadBatchMetadata() {
-    // Given
-    var baseTargetClassSelector = Target.builder()
-        .odsId(HANDLE_PROXY + ID)
-        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .oaSelector(new ClassSelector()
-            .withOaClass("digitalSpecimenWrapper.occurrences[1].locality"))
-        .build();
-    // Path is incorrect
-    var batchMetadata = new BatchMetadata(
-        1, "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude", "11");
-
-    //Then
-    assertThrows(BatchingException.class,
-        () -> jsonPathComponent.getAnnotationTargets(batchMetadata, givenElasticDocument(ID,
-                "Netherlands"),
-            baseTargetClassSelector));
   }
 
   @Test
@@ -208,19 +156,62 @@ class JsonPathComponentTest {
   void testBadJsonpathFormat() throws JsonProcessingException {
     // Given
     var batchMetadata = new BatchMetadata(1,
-        "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']",
+        "[digitalSpecimenWrapper][occurrences][*]..[location][georeference]['dwc:decimalLatitude']['dwc:value']",
         "11");
-    var baseTargetClassSelector = new Target()
-        .withOdsId(ID)
-        .withOdsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .withSelector(new FieldSelector()
-            .withOdsField("digitalSpecimenWrapper.occurrences[1].locality"));
+    var baseTargetClassSelector = Target.builder()
+        .odsId(ID)
+        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+        .oaSelector(new FieldSelector()
+            .withOdsField("digitalSpecimenWrapper.occurrences[1].locality"))
+        .build();
 
     // When
     assertThrows(BatchingException.class, () ->
         jsonPathComponent.getAnnotationTargets(batchMetadata,
             givenElasticDocument(),
             baseTargetClassSelector));
+  }
+
+  @Test
+  void testCompoundFieldIndex(){
+    var givenList = new ArrayList<FieldIndex>();
+    givenList.add(new FieldIndex(List.of("A"), List.of(1)));
+    givenList.add(new FieldIndex(List.of("B"), List.of(2)));
+    givenList.add(new FieldIndex(List.of("C"), List.of(3)));
+    var expected = new ArrayList<FieldIndex>();
+    expected.add(new FieldIndex(List.of("A"), List.of(1)));
+    expected.add(new FieldIndex(List.of("A", "B"), List.of(1, 2)));
+    expected.add(new FieldIndex(List.of("A", "B", "C"), List.of(1, 2, 3)));
+    var result = compoundFieldIndex(givenList);
+    assertThat(result).isEqualTo(expected);
+  }
+
+
+  private ArrayList<FieldIndex> compoundFieldIndex(ArrayList<FieldIndex> lst) {
+    if (lst.size() == 1) {
+      return lst;
+    }
+    var previousCompound = compoundFieldIndex(new ArrayList<>(lst.subList(0, lst.size() - 1)));
+    FieldIndex currentFieldIndex = lst.get(lst.size() - 1);
+    var compoundedField = new ArrayList<>(previousCompound.get(previousCompound.size() - 1).field());
+    var compoundedIndex = new ArrayList<>(previousCompound.get(previousCompound.size() - 1).index());
+    compoundedField.addAll(currentFieldIndex.field());
+    compoundedIndex.addAll(currentFieldIndex.index());
+    previousCompound.add(new FieldIndex(compoundedField, compoundedIndex));
+    return previousCompound;
+  }
+
+  private ArrayList<ArrayList<String>> compoundList(ArrayList<ArrayList<String>> l) {
+    if (l.size() == 1) {
+      return l;
+    }
+    var previousCompound = compoundList(new ArrayList<>(l.subList(0, l.size() - 1)));
+    var currentList = l.get(l.size() - 1);
+    var previousResult = previousCompound.get(previousCompound.size() - 1);
+    var compoundedList = new ArrayList<>(previousResult);
+    compoundedList.addAll(currentList);
+    previousCompound.add(compoundedList);
+    return previousCompound;
   }
 
   @Test
@@ -239,7 +230,7 @@ class JsonPathComponentTest {
             "MNH"
         )));
 
-    var result = jsonPathComponent.isTrueMatch(annotatedObject, batchMetadata);
+    var result = jsonPathComponent.isTrueMatch(batchMetadata, null, null);
 
     assertThat(result).isTrue();
   }
@@ -256,7 +247,7 @@ class JsonPathComponentTest {
             "bad"
         )));
 
-    var result = jsonPathComponent.isTrueMatch(annotatedObject, batchMetadata);
+    var result = jsonPathComponent.isTrueMatch(batchMetadata, null, null);
     assertThat(result).isFalse();
   }
 
@@ -272,28 +263,8 @@ class JsonPathComponentTest {
             "MNH"
         )));
 
-    var result = jsonPathComponent.isTrueMatch(annotatedObject, batchMetadata);
+    var result = jsonPathComponent.isTrueMatch(batchMetadata, null, null);
     assertThat(result).isTrue();
-  }
-
-  @Test
-  void testIndexedPathsHaveCommonality() {
-    var param1 = new BatchMetadataSearchParam(
-        "specimen.occurrences[*].locality[*].city",
-        "Paris");
-    var param2 = new BatchMetadataSearchParam(
-        "specimen.occurrences[*].locality[*].country",
-        "France");
-    HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<Integer>>> commonPathMap = new HashMap<>();
-    commonPathMap.put(List.of("occurrences"),
-        makeSubmap(List.of(param1, param2), List.of(List.of(1), List.of(1))));
-    commonPathMap.put(List.of("occurrences", "locality"),
-        makeSubmap(List.of(param1, param2), List.of(List.of(1,1), List.of(1,1))));
-
-    var result =  indexedPathsHaveCommonality(commonPathMap);
-
-    assertThat(result).isTrue();
-
   }
 
   private HashMap<BatchMetadataSearchParam, List<Integer>> makeSubmap(
@@ -305,24 +276,6 @@ class JsonPathComponentTest {
     return map;
 
   }
-
-
-  private boolean indexedPathsHaveCommonality(
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<Integer>>> commonPathMap) {
-    for (var fields : commonPathMap.entrySet()) {
-      var firstList = fields.getValue().entrySet().iterator().next().getValue();
-      HashSet<List<Integer>> commonList = new HashSet<>(List.of(firstList));
-      for (var indexMap : fields.getValue().entrySet()) {
-        var currentList = indexMap.getValue();
-        commonList.retainAll(List.of(indexMap.getValue()));
-      }
-      if (commonList.isEmpty()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
 
   private static JsonNode givenJsonNode() throws Exception {
     return MAPPER.readTree("""
@@ -377,8 +330,38 @@ class JsonPathComponentTest {
           }
         }
         """);
-
   }
+
+  @Test
+  void testBuildTargetPaths() throws Exception {
+    var targetPath = "specimen.occurrences.2.location.city";
+    var expected = List.of(
+        "specimen.occurrences.1.location.city"
+    );
+    var selector = new FieldSelector(targetPath);
+    var target = Target.builder()
+        .odsId(ID)
+        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
+        .oaSelector(selector)
+        .build();
+
+    var document = givenJsonNode();
+    var context = using(jsonPathConfiguration).parse(MAPPER.writeValueAsString(document));
+    var commonIndexes = Map.of(
+        List.of("occurrences"), List.of(List.of(1)),
+        List.of("identifications"), List.of(List.of(1))
+    );
+    var result = jsonPathComponent.getAnnotationTargetPaths(commonIndexes, target, context);
+    assertThat(result).isEqualTo(expected);
+  }
+
+
+
+
+  record FieldIndex(
+      List<String> field,
+      List<Integer> index
+  ){}
 
 
 }
