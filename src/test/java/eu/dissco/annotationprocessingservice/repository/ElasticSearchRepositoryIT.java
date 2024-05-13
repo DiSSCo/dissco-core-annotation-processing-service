@@ -120,7 +120,7 @@ class ElasticSearchRepositoryIT {
   void testIndexAnnotations() throws IOException {
     // Given
     var annotations = List.of(givenAnnotationProcessed(),
-        givenAnnotationProcessed().withOdsId("alt"));
+        givenAnnotationProcessed().setOdsId("alt"));
 
     // When
     var result = repository.indexAnnotations(annotations);

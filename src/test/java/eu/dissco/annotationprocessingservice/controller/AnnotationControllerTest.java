@@ -48,7 +48,7 @@ class AnnotationControllerTest {
   void testUpdateAnnotation()
       throws Exception {
     // Given
-    var request = givenAnnotationRequest().withOdsId(ID);
+    var request = givenAnnotationRequest().setOdsId(ID);
     given(service.updateAnnotation(request)).willReturn(givenAnnotationProcessed());
     var prefix = ID.split("/")[0];
     var suffix = ID.split("/")[1];
@@ -65,7 +65,7 @@ class AnnotationControllerTest {
   void testUpdateAnnotationIdMismatch()
       throws Exception {
     // Given
-    var request = givenAnnotationRequest().withOdsId(ID);
+    var request = givenAnnotationRequest().setOdsId(ID);
     var prefix = ID.split("/")[0];
     var suffix = "wrong";
 
