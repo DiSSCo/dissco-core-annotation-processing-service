@@ -3,7 +3,6 @@ package eu.dissco.annotationprocessingservice.component;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.JsonPath.using;
-import static org.apache.commons.lang3.ObjectUtils.min;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,7 +84,7 @@ public class JsonPathComponent {
     var arrayFields = new ArrayList<String>();
     while (matcher.find()) {
       var match = matcher.group();
-      arrayFields.add(match.replaceAll("\\PL+", ""));
+      arrayFields.add(match.replaceAll("\\P{L}+", ""));
     }
     if (arrayFields.isEmpty()) {
       return List.of(baseTargetPath);
@@ -262,7 +261,6 @@ public class JsonPathComponent {
   }
 
   private String getLastKey(String jsonPath) {
-    // Get last key of a jsonPath using regex defined in
     var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
     if (lastKeyMatcher.find()) {
       return lastKeyMatcher.group().replace("\\.", "");
@@ -437,7 +435,7 @@ public class JsonPathComponent {
       var matcher = arrayFieldPattern.matcher(jsonPath);
       while (matcher.find()) {
         var match = matcher.group();
-        var fieldName = match.replaceAll("\\PL+", "");
+        var fieldName = match.replaceAll("\\P{L}+", "");
         var idx = Integer.valueOf(match.replaceAll("\\D", ""));
         indexPairs.add(new FieldIndex(List.of(fieldName), List.of(idx)));
       }
