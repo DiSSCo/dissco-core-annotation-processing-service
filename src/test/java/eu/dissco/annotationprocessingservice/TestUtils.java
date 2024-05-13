@@ -164,6 +164,16 @@ public class TestUtils {
         .withOdsField("digitalSpecimenWrapper.occurrences[1].locality");
   }
 
+  public static Target givenOaTarget(Selector selector){
+    return givenOaTarget(ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
+  }
+
+  public static FieldSelector givenSelector(String field){
+    return new FieldSelector()
+        .withOdsField(field);
+  }
+
+
   public static Creator givenCreator(String userId) {
     return Creator.builder()
         .foafName("Test User")

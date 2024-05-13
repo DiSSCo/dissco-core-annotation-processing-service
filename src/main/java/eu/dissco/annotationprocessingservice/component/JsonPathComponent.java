@@ -46,9 +46,10 @@ public class JsonPathComponent {
 
   private final ObjectMapper mapper;
   private final Configuration jsonPathConfig;
-  @Qualifier("lastKey")
-  private final Pattern lastKeyPattern;
-  private final GreatestCommonSubstringComponent substringComponent;
+
+  // Identifies the last field in a dot notation pattern
+  private final Pattern lastKeyPattern = Pattern.compile("[^.]+(?=\\.$)|([^.]+$)");
+  // Identifies array fields in a mixed notation pattern
   private final Pattern arrayFieldPattern = Pattern.compile(".\\w+\\.\\d+.|\\.\\w+\\.\\d+");
 
 
@@ -65,7 +66,7 @@ public class JsonPathComponent {
     }
     if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
       log.warn("False positive detected");
-      log.debug("{} does not comply to batch metadata {}", annotatedObject, batchMetadata);
+      log.info("{} does not comply to batch metadata {}", annotatedObject, batchMetadata);
       return Collections.emptyList();
     }
     var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
@@ -73,7 +74,7 @@ public class JsonPathComponent {
   }
 
 
-  public List<String> getAnnotationTargetPaths(
+  private List<String> getAnnotationTargetPaths(
       Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
       DocumentContext context)
       throws BatchingException {
@@ -312,12 +313,12 @@ public class JsonPathComponent {
     return String.join(".", jsonPathArray);
   }
 
-  public boolean isTrueMatch(BatchMetadataExtended batchMetadata,
+  private boolean isTrueMatch(BatchMetadataExtended batchMetadata,
       HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) {
     if (batchMetadata.searchParams().size() == 1) {
       return true;
     }
-    HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>> indexedPaths = new HashMap<>();
+    HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
     try {
       for (var param : batchMetadata.searchParams()) {
         var validPaths = new HashSet<String>(
@@ -334,8 +335,8 @@ public class JsonPathComponent {
   }
 
   private void mergePathMaps(
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>> indexedPaths,
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>> newPaths) {
+      HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths,
+      HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> newPaths) {
     for (var newIndexedPaths : newPaths.entrySet()) {
       if (indexedPaths.containsKey(newIndexedPaths.getKey())) {
         indexedPaths.get(newIndexedPaths.getKey())
@@ -362,7 +363,7 @@ public class JsonPathComponent {
    */
 
   private boolean indexedPathsHaveCommonality(
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>> commonPathMap,
+      HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> commonPathMap,
       HashMap<List<String>, List<List<Integer>>> commonIndexes) {
     for (var fields : commonPathMap.entrySet()) {
       var firstList = fields.getValue().entrySet().iterator().next().getValue();
@@ -384,7 +385,7 @@ public class JsonPathComponent {
   [occurrences] -> searchParam, [1],
   [occurrences, locality] -> searchParam, [1, 2]
    */
-  private HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>> indexArrayPaths(
+  private HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexArrayPaths(
       BatchMetadataSearchParam searchParam, HashSet<String> jsonPaths) {
     var fieldIdxs = new HashMap<String, List<FieldIndex>>();
     for (var jsonPath : jsonPaths) {
@@ -434,17 +435,17 @@ public class JsonPathComponent {
     return previousCompound;
   }
 
-  private HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>> mapCommonPaths(
+  private HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> mapCommonPaths(
       HashMap<String, List<FieldIndex>> idxMap,
       BatchMetadataSearchParam searchParam) {
-    var commonPathMap = new HashMap<List<String>, HashMap<BatchMetadataSearchParam, List<List<Integer>>>>();
+    var commonPathMap = new HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>>();
     for (var fieldGroups : idxMap.entrySet()) {
       for (var fieldList : fieldGroups.getValue()) {
         if (commonPathMap.containsKey(fieldList.fields)) {
           commonPathMap.get(fieldList.fields).get(searchParam).add(fieldList.indexes);
         } else {
           commonPathMap.put(fieldList.fields,
-              new HashMap<>(Map.of(searchParam, List.of(fieldList.indexes))));
+              new HashMap<>(Map.of(searchParam, new ArrayList<>(List.of(fieldList.indexes)))));
         }
       }
     }

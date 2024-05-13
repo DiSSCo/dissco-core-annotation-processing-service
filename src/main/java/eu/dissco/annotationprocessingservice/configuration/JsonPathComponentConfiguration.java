@@ -15,11 +15,4 @@ public class JsonPathComponentConfiguration {
         .build();
   }
 
-  @Bean("lastKey")
-  Pattern lastKeyPattern(){
-    // [^.]+(?=\.$) -> If string ends in a period, selects text between second last and last period ("a.AA.", AA is selected)
-    // ([^.]+$) -> Selects text from last period to end of string ("a.AA", AA is selected)
-    return Pattern.compile("[^.]+(?=\\.$)|([^.]+$)");
-  }
-
 }
