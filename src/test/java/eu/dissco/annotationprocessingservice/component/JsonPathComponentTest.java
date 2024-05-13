@@ -7,7 +7,9 @@ import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenSelector;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,10 +25,12 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,14 +106,10 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetPathsFieldSelectorExtendedDifferentLevels() throws Exception {
+  void testGetAnnotationTargetsExtended() {
     // Given
-    var baseTargetClassSelector = givenOaTarget(ID);
-    var expected = List.of(Target.builder()
-        .odsId(DOI_PROXY + ID)
-        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .oaSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality"))
-        .build());
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var expected = List.of(givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
             "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
@@ -123,7 +123,146 @@ class JsonPathComponentTest {
     // When
     var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
         givenElasticDocument(),
-        baseTargetClassSelector);
+        baseTarget);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetAnnotationTargetsExtendedOneBatchMetadata() {
+    // Given
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var expected = List.of(givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
+        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+            "Netherlands")));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        givenElasticDocument(),
+        baseTarget);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetAnnotationTargetsExtendedFalsePositive() {
+    // Given
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+            "Netherlands"),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
+            "Incorrect"
+        )
+    ));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        givenElasticDocument(),
+        baseTarget);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testGetAnnotationTargetsExtendedOneSharedIndexWithTarget() {
+    // Given
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var expected = List.of(
+        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
+        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+            "Netherlands"),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.fieldNum",
+            "1"
+        )));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        givenElasticDocument(),
+        baseTarget);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetAnnotationTargetsExtendedNestedFields() throws Exception {
+    // Given
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[5].assertions[5].assertionValue"));
+    var expected = List.of(
+        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].assertions[0].assertionValue")),
+        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].assertions[1].assertionValue")));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionType",
+            "weight"),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].eventDate",
+            "2001-01-01"
+        )));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        givenNestedNode(),
+        baseTarget);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetAnnotationTargetsExtendedNestedFieldsFalsePositive() throws Exception {
+    // Given
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[5].assertions[5].assertionValue"));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionType",
+            "weight"),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionValue",
+            "10cm"
+        )));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        givenNestedNode(),
+        baseTarget);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void testGetAnnotationTargetsExtendedNestedFieldsBothValid() throws Exception {
+    // Given
+    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[5].assertions[5].assertionValue"));
+    var expected = List.of(
+        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].assertions[1].assertionValue")));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionType",
+            "weight"),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionValue",
+            "10.1kilos"
+        )));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        givenNestedNode(),
+        baseTarget);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -137,16 +276,18 @@ class JsonPathComponentTest {
         .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
         .oaSelector(new FragmentSelector())
         .build();
+    var search = givenBatchMetadataLatitudeSearch();
+    var doc = givenElasticDocument();
 
     // When
-    assertThrows(BatchingException.class, () ->
-        jsonPathComponent.getAnnotationTargets(givenBatchMetadataLatitudeSearch(),
-            givenElasticDocument(),
+    assertThrows(BatchingRuntimeException.class, () ->
+        jsonPathComponent.getAnnotationTargets(search,
+            doc,
             baseTargetClassSelector));
   }
 
   @Test
-  void testBadJsonpathFormat() throws JsonProcessingException {
+  void testBadJsonpathFormat() {
     // Given
     var batchMetadata = new BatchMetadata(1,
         "[digitalSpecimenWrapper][occurrences][*]..[location][georeference]['dwc:decimalLatitude']['dwc:value']",
@@ -165,112 +306,38 @@ class JsonPathComponentTest {
             baseTargetClassSelector));
   }
 
-  @Test
-  void testCompoundFieldIndex(){
-    var givenList = new ArrayList<FieldIndex>();
-    givenList.add(new FieldIndex(List.of("A"), List.of(1)));
-    givenList.add(new FieldIndex(List.of("B"), List.of(2)));
-    givenList.add(new FieldIndex(List.of("C"), List.of(3)));
-    var expected = new ArrayList<FieldIndex>();
-    expected.add(new FieldIndex(List.of("A"), List.of(1)));
-    expected.add(new FieldIndex(List.of("A", "B"), List.of(1, 2)));
-    expected.add(new FieldIndex(List.of("A", "B", "C"), List.of(1, 2, 3)));
-    var result = compoundFieldIndex(givenList);
-    assertThat(result).isEqualTo(expected);
-  }
-
-
-  private ArrayList<FieldIndex> compoundFieldIndex(ArrayList<FieldIndex> lst) {
-    if (lst.size() == 1) {
-      return lst;
-    }
-    var previousCompound = compoundFieldIndex(new ArrayList<>(lst.subList(0, lst.size() - 1)));
-    FieldIndex currentFieldIndex = lst.get(lst.size() - 1);
-    var compoundedField = new ArrayList<>(previousCompound.get(previousCompound.size() - 1).field());
-    var compoundedIndex = new ArrayList<>(previousCompound.get(previousCompound.size() - 1).index());
-    compoundedField.addAll(currentFieldIndex.field());
-    compoundedIndex.addAll(currentFieldIndex.index());
-    previousCompound.add(new FieldIndex(compoundedField, compoundedIndex));
-    return previousCompound;
-  }
-
-  private ArrayList<ArrayList<String>> compoundList(ArrayList<ArrayList<String>> l) {
-    if (l.size() == 1) {
-      return l;
-    }
-    var previousCompound = compoundList(new ArrayList<>(l.subList(0, l.size() - 1)));
-    var currentList = l.get(l.size() - 1);
-    var previousResult = previousCompound.get(previousCompound.size() - 1);
-    var compoundedList = new ArrayList<>(previousResult);
-    compoundedList.addAll(currentList);
-    previousCompound.add(compoundedList);
-    return previousCompound;
-  }
-
-  @Test
-  void testIsTrueMatch() throws Exception {
-    /*
-    var annotatedObject = givenJsonNode();
-    var batchMetadata = new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "specimen.occurrences[*].location.city",
-            "Paris"),
-        new BatchMetadataSearchParam(
-            "specimen.occurrences[*].remarks.weather",
-            "good"
-        ),
-        new BatchMetadataSearchParam(
-            "specimen.institution",
-            "MNH"
-        )));
-
-    var result = jsonPathComponent.isTrueMatch(batchMetadata, null, null);
-
-    assertThat(result).isTrue(); */
-  }
-
-  @Test
-  void testIsTrueMatchFalse() throws Exception {
-    /*
-    var annotatedObject = givenJsonNode();
-    var batchMetadata = new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "specimen.occurrences[*].location.city",
-            "Paris"),
-        new BatchMetadataSearchParam(
-            "specimen.occurrences[*].remarks.weather",
-            "bad"
-        )));
-
-    var result = jsonPathComponent.isTrueMatch(batchMetadata, null, null);
-    assertThat(result).isFalse(); */
-  }
-
-  @Test
-  void testIsTrueMatch2() throws Exception {
-    /*
-    var annotatedObject = givenJsonNode();
-    var batchMetadata = new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "specimen.occurrences[*].location.city",
-            "Paris"),
-        new BatchMetadataSearchParam(
-            "specimen.institution",
-            "MNH"
-        )));
-
-    var result = jsonPathComponent.isTrueMatch(batchMetadata, null, null);
-    assertThat(result).isTrue(); */
-  }
-
-  private HashMap<BatchMetadataSearchParam, List<Integer>> makeSubmap(
-      List<BatchMetadataSearchParam> params, List<List<Integer>> idx) {
-    HashMap<BatchMetadataSearchParam, List<Integer>> map = new HashMap<>();
-    for (int i = 0; i < params.size(); i++) {
-      map.put(params.get(i), idx.get(i));
-    }
-    return map;
-
+  private static JsonNode givenNestedNode() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "id": "20.5000.1025/KZL-VC0-ZK2",
+          "digitalSpecimenWrapper": {
+            "occurrences": [
+              {
+                "assertions": [
+                  {
+                    "assertionType": "length",
+                    "assertionValue": "10cm"
+                  }
+                ],
+                "eventDate" :"2001-01-01"
+              },
+              {
+                "assertions": [
+                 {
+                    "assertionType": "weight",
+                    "assertionValue": "10kilos"
+                  },
+                  {
+                    "assertionType": "weight",
+                    "assertionValue": "10.1kilos"
+                  }
+                ],
+                "eventDate" :"2001-01-01"
+              }
+            ]
+          }
+        }
+        """);
   }
 
   private static JsonNode givenJsonNode() throws Exception {
@@ -327,40 +394,5 @@ class JsonPathComponentTest {
         }
         """);
   }
-
-  @Test
-  void testBuildTargetPaths() throws Exception {
-    /*
-    var targetPath = "specimen.occurrences.2.location.city";
-    var expected = List.of(
-        "specimen.occurrences.1.location.city"
-    );
-    var selector = new FieldSelector(targetPath);
-    var target = Target.builder()
-        .odsId(ID)
-        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .oaSelector(selector)
-        .build();
-
-    var document = givenJsonNode();
-    var context = using(jsonPathConfiguration).parse(MAPPER.writeValueAsString(document));
-    var commonIndexes = Map.of(
-        List.of("occurrences"), List.of(List.of(1)),
-        List.of("identifications"), List.of(List.of(1))
-    );
-    var result = jsonPathComponent.getAnnotationTargetPaths(commonIndexes, target, context);
-    assertThat(result).isEqualTo(expected);
-
-     */
-  }
-
-
-
-
-  record FieldIndex(
-      List<String> field,
-      List<Integer> index
-  ){}
-
 
 }

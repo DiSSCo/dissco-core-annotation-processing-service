@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.component;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.JsonPath.using;
+import static org.apache.commons.lang3.ObjectUtils.min;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,13 +31,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -50,18 +51,19 @@ public class JsonPathComponent {
   // Identifies the last field in a dot notation pattern
   private final Pattern lastKeyPattern = Pattern.compile("[^.]+(?=\\.$)|([^.]+$)");
   // Identifies array fields in a mixed notation pattern
-  private final Pattern arrayFieldPattern = Pattern.compile(".\\w+\\.\\d+.|\\.\\w+\\.\\d+");
+  private final Pattern arrayFieldPattern = Pattern.compile("(\\w+\\.\\d+)");
+  private final Pattern dotIndexPatternFirst = Pattern.compile("\\.\\d");
+  private final Pattern dotIndexPatternLast = Pattern.compile("\\d\\.");
 
 
   public List<Target> getAnnotationTargetsExtended(BatchMetadataExtended batchMetadata,
-      JsonNode annotatedObject,
-      Target baseTarget) throws BatchingException {
+      JsonNode annotatedObject, Target baseTarget) {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
     DocumentContext context;
     try {
       context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
     } catch (JsonProcessingException e) {
-      log.info("Unable to read jsonPath");
+      log.error("Unable to read jsonPath", e);
       throw new BatchingRuntimeException();
     }
     if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
@@ -77,7 +79,7 @@ public class JsonPathComponent {
   private List<String> getAnnotationTargetPaths(
       Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
       DocumentContext context)
-      throws BatchingException {
+      throws BatchingRuntimeException {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
     var arrayFields = new ArrayList<String>();
@@ -88,17 +90,22 @@ public class JsonPathComponent {
     if (arrayFields.isEmpty()) {
       return List.of(baseTargetPath);
     }
-    var indexedPath = findTargetPathIndexes(arrayFields, commonIndexes);
     var modifiedPath = "$." + baseTargetPath.replaceAll("\\d+", "*");
     ArrayList<String> jsonPaths = context.read(modifiedPath);
-    var invalidPaths = new ArrayList<String>();
-    for (var jsonPath : jsonPaths) {
-      if (!isValidJsonPath(toDotDelineation(jsonPath), indexedPath)) {
-        invalidPaths.add(jsonPath);
+    if (!commonIndexes.isEmpty()) {
+      var invalidPaths = new ArrayList<String>();
+      var indexedPath = findTargetPathIndexes(arrayFields, commonIndexes);
+      for (var jsonPath : jsonPaths) {
+        if (!isValidJsonPath(toDotNotation(jsonPath), indexedPath)) {
+          invalidPaths.add(jsonPath);
+        }
       }
+      jsonPaths.removeAll(invalidPaths);
     }
-    jsonPaths.removeAll(invalidPaths);
-    return jsonPaths.stream().map(this::toDotDelineation).toList(); // todo maybe do mixed notation?
+    return jsonPaths.stream()
+        .map(this::toDotNotation)
+        .map(this::toMixedNotation)
+        .toList();
   }
 
 
@@ -125,7 +132,7 @@ public class JsonPathComponent {
       var inputArrays = commonIndex.getKey();
       matchedFields = new ArrayList<>();
       for (int i = 0; i < targetArrays.size(); i++) {
-        if (i > inputArrays.size() || !targetArrays.get(i).equals(inputArrays.get(i))) {
+        if (i > inputArrays.size()-1 || !targetArrays.get(i).equals(inputArrays.get(i))) {
           break;
         }
         matchedFields.add(targetArrays.get(i));
@@ -144,25 +151,40 @@ public class JsonPathComponent {
   }
 
   // Takes the found json path and compares it to indexes that met the criteria of the input parameters
-  boolean isValidJsonPath(String jsonPath, Pair<List<String>, List<List<Integer>>> validIndexes) {
-    var matcher = arrayFieldPattern.matcher(jsonPath);
-    var foundIndexes = new ArrayList<Integer>();
-    while (matcher.find()) {
-      var match = matcher.group();
+
+  boolean isValidJsonPath(String jsonPath, List<FieldIndex> validInputIndexes) {
+    var targetArrayFieldMatcher = arrayFieldPattern.matcher(jsonPath);
+    var foundIndexesInTargetJsonPath = new ArrayList<Integer>();
+    while (targetArrayFieldMatcher.find()) {
+      var match = targetArrayFieldMatcher.group();
       // only get index of json path arrays
-      foundIndexes.add(Integer.parseInt(match.replaceAll("\\D+", "")));
+      foundIndexesInTargetJsonPath.add(Integer.parseInt(match.replaceAll("\\D+", "")));
     }
     // We take sublists because we may be using fewer indexes than the target path has
     // e.g. if the target path has occurrence[*]locality[*], but we only used occurrence[*] in our input parameters
     // Then we would only be able to look at the indexes for occurrence
     // If this is the case, we log the ambiguity but annotate all localities
-    var validIndexSublist = validIndexes.getRight().stream()
-        .map(i -> i.subList(0, foundIndexes.size())).toList();
-    if (validIndexSublist.get(0).size() < validIndexes.getRight().get(0).size()) {
-      log.warn("Ambigious annotation: target path is {}, but we only have indexes for {}", jsonPath,
-          validIndexes.getLeft());
+    var targetIndexSublist = foundIndexesInTargetJsonPath
+        .subList(0, validInputIndexes.size());
+    return (validInputIndexes.stream().map(FieldIndex::indexes).toList().contains(targetIndexSublist));
+  }
+
+
+  boolean isValidJsonPath(String jsonPath, Pair<List<String>, List<List<Integer>>> validInputIndexes) {
+    var targetArrayFieldMatcher = arrayFieldPattern.matcher(jsonPath);
+    var foundIndexesInTargetJsonPath = new ArrayList<Integer>();
+    while (targetArrayFieldMatcher.find()) {
+      var match = targetArrayFieldMatcher.group();
+      // only get index of json path arrays
+      foundIndexesInTargetJsonPath.add(Integer.parseInt(match.replaceAll("\\D+", "")));
     }
-    return validIndexSublist.contains(foundIndexes);
+    // We take sublists because we may be using fewer indexes than the target path has
+    // e.g. if the target path has occurrence[*]locality[*], but we only used occurrence[*] in our input parameters
+    // Then we would only be able to look at the indexes for occurrence
+    // If this is the case, we log the ambiguity but annotate all localities
+    var targetIndexSublist = foundIndexesInTargetJsonPath
+        .subList(0, validInputIndexes.getRight().get(0).size());
+    return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
   public List<Target> getAnnotationTargets(BatchMetadata batchMetadata, JsonNode annotatedObject,
@@ -178,7 +200,7 @@ public class JsonPathComponent {
       throw new BatchingException();
     }
     var correctJsonInputPathsDot = correctJsonInputPaths.stream()
-        .map(this::toDotDelineation).toList();
+        .map(this::toDotNotation).toList();
     var targetPath = getTargetPath(baseTarget);
 
     var targetPaths = iterateOverList(correctJsonInputPathsDot, targetPath);
@@ -209,44 +231,44 @@ public class JsonPathComponent {
     return newTargets;
   }
 
-  private String getTargetPath(Target baseTarget) throws BatchingException {
+  private String getTargetPath(Target baseTarget) throws BatchingRuntimeException {
     var selectorType = baseTarget.getOaSelector().getOdsType();
     switch (selectorType) {
       case CLASS_SELECTOR -> {
         var selector = (ClassSelector) (baseTarget.getOaSelector());
-        return toDotDelineation(selector.getOaClass());
+        return toDotNotation(selector.getOaClass());
       }
       case FIELD_SELECTOR -> {
         var selector = (FieldSelector) baseTarget.getOaSelector();
-        return toDotDelineation(selector.getOdsField());
+        return toDotNotation(selector.getOdsField());
       }
       default -> {
         log.error("Unable to batch annotations with selector type {}", selectorType);
-        throw new BatchingException();
+        throw new BatchingRuntimeException();
       }
     }
   }
 
-  private Filter generateFilter(BatchMetadata batchMetadata) throws BatchingException {
+  private Filter generateFilter(BatchMetadata batchMetadata) {
     var targetField = getLastKey(batchMetadata.inputField());
     var targetValue = batchMetadata.inputValue();
     return filter(where(targetField).is(targetValue));
   }
 
-  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) throws BatchingException {
+  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) {
     var targetField = getLastKey(batchMetadata.inputField());
     var targetValue = batchMetadata.inputValue();
     return filter(where(targetField).is(targetValue));
   }
 
-  private String getLastKey(String jsonPath) throws BatchingException {
+  private String getLastKey(String jsonPath) {
     // Get last key of a jsonPath using regex defined in
     var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
     if (lastKeyMatcher.find()) {
       return lastKeyMatcher.group().replace("\\.", "");
     } else {
       log.error("Unable to parse last key of jsonPath {}", jsonPath);
-      throw new BatchingException();
+      throw new BatchingRuntimeException();
     }
   }
 
@@ -293,7 +315,7 @@ public class JsonPathComponent {
     return targetPath.replaceAll(replaceThis, withThis);
   }
 
-  private String toDotDelineation(String jsonPath) {
+  private String toDotNotation(String jsonPath) {
     // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
     // From: "[fields][1][otherField]" or "fields[1].otherfield"
     // To: "fields.1.otherField"
@@ -308,28 +330,50 @@ public class JsonPathComponent {
     return removeTrailingPeriod(jsonPath);
   }
 
+  // From: "fields.1.otherField"
+  // To: "fields[1].otherField"
+  private String toMixedNotation(String jsonPath) {
+    var matcher1 = dotIndexPatternFirst.matcher(jsonPath);
+    var matcher2 = dotIndexPatternLast.matcher(jsonPath);
+    var digitPattern = Pattern.compile("\\d");
+    while (matcher1.find()) {
+      var match = matcher1.group();
+      var indexMatcher = digitPattern.matcher(match);
+      indexMatcher.find();
+      jsonPath = jsonPath.replace(match, "[" + indexMatcher.group());
+    }
+    while (matcher2.find()) {
+      var match = matcher2.group();
+      var indexMatcher = digitPattern.matcher(match);
+      indexMatcher.find();
+      jsonPath = jsonPath.replace(match, indexMatcher.group() + "].");
+    }
+    return removeTrailingPeriod(jsonPath);
+
+  }
+
   private static String removeTrailingPeriod(String jsonPath) {
     var jsonPathArray = jsonPath.split("\\.");
     return String.join(".", jsonPathArray);
   }
 
+  /*
+  Checks if a given elastic result is a true match - meaning all the criteria in the batchMetadata are met
+  1. For each parameter in the batch metadata, find all jsonPaths that match that parameter
+  2. Index array paths: collect the indexes of any arrays in the valid json paths (step 1).
+  Group array indexes by name of field(s) containing arrays, and the parameter these indexes meet.
+  3. Check that there is at least one common sequence of indexes that fulfills each batch parameter (that has a common array field)
+   */
   private boolean isTrueMatch(BatchMetadataExtended batchMetadata,
       HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) {
-    if (batchMetadata.searchParams().size() == 1) {
-      return true;
-    }
     HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
-    try {
-      for (var param : batchMetadata.searchParams()) {
-        var validPaths = new HashSet<String>(
-            context.read(removeLastKey(param.inputField()), generateFilter(param)))
-            .stream().map(this::toDotDelineation)
-            .collect(Collectors.toCollection(HashSet::new));
-        var newIndexedPaths = indexArrayPaths(param, validPaths);
-        mergePathMaps(indexedPaths, newIndexedPaths);
-      }
-    } catch (BatchingException e) {
-      throw new BatchingRuntimeException();
+    for (var param : batchMetadata.searchParams()) {
+      var validPaths = new HashSet<String>(
+          context.read(removeLastKey(param.inputField()), generateFilter(param)))
+          .stream().map(this::toDotNotation)
+          .collect(Collectors.toCollection(HashSet::new));
+      var newIndexedPaths = indexArrayPaths(param, validPaths);
+      mergePathMaps(indexedPaths, newIndexedPaths);
     }
     return indexedPathsHaveCommonality(indexedPaths, commonIndexes);
   }
@@ -367,14 +411,14 @@ public class JsonPathComponent {
       HashMap<List<String>, List<List<Integer>>> commonIndexes) {
     for (var fields : commonPathMap.entrySet()) {
       var firstList = fields.getValue().entrySet().iterator().next().getValue();
-      var commonList = new HashSet<>(List.of(firstList));
+      var commonSet = new HashSet<>(firstList);
       for (var indexMap : fields.getValue().entrySet()) {
-        commonList.retainAll(List.of(indexMap.getValue()));
+        commonSet.retainAll(indexMap.getValue());
       }
-      if (commonList.isEmpty()) {
+      if (commonSet.isEmpty()) {
         return false;
       }
-      commonIndexes.put(fields.getKey(), commonList.stream().flatMap(Collection::stream).toList());
+      commonIndexes.put(fields.getKey(), new ArrayList<>(commonSet));
     }
     return true;
   }
@@ -451,6 +495,7 @@ public class JsonPathComponent {
     }
     return commonPathMap;
   }
+
   record FieldIndex(
       List<String> fields,
       List<Integer> indexes
