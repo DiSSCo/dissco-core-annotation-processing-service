@@ -85,27 +85,32 @@ public class JsonPathComponent {
       var match = matcher.group();
       arrayFields.add(match.replaceAll("\\P{L}+", ""));
     }
+    // If there are no arrays are in the target field, we can use what is in the base annotation
     if (arrayFields.isEmpty()) {
-      return List.of(toMixedNotation(toDotNotation(baseTargetPath)));
+      return List.of(toMixedNotation(baseTargetPath));
     }
-    var modifiedPath = "$." + baseTargetPath.replaceAll("\\d+", "*");
-    ArrayList<String> jsonPaths = context.read(modifiedPath);
-    if (!commonIndexes.isEmpty()) {
-      var invalidPaths = new ArrayList<String>();
-      var indexedPathOptional = findTargetPathIndexes(arrayFields, commonIndexes);
-      if (indexedPathOptional.isPresent()) {
-        for (var jsonPath : jsonPaths) {
-          if (!isValidJsonPath(toDotNotation(jsonPath), indexedPathOptional.get())) {
-            invalidPaths.add(jsonPath);
-          }
-        }
-        jsonPaths.removeAll(invalidPaths);
-      }
-    }
+    var readablePath = "$." + baseTargetPath.replaceAll("\\d+", "*");
+    ArrayList<String> jsonPaths = context.read(readablePath);
+    removeInvalidPaths(jsonPaths, arrayFields, commonIndexes);
     return jsonPaths.stream()
-        .map(this::toDotNotation)
         .map(this::toMixedNotation)
         .toList();
+  }
+
+  private void removeInvalidPaths(ArrayList<String> jsonPaths, List<String> arrayFields, Map<List<String>, List<List<Integer>>> commonIndexes) {
+    if (commonIndexes.isEmpty()){
+      return;
+    }
+    var invalidPaths = new ArrayList<String>();
+    var indexedPathOptional = findTargetPathIndexes(arrayFields, commonIndexes);
+    if (indexedPathOptional.isPresent()) {
+      for (var jsonPath : jsonPaths) {
+        if (!isValidJsonPath(toDotNotation(jsonPath), indexedPathOptional.get())) {
+          invalidPaths.add(jsonPath);
+        }
+      }
+      jsonPaths.removeAll(invalidPaths);
+    }
   }
 
 
@@ -332,6 +337,7 @@ public class JsonPathComponent {
   // From: "fields.1.otherField"
   // To: "fields[1].otherField"
   private String toMixedNotation(String jsonPath) {
+    jsonPath = toDotNotation(jsonPath);
     var matcher1 = dotIndexPatternFirst.matcher(jsonPath);
     var matcher2 = dotIndexPatternLast.matcher(jsonPath);
     var digitPattern = Pattern.compile("\\d");
