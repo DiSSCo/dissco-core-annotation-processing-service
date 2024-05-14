@@ -248,40 +248,5 @@ class ElasticSearchRepositoryIT {
     client.indices().refresh(b -> b.index(index));
   }
 
-  private JsonNode givenElasticOnlyOneOccurrence() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "id": "20.5000.1025/AAA-BBB-CCC",
-          "digitalSpecimenWrapper": {
-            "fieldNum": 1,
-            "other": [
-              "a",
-              "10"
-            ],
-            "occurrences": [
-              {
-                "dwc:occurrenceRemarks": "Correct",
-                "annotateTarget": "this",
-                "hello":"hello",
-                "location": {
-                  "dwc:country": "netherlands",
-                  "georeference": {
-                    "dwc:decimalLatitude": {
-                      "dwc:value": 11
-                    },
-                    "dwc:decimalLongitude": "10",
-                    "dwc": [
-                      "1"
-                    ]
-                  },
-                  "locality": "known"
-                }
-              }
-            ]
-          }
-        }
-        """);
-  }
-
 }
 
