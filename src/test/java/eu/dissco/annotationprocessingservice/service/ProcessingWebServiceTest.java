@@ -161,6 +161,7 @@ class ProcessingWebServiceTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.NotFound);
     given(elasticRepository.indexAnnotation(givenAnnotationProcessedWeb())).willReturn(indexResponse);
+    doThrow(PidCreationException.class).when(handleComponent).rollbackHandleCreation(any());
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
 
