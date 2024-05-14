@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -85,19 +86,21 @@ public class JsonPathComponent {
       arrayFields.add(match.replaceAll("\\P{L}+", ""));
     }
     if (arrayFields.isEmpty()) {
-      return List.of(baseTargetPath);
+      return List.of(toMixedNotation(toDotNotation(baseTargetPath)));
     }
     var modifiedPath = "$." + baseTargetPath.replaceAll("\\d+", "*");
     ArrayList<String> jsonPaths = context.read(modifiedPath);
     if (!commonIndexes.isEmpty()) {
       var invalidPaths = new ArrayList<String>();
-      var indexedPath = findTargetPathIndexes(arrayFields, commonIndexes);
-      for (var jsonPath : jsonPaths) {
-        if (!isValidJsonPath(toDotNotation(jsonPath), indexedPath)) {
-          invalidPaths.add(jsonPath);
+      var indexedPathOptional = findTargetPathIndexes(arrayFields, commonIndexes);
+      if (indexedPathOptional.isPresent()) {
+        for (var jsonPath : jsonPaths) {
+          if (!isValidJsonPath(toDotNotation(jsonPath), indexedPathOptional.get())) {
+            invalidPaths.add(jsonPath);
+          }
         }
+        jsonPaths.removeAll(invalidPaths);
       }
-      jsonPaths.removeAll(invalidPaths);
     }
     return jsonPaths.stream()
         .map(this::toDotNotation)
@@ -120,7 +123,7 @@ public class JsonPathComponent {
    fields in the input paths. The indexed input with the greatest number of array fields in common
    with our target path will be used to make our final indexed target path
    */
-  private Pair<List<String>, List<List<Integer>>> findTargetPathIndexes(List<String> targetArrays,
+  private Optional<Pair<List<String>, List<List<Integer>>>> findTargetPathIndexes(List<String> targetArrays,
       Map<List<String>, List<List<Integer>>> commonInputIndexes) {
     int highestMatches = 0;
     Entry<List<String>, List<List<Integer>>> bestMatch = null;
@@ -142,9 +145,9 @@ public class JsonPathComponent {
     if (bestMatch != null) {
       var maxMatches = highestMatches;
       var idxList = bestMatch.getValue().stream().map(l -> l.subList(0, maxMatches)).toList();
-      return Pair.of(matchedFields, idxList);
+      return Optional.of(Pair.of(matchedFields, idxList));
     }
-    return Pair.of(Collections.emptyList(), Collections.emptyList());
+    return Optional.empty();
   }
 
   // Takes the found json path and compares it to indexes that met the criteria of the input parameters
@@ -345,7 +348,6 @@ public class JsonPathComponent {
       jsonPath = jsonPath.replace(match, indexMatcher.group() + "].");
     }
     return removeTrailingPeriod(jsonPath);
-
   }
 
   private static String removeTrailingPeriod(String jsonPath) {
