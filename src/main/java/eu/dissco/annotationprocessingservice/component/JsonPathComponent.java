@@ -52,6 +52,7 @@ public class JsonPathComponent {
   private final Pattern arrayFieldPattern = Pattern.compile("(\\w+\\.\\d+)");
   private final Pattern dotIndexPatternFirst = Pattern.compile("\\.\\d");
   private final Pattern dotIndexPatternLast = Pattern.compile("\\d\\.");
+  private final Pattern digitPattern = Pattern.compile("\\d");
 
 
   public List<Target> getAnnotationTargetsExtended(BatchMetadataExtended batchMetadata,
@@ -97,8 +98,9 @@ public class JsonPathComponent {
         .toList();
   }
 
-  private void removeInvalidPaths(ArrayList<String> jsonPaths, List<String> arrayFields, Map<List<String>, List<List<Integer>>> commonIndexes) {
-    if (commonIndexes.isEmpty()){
+  private void removeInvalidPaths(ArrayList<String> jsonPaths, List<String> arrayFields,
+      Map<List<String>, List<List<Integer>>> commonIndexes) {
+    if (commonIndexes.isEmpty()) {
       return;
     }
     var invalidPaths = new ArrayList<String>();
@@ -128,7 +130,8 @@ public class JsonPathComponent {
    fields in the input paths. The indexed input with the greatest number of array fields in common
    with our target path will be used to make our final indexed target path
    */
-  private Optional<Pair<List<String>, List<List<Integer>>>> findTargetPathIndexes(List<String> targetArrays,
+  private Optional<Pair<List<String>, List<List<Integer>>>> findTargetPathIndexes(
+      List<String> targetArrays,
       Map<List<String>, List<List<Integer>>> commonInputIndexes) {
     int highestMatches = 0;
     Entry<List<String>, List<List<Integer>>> bestMatch = null;
@@ -137,7 +140,7 @@ public class JsonPathComponent {
       var inputArrays = commonIndex.getKey();
       matchedFields = new ArrayList<>();
       for (int i = 0; i < targetArrays.size(); i++) {
-        if (i > inputArrays.size()-1 || !targetArrays.get(i).equals(inputArrays.get(i))) {
+        if (i > inputArrays.size() - 1 || !targetArrays.get(i).equals(inputArrays.get(i))) {
           break;
         }
         matchedFields.add(targetArrays.get(i));
@@ -171,11 +174,13 @@ public class JsonPathComponent {
     // If this is the case, we log the ambiguity but annotate all localities
     var targetIndexSublist = foundIndexesInTargetJsonPath
         .subList(0, validInputIndexes.size());
-    return (validInputIndexes.stream().map(FieldIndex::indexes).toList().contains(targetIndexSublist));
+    return (validInputIndexes.stream().map(FieldIndex::indexes).toList()
+        .contains(targetIndexSublist));
   }
 
 
-  boolean isValidJsonPath(String jsonPath, Pair<List<String>, List<List<Integer>>> validInputIndexes) {
+  boolean isValidJsonPath(String jsonPath,
+      Pair<List<String>, List<List<Integer>>> validInputIndexes) {
     var targetArrayFieldMatcher = arrayFieldPattern.matcher(jsonPath);
     var foundIndexesInTargetJsonPath = new ArrayList<Integer>();
     while (targetArrayFieldMatcher.find()) {
@@ -205,9 +210,8 @@ public class JsonPathComponent {
       throw new BatchingException();
     }
     var correctJsonInputPathsDot = correctJsonInputPaths.stream()
-        .map(this::toDotNotation).toList();
+        .map(JsonPathComponent::toDotNotation).toList();
     var targetPath = getTargetPath(baseTarget);
-
     var targetPaths = iterateOverList(correctJsonInputPathsDot, targetPath);
     return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
   }
@@ -319,47 +323,6 @@ public class JsonPathComponent {
     return targetPath.replaceAll(replaceThis, withThis);
   }
 
-  private String toDotNotation(String jsonPath) {
-    // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
-    // From: "[fields][1][otherField]" or "fields[1].otherfield"
-    // To: "fields.1.otherField"
-
-    jsonPath = jsonPath
-        .replace("$", "")
-        .replaceAll("\\[(?=[*|\\d])", ".") // Captures [ next to * or 1-9, replace with .
-        .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters, removes
-        .replace("]", ".")
-        .replace("..", ".")
-        .replace("'", "");
-    return removeTrailingPeriod(jsonPath);
-  }
-
-  // From: "fields.1.otherField"
-  // To: "fields[1].otherField"
-  private String toMixedNotation(String jsonPath) {
-    jsonPath = toDotNotation(jsonPath);
-    var matcher1 = dotIndexPatternFirst.matcher(jsonPath);
-    var matcher2 = dotIndexPatternLast.matcher(jsonPath);
-    var digitPattern = Pattern.compile("\\d");
-    while (matcher1.find()) {
-      var match = matcher1.group();
-      var indexMatcher = digitPattern.matcher(match);
-      indexMatcher.find();
-      jsonPath = jsonPath.replace(match, "[" + indexMatcher.group());
-    }
-    while (matcher2.find()) {
-      var match = matcher2.group();
-      var indexMatcher = digitPattern.matcher(match);
-      indexMatcher.find();
-      jsonPath = jsonPath.replace(match, indexMatcher.group() + "].");
-    }
-    return removeTrailingPeriod(jsonPath);
-  }
-
-  private static String removeTrailingPeriod(String jsonPath) {
-    var jsonPathArray = jsonPath.split("\\.");
-    return String.join(".", jsonPathArray);
-  }
 
   /*
   Checks if a given elastic result is a true match - meaning all the criteria in the batchMetadata are met
@@ -374,23 +337,56 @@ public class JsonPathComponent {
     for (var param : batchMetadata.searchParams()) {
       var validPaths = new HashSet<String>(
           context.read(removeLastKey(param.inputField()), generateFilter(param)))
-          .stream().map(this::toDotNotation)
+          .stream().map(JsonPathComponent::toDotNotation)
           .collect(Collectors.toCollection(HashSet::new));
-      var newIndexedPaths = indexArrayPaths(param, validPaths);
-      mergePathMaps(indexedPaths, newIndexedPaths);
+      var newIndexedPaths = indexArrayPaths(validPaths);
+      mergePathMaps(indexedPaths, newIndexedPaths, param);
     }
     return indexedPathsHaveCommonality(indexedPaths, commonIndexes);
   }
 
+  /*
+  Looks at fields names that are arrays (i.e. meet the criteria of arrayFieldPattern) and collects
+  all the indexes of that array. E.g. given the jsonpath specimen.occurrences.1.locality.2, we get
+  [occurrences] -> [1],
+  [occurrences, locality] -> [1, 2]
+
+  We need this "compounded list" in order to later compare array indexes with later paths.
+  e.g. Let's say we also have the jsonPath specimen.occurrences.2.georeference.2, which breaks down
+  into the Map:
+  [occurrences] -> [2],
+  [occurrences, georeference] -> [2, 2]
+
+  We can more easily see the "occurrences" field has no common index between these two paths by looking
+  at the first entry of the map instead of the second entry.
+   */
+  private Map<List<String>, List<List<Integer>>> indexArrayPaths(HashSet<String> jsonPaths) {
+    var indexList = new ArrayList<FieldIndex>();
+    for (var jsonPath : jsonPaths) {
+      var indexListForThisPath = new ArrayList<FieldIndex>();
+      var matcher = arrayFieldPattern.matcher(jsonPath);
+      while (matcher.find()) {
+        var match = matcher.group();
+        var fieldName = match.replaceAll("\\P{L}+", "");
+        var idx = Integer.valueOf(match.replaceAll("\\D", ""));
+        indexListForThisPath.add(new FieldIndex(List.of(fieldName), List.of(idx)));
+      }
+      indexList.addAll(compoundPreviousFieldIndex(indexListForThisPath));
+    }
+    return mergeFieldIndexesForSingleParameter(indexList);
+  }
+
   private void mergePathMaps(
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths,
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> newPaths) {
+      HashMap<List<String>, HashMap<BatchMetadataSearchParam,
+          ArrayList<List<Integer>>>> indexedPaths,
+      Map<List<String>, List<List<Integer>>> newPaths, BatchMetadataSearchParam param) {
     for (var newIndexedPaths : newPaths.entrySet()) {
       if (indexedPaths.containsKey(newIndexedPaths.getKey())) {
         indexedPaths.get(newIndexedPaths.getKey())
-            .putAll(newIndexedPaths.getValue());
+            .put(param, new ArrayList<>(newIndexedPaths.getValue()));
       } else {
-        indexedPaths.put(newIndexedPaths.getKey(), newIndexedPaths.getValue());
+        indexedPaths.put(newIndexedPaths.getKey(),
+            new HashMap<>(Map.of(param, new ArrayList<>(newIndexedPaths.getValue()))));
       }
     }
   }
@@ -409,7 +405,6 @@ public class JsonPathComponent {
   In the above example, occurrence[1] meets param1, param2, param3. Additionally, locality[1] in occurrence[1] meets param1 and param2
   By looking at the common paths, we can determine if this is a true match.
    */
-
   private boolean indexedPathsHaveCommonality(
       HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> commonPathMap,
       HashMap<List<String>, List<List<Integer>>> commonIndexes) {
@@ -427,44 +422,30 @@ public class JsonPathComponent {
     return true;
   }
 
-  /*
-  Looks at fields names that are arrays (i.e. meet the criteria of arrayFieldPattern) and collects
-  all the indexes of that array. E.g. given the jsonpath specimen.occurrences.1.locality.2, we get
-  [occurrences] -> searchParam, [1],
-  [occurrences, locality] -> searchParam, [1, 2]
-   */
-  private HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexArrayPaths(
-      BatchMetadataSearchParam searchParam, HashSet<String> jsonPaths) {
-    var fieldIdxs = new HashMap<String, List<FieldIndex>>();
-    for (var jsonPath : jsonPaths) {
-      var indexPairs = new ArrayList<FieldIndex>();
-      var matcher = arrayFieldPattern.matcher(jsonPath);
-      while (matcher.find()) {
-        var match = matcher.group();
-        var fieldName = match.replaceAll("\\P{L}+", "");
-        var idx = Integer.valueOf(match.replaceAll("\\D", ""));
-        indexPairs.add(new FieldIndex(List.of(fieldName), List.of(idx)));
+  private Map<List<String>, List<List<Integer>>> mergeFieldIndexesForSingleParameter(
+      List<FieldIndex> fieldIndexList) {
+    var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
+    for (var fieldIndex : fieldIndexList) {
+      if (commonIndexes.containsKey(fieldIndex.fields())) {
+        commonIndexes.get(fieldIndex.fields()).add(fieldIndex.indexes());
+      } else {
+        commonIndexes.put(fieldIndex.fields(), new ArrayList<>(List.of(fieldIndex.indexes())));
       }
-      fieldIdxs.put(jsonPath, compoundPreviousFieldIndex(indexPairs));
     }
-    return mapCommonPaths(fieldIdxs, searchParam);
+    return commonIndexes;
   }
-
 
   /*
   Takes List<FieldIndex> and compounds the list of field names and indexes with previous elements
   Input:
-    {
       fieldIndex(["A"], [1]),
       fieldIndex(["B"], [2]),
       fieldIndex(["C"], [3])
-    }
+
    Output:
-     {
       fieldIndex(["A"], [1]),
       fieldIndex(["A", "B"], [1, 2]),
       fieldIndex(["A", "B", "C"], [1, 2, 3])
-    }
    */
   private ArrayList<FieldIndex> compoundPreviousFieldIndex(ArrayList<FieldIndex> lst) {
     if (lst.size() <= 1) {
@@ -483,27 +464,55 @@ public class JsonPathComponent {
     return previousCompound;
   }
 
-  private HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> mapCommonPaths(
-      HashMap<String, List<FieldIndex>> idxMap,
-      BatchMetadataSearchParam searchParam) {
-    var commonPathMap = new HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>>();
-    for (var fieldGroups : idxMap.entrySet()) {
-      for (var fieldList : fieldGroups.getValue()) {
-        if (commonPathMap.containsKey(fieldList.fields)) {
-          commonPathMap.get(fieldList.fields).get(searchParam).add(fieldList.indexes);
-        } else {
-          commonPathMap.put(fieldList.fields,
-              new HashMap<>(Map.of(searchParam, new ArrayList<>(List.of(fieldList.indexes)))));
-        }
-      }
-    }
-    return commonPathMap;
+  // Formatting functions
+
+  private static String toDotNotation(String jsonPath) {
+    // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
+    // From: "[fields][1][otherField]" or "fields[1].otherfield"
+    // To: "fields.1.otherField"
+    jsonPath = jsonPath
+        .replace("$", "")
+        .replaceAll("\\[(?=[*|\\d])", ".") // Captures [ next to * or 1-9, replace with .
+        .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters, removes
+        .replace("]", ".")
+        .replace("..", ".")
+        .replace("'", "");
+    return removeTrailingPeriod(jsonPath);
   }
 
+  // From: "fields.1.otherField"
+  // To: "fields[1].otherField"
+  private String toMixedNotation(String jsonPath) {
+    jsonPath = toDotNotation(jsonPath);
+    var matcherStart = dotIndexPatternFirst.matcher(jsonPath);
+    var matcherEnd = dotIndexPatternLast.matcher(jsonPath);
+    while (matcherStart.find()) {
+      var match = matcherStart.group();
+      var digitMatcher = digitPattern.matcher(match);
+      digitMatcher.find();
+      jsonPath = jsonPath.replace(match, "[" + digitMatcher.group());
+    }
+    while (matcherEnd.find()) {
+      var match = matcherEnd.group();
+      var indexMatcher = digitPattern.matcher(match);
+      indexMatcher.find();
+      jsonPath = jsonPath.replace(match, indexMatcher.group() + "].");
+    }
+    return removeTrailingPeriod(jsonPath);
+  }
+
+  private static String removeTrailingPeriod(String jsonPath) {
+    var jsonPathArray = jsonPath.split("\\.");
+    return String.join(".", jsonPathArray);
+  }
+
+  /*
+  Internal class useful for coupling field and index lists when creating "compound" lists, when we
+  check if an object is a true match.
+  */
   record FieldIndex(
       List<String> fields,
       List<Integer> indexes
   ) {
-
   }
 }

@@ -308,40 +308,6 @@ class JsonPathComponentTest {
             baseTargetClassSelector));
   }
 
-  private static JsonNode givenNestedNode() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "id": "20.5000.1025/KZL-VC0-ZK2",
-          "digitalSpecimenWrapper": {
-            "occurrences": [
-              {
-                "assertions": [
-                  {
-                    "assertionType": "length",
-                    "assertionValue": "10cm"
-                  }
-                ],
-                "eventDate" :"2001-01-01"
-              },
-              {
-                "assertions": [
-                 {
-                    "assertionType": "weight",
-                    "assertionValue": "10kilos"
-                  },
-                  {
-                    "assertionType": "weight",
-                    "assertionValue": "10.1kilos"
-                  }
-                ],
-                "eventDate" :"2001-01-01"
-              }
-            ]
-          }
-        }
-        """);
-  }
-
   // Case 0 -> False Positive
   @Test
   void testCase0() throws Exception {
@@ -566,7 +532,6 @@ class JsonPathComponentTest {
     assertThat(result).isEqualTo(expected);
   }
 
-
   // Case 6a -> Nested Array in target, 1 input with no arrays
   @Test
   void testCase6a() throws Exception {
@@ -737,6 +702,40 @@ class JsonPathComponentTest {
              }
            ]
          }
+        }
+        """);
+  }
+
+  private static JsonNode givenNestedNode() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "id": "20.5000.1025/KZL-VC0-ZK2",
+          "digitalSpecimenWrapper": {
+            "occurrences": [
+              {
+                "assertions": [
+                  {
+                    "assertionType": "length",
+                    "assertionValue": "10cm"
+                  }
+                ],
+                "eventDate" :"2001-01-01"
+              },
+              {
+                "assertions": [
+                 {
+                    "assertionType": "weight",
+                    "assertionValue": "10kilos"
+                  },
+                  {
+                    "assertionType": "weight",
+                    "assertionValue": "10.1kilos"
+                  }
+                ],
+                "eventDate" :"2001-01-01"
+              }
+            ]
+          }
         }
         """);
   }
