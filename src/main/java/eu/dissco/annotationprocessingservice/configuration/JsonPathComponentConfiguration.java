@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.configuration;
 
 import com.jayway.jsonpath.Option;
-import java.util.regex.Pattern;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
