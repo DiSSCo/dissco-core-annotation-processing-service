@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;

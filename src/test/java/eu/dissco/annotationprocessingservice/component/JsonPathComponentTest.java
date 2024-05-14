@@ -1,6 +1,5 @@
 package eu.dissco.annotationprocessingservice.component;
 
-import static com.jayway.jsonpath.JsonPath.using;
 import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
@@ -9,7 +8,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocume
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenSelector;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,11 +24,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
