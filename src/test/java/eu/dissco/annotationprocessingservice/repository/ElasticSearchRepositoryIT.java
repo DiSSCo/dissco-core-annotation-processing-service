@@ -16,7 +16,6 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
@@ -230,41 +229,6 @@ class ElasticSearchRepositoryIT {
     }
     client.bulk(bulkRequest.build());
     client.indices().refresh(b -> b.index(index));
-  }
-
-  private JsonNode givenElasticOnlyOneOccurrence() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "id": "20.5000.1025/AAA-BBB-CCC",
-          "digitalSpecimenWrapper": {
-            "fieldNum": 1,
-            "other": [
-              "a",
-              "10"
-            ],
-            "occurrences": [
-              {
-                "dwc:occurrenceRemarks": "Correct",
-                "annotateTarget": "this",
-                "hello":"hello",
-                "location": {
-                  "dwc:country": "netherlands",
-                  "georeference": {
-                    "dwc:decimalLatitude": {
-                      "dwc:value": 11
-                    },
-                    "dwc:decimalLongitude": "10",
-                    "dwc": [
-                      "1"
-                    ]
-                  },
-                  "locality": "known"
-                }
-              }
-            ]
-          }
-        }
-        """);
   }
 
 }

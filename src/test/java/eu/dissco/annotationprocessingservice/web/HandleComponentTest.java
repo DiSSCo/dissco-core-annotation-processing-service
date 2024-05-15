@@ -156,7 +156,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testArchiveHandle() throws Exception {
+  void testArchiveHandle() {
     // Given
     var requestBody = MAPPER.createObjectNode();
     mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
