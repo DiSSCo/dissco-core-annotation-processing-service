@@ -9,6 +9,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
@@ -27,6 +28,8 @@ import eu.dissco.annotationprocessingservice.TestUtils;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
@@ -104,7 +107,7 @@ class BatchAnnotationServiceTest {
     var baseAnnotationB = givenAnnotationRequest().setPlaceInBatch(placeInBatch)
         .setOaBody(annotationBodyB);
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
-        List.of(givenBatchMetadataLatitudeSearch()), null);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
 
     var annotatableIds = List.of("0", "1", "2");
 
@@ -156,7 +159,7 @@ class BatchAnnotationServiceTest {
     var baseAnnotationB = givenAnnotationRequest().setPlaceInBatch(placeInBatch)
         .setOaTarget(givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT));
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
-        List.of(givenBatchMetadataLatitudeSearch()), null);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
 
 
     // When
@@ -175,10 +178,10 @@ class BatchAnnotationServiceTest {
     var annotatableIdsB = List.of("3", "4", "5");
     var annotationBodyB = givenOaBody("alt value");
     var annotationTargetB = givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT);
-    var batchMetadataA = givenBatchMetadataLatitudeSearch();
-    var batchMetadataB = new BatchMetadata(2,
-        "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "12");
+    var batchMetadataA = givenBatchMetadataExtendedLatitudeSearch();
+    var batchMetadataB = new BatchMetadataExtended(2,
+        List.of(new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
+        "12")));
     var batchMetadataList = List.of(batchMetadataA, batchMetadataB);
     var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(1);
     var baseAnnotationB = givenAnnotationRequest()
@@ -219,9 +222,9 @@ class BatchAnnotationServiceTest {
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(
+    given(elasticRepository.searchByBatchMetadataExtended(
         batchMetadataA, AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticDocumentsA);
-    given(elasticRepository.searchByBatchMetadata(
+    given(elasticRepository.searchByBatchMetadataExtended(
         batchMetadataB, AnnotationTargetType.MEDIA_OBJECT, 1, pageSizePlusOne)).willReturn(elasticDocumentsB);
 
     // When
@@ -237,7 +240,7 @@ class BatchAnnotationServiceTest {
   void testApplyBatchAnnotationsMissingPlaceInBatch() {
     // Given
     var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID,
-        List.of(givenBatchMetadataLatitudeSearch()), false);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), false);
 
     // When
     assertThrows(BatchingException.class,

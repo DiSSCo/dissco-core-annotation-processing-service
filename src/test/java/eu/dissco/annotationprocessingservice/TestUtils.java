@@ -74,11 +74,12 @@ public class TestUtils {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
   }
 
-  public static Annotation givenAnnotationProcessedWeb(){
+  public static Annotation givenAnnotationProcessedWeb() {
     return givenAnnotationProcessedWeb(ID, CREATOR, TARGET_ID);
   }
 
-  public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId, String targetId){
+  public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId,
+      String targetId) {
     return Annotation.builder()
         .odsId(annotationId)
         .odsVersion(1)
@@ -151,7 +152,8 @@ public class TestUtils {
         .build();
   }
 
-  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType, Selector selector) {
+  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType,
+      Selector selector) {
     return Target.builder()
         .odsId(DOI_PROXY + targetId)
         .oaSelector(selector)
@@ -164,11 +166,11 @@ public class TestUtils {
         .withOdsField("digitalSpecimenWrapper.occurrences[1].locality");
   }
 
-  public static Target givenOaTarget(Selector selector){
+  public static Target givenOaTarget(Selector selector) {
     return givenOaTarget(ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
   }
 
-  public static FieldSelector givenSelector(String field){
+  public static FieldSelector givenSelector(String field) {
     return new FieldSelector()
         .withOdsField(field);
   }
@@ -332,7 +334,8 @@ public class TestUtils {
         """);
   }
 
-  public static BatchMetadataExtended givenBatchMetadataCountryAndContinent(String country, String continent){
+  public static BatchMetadataExtended givenBatchMetadataCountryAndContinent(String country,
+      String continent) {
     return new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
             "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
@@ -348,15 +351,22 @@ public class TestUtils {
         "11");
   }
 
+  public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
+    return new BatchMetadataExtended(1,
+        List.of(new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
+            "11")));
+  }
+
   public static BatchMetadata givenBatchMetadataCountrySearch() {
     return new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
         "Netherlands");
   }
 
-  public static AnnotationEvent givenAnnotationEventBatchEnabled(){
+  public static AnnotationEvent givenAnnotationEventBatchEnabled() {
     return new AnnotationEvent(List.of(givenAnnotationRequest()
         .setPlaceInBatch(1)), JOB_ID,
-        List.of(givenBatchMetadataLatitudeSearch()), null);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
   }
 
   public static JsonNode givenElasticDocument() {
@@ -384,53 +394,53 @@ public class TestUtils {
                         "annotateTarget":"this",
                         "location": {
                           "dwc:country": \"""" + country + """
-",
-              "dwc:continent":"Europe",
-              "georeference": {
-                "dwc:decimalLatitude": {
-                  "dwc:value":11
-                },
-                "dwc:decimalLongitude": "10",
-                "dwc":["1"]
-              },
-              "locality":"known"
-            }
-          },
-          {
-            "dwc:occurrenceRemarks": "Incorrect",
-            "annotateTarget":"this",
-            "location": {
-              "dwc:country": "Unknown",
-               "dwc:continent":"Error",
-              "georeference": {
-                "dwc:decimalLatitude": {
-                  "dwc:value":10
-                },
-                "dwc:decimalLongitude": "10"
-              },
-              "locality":"unknown"
-            }
-          },
-          {
-            "dwc:occurrenceRemarks": "Half Correct",
-            "annotateTarget":"this",
-            "location": {
-              "dwc:country": \"""" + country + """
-",
-                    "dwc:continent":"Unknown",
-                    "georeference": {
-                      "dwc:decimalLatitude": {
-                        "dwc:value":11
-                      },
-                      "dwc:decimalLongitude": "10.1",
-                      "test":"hello"
+          ",
+                        "dwc:continent":"Europe",
+                        "georeference": {
+                          "dwc:decimalLatitude": {
+                            "dwc:value":11
+                          },
+                          "dwc:decimalLongitude": "10",
+                          "dwc":["1"]
+                        },
+                        "locality":"known"
+                      }
                     },
-                    "locality":"unknown"
-                  }
-                }
-              ]
-            }
-          }""");
+                    {
+                      "dwc:occurrenceRemarks": "Incorrect",
+                      "annotateTarget":"this",
+                      "location": {
+                        "dwc:country": "Unknown",
+                         "dwc:continent":"Error",
+                        "georeference": {
+                          "dwc:decimalLatitude": {
+                            "dwc:value":10
+                          },
+                          "dwc:decimalLongitude": "10"
+                        },
+                        "locality":"unknown"
+                      }
+                    },
+                    {
+                      "dwc:occurrenceRemarks": "Half Correct",
+                      "annotateTarget":"this",
+                      "location": {
+                        "dwc:country": \"""" + country + """
+          ",
+                              "dwc:continent":"Unknown",
+                              "georeference": {
+                                "dwc:decimalLatitude": {
+                                  "dwc:value":11
+                                },
+                                "dwc:decimalLongitude": "10.1",
+                                "test":"hello"
+                              },
+                              "locality":"unknown"
+                            }
+                          }
+                        ]
+                      }
+                    }""");
     } catch (JsonProcessingException e) {
       throw new RuntimeException();
     }

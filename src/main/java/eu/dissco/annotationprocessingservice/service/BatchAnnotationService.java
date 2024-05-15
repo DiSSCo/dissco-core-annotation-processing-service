@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
@@ -38,13 +39,13 @@ public class BatchAnnotationService {
     }
   }
 
-  private void runBatchForMetadata(List<Annotation> baseAnnotations, BatchMetadata batchMetadata,
+  private void runBatchForMetadata(List<Annotation> baseAnnotations, BatchMetadataExtended batchMetadata,
       String jobId, int pageSizePlusOne) throws IOException, BatchingException {
     int pageNumber = 1;
     boolean moreBatching = true;
     while (moreBatching) {
       var targetType = getTargetTypeFromList(baseAnnotations);
-      var annotatedObjects = elasticRepository.searchByBatchMetadata(
+      var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
           batchMetadata, targetType, pageNumber, pageSizePlusOne);
       if (annotatedObjects.isEmpty()) {
         log.info("No annotated objects found. Page number: {}", pageNumber);
@@ -92,11 +93,10 @@ public class BatchAnnotationService {
   }
 
   private List<Annotation> generateBatchAnnotations(Annotation baseAnnotation,
-      BatchMetadata batchMetadata, List<JsonNode> annotatedObjects)
-      throws BatchingException, JsonProcessingException {
+      BatchMetadataExtended batchMetadata, List<JsonNode> annotatedObjects) {
     var batchAnnotations = new ArrayList<Annotation>();
     for (var annotatedObject : annotatedObjects) {
-      var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
+      var targets = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, annotatedObject,
           baseAnnotation.getOaTarget());
       batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }
