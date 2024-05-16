@@ -10,7 +10,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRa
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedLatitudeSearch;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
@@ -27,7 +26,6 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import eu.dissco.annotationprocessingservice.TestUtils;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -88,8 +86,8 @@ class BatchAnnotationServiceTest {
     var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null, true);
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(
-        givenBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticDocuments);
+    given(elasticRepository.searchByBatchMetadataExtended(
+        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
     batchAnnotationService.applyBatchAnnotations(event);
@@ -97,6 +95,27 @@ class BatchAnnotationServiceTest {
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
   }
+
+  @Test
+  void testApplyBatchingSinglePageFalsePositive() throws Exception {
+    // Given
+    var event = givenAnnotationEventBatchEnabled();
+    var annotatableIds = List.of("0", "1", "2");
+    int pageSize = annotatableIds.size();
+    int pageSizePlusOne = pageSize + 1;
+    var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
+    given(jsonPathComponent.getAnnotationTargetsExtended(any(), any(), any())).willReturn(Collections.emptyList());
+    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
+    given(elasticRepository.searchByBatchMetadataExtended(
+        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticDocuments);
+
+    // When
+    batchAnnotationService.applyBatchAnnotations(event);
+
+    // Then
+    then(kafkaPublisherService).shouldHaveNoInteractions();
+  }
+
 
   @Test
   void testApplyBatchingSinglePageTwoBaseAnnotations() throws Exception {
@@ -140,8 +159,8 @@ class BatchAnnotationServiceTest {
 
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(
-        givenBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,1, pageSizePlusOne)).willReturn(elasticDocuments);
+    given(elasticRepository.searchByBatchMetadataExtended(
+        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,1, pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
     batchAnnotationService.applyBatchAnnotations(event);
@@ -256,11 +275,11 @@ class BatchAnnotationServiceTest {
     var elasticPageOne = Collections.nCopies(pageSizePlusOne, givenElasticDocument());
     var elasticPageTwo = List.of(givenElasticDocument());
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadata(
-        givenBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticPageOne);
-    given(elasticRepository.searchByBatchMetadata(
-        givenBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 2, pageSizePlusOne)).willReturn(elasticPageTwo);
-    given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
+    given(elasticRepository.searchByBatchMetadataExtended(
+        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticPageOne);
+    given(elasticRepository.searchByBatchMetadataExtended(
+        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 2, pageSizePlusOne)).willReturn(elasticPageTwo);
+    given(jsonPathComponent.getAnnotationTargetsExtended(any(), any(), any())).willReturn(
         List.of(givenOaTarget(ID)));
 
     // When
@@ -275,7 +294,7 @@ class BatchAnnotationServiceTest {
     // Given
     var event = givenAnnotationEventBatchEnabled();
     given(applicationProperties.getBatchPageSize()).willReturn(10);
-    given(elasticRepository.searchByBatchMetadata(any(), any(), anyInt(), anyInt())).willReturn(
+    given(elasticRepository.searchByBatchMetadataExtended(any(), any(), anyInt(), anyInt())).willReturn(
         Collections.emptyList());
 
     // When
@@ -286,13 +305,13 @@ class BatchAnnotationServiceTest {
     then(jsonPathComponent).shouldHaveNoInteractions();
   }
 
-  private void givenJsonPathResponse(List<String> ids) throws Exception {
+  private void givenJsonPathResponse(List<String> ids) {
     givenJsonPathResponse(ids, givenOaTarget(TARGET_ID));
   }
 
-  private void givenJsonPathResponse(List<String> ids, Target target) throws Exception {
+  private void givenJsonPathResponse(List<String> ids, Target target) {
     for (var id : ids) {
-      given(jsonPathComponent.getAnnotationTargets(any(), eq(givenElasticDocument(id)),
+      given(jsonPathComponent.getAnnotationTargetsExtended(any(), eq(givenElasticDocument(id)),
           eq(target))).willReturn(List.of(givenOaTarget(id)));
     }
   }

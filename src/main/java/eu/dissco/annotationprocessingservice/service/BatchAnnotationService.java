@@ -1,10 +1,8 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
@@ -27,7 +25,7 @@ public class BatchAnnotationService {
   private final ApplicationProperties applicationProperties;
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
-  private final JsonPathComponent jsonPathComponent;
+ private final JsonPathComponent jsonPathComponent;
 
   public void applyBatchAnnotations(AnnotationEvent annotationEvent)
       throws IOException, BatchingException {
@@ -59,11 +57,11 @@ public class BatchAnnotationService {
       for (var baseAnnotation : baseAnnotations) {
         var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
             annotatedObjects);
-        annotations = moreBatching ? annotations.subList(0,
-            applicationProperties.getBatchPageSize()) : annotations;
-        var batchEvent = new AnnotationEvent(annotations, jobId, null, true);
-        kafkaService.publishBatchAnnotation(batchEvent);
-        log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
+        if (!annotations.isEmpty()) {
+          var batchEvent = new AnnotationEvent(annotations, jobId, null, true);
+          kafkaService.publishBatchAnnotation(batchEvent);
+          log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
+        }
       }
       pageNumber = pageNumber + 1;
     }

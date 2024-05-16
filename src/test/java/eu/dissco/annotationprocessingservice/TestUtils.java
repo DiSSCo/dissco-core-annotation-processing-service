@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
@@ -345,22 +344,11 @@ public class TestUtils {
     ));
   }
 
-  public static BatchMetadata givenBatchMetadataLatitudeSearch() {
-    return new BatchMetadata(1,
-        "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "11");
-  }
-
   public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
     return new BatchMetadataExtended(1,
         List.of(new BatchMetadataSearchParam(
             "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
             "11")));
-  }
-
-  public static BatchMetadata givenBatchMetadataCountrySearch() {
-    return new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-        "Netherlands");
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled() {

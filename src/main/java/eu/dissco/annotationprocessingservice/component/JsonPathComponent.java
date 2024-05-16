@@ -10,8 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.Filter;
-import com.jayway.jsonpath.JsonPathException;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
@@ -197,25 +195,6 @@ public class JsonPathComponent {
     return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
-  public List<Target> getAnnotationTargets(BatchMetadata batchMetadata, JsonNode annotatedObject,
-      Target baseTarget) throws JsonProcessingException, BatchingException {
-    var context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
-    var filter = generateFilter(batchMetadata);
-    List<String> correctJsonInputPaths = null;
-    try {
-      correctJsonInputPaths = context.read(
-          removeLastKey(batchMetadata.inputField()), filter);
-    } catch (JsonPathException e) {
-      log.error("Poorly formatted json path", e);
-      throw new BatchingException();
-    }
-    var correctJsonInputPathsDot = correctJsonInputPaths.stream()
-        .map(JsonPathComponent::toDotNotation).toList();
-    var targetPath = getTargetPath(baseTarget);
-    var targetPaths = iterateOverList(correctJsonInputPathsDot, targetPath);
-    return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
-  }
-
   private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget,
       String newTargetId) {
     boolean isClassSelector = baseTarget.getOaSelector().getOdsType()
@@ -258,12 +237,6 @@ public class JsonPathComponent {
     }
   }
 
-  private Filter generateFilter(BatchMetadata batchMetadata) {
-    var targetField = getLastKey(batchMetadata.inputField());
-    var targetValue = batchMetadata.inputValue();
-    return filter(where(targetField).is(targetValue));
-  }
-
   private Filter generateFilter(BatchMetadataSearchParam batchMetadata) {
     var targetField = getLastKey(batchMetadata.inputField());
     var targetValue = batchMetadata.inputValue();
@@ -284,45 +257,6 @@ public class JsonPathComponent {
     jsonPath = jsonPath.replaceAll(lastKeyPattern.pattern(), "");
     return removeTrailingPeriod(jsonPath) + "[?]";
   }
-
-  private List<String> iterateOverList(List<String> correctJsonInputPaths, String baseTargetPath) {
-    /*
-    - `baseTargetPath`: the target fields or class of the original annotation
-    - `correctJsonInputPaths`: JSON paths corresponding to input fields that contain the same value used by the annotating MAS to create the original annotation.
-
-    - In this method, we examine the indexes within `correctJsonInputPaths` to construct the target fields/class of the new annotation.
-    - For example, if "occurrence.1.georeference.latitude" is a correct input JSON path, it signifies that the value stored at this path is identical to the value used by the MAS to create the original annotation.
-    - If "occurrence.3.locality" is found in the `baseTargetPath` (indicating that it is the fields that was annotated), we need to update the indexes of the occurrence array.
-    - The result will be "occurrence.3.locality".
-     */
-
-    List<String> targetPaths = new ArrayList<>();
-    for (var correctJsonInputPath : correctJsonInputPaths) {
-      String annotatePath = baseTargetPath;
-      var segments = Arrays.asList(correctJsonInputPath.split("\\."));
-      var segmentItr = segments.listIterator();
-      while (segmentItr.hasNext()) {
-        var segment = segmentItr.next();
-        if (segmentItr.hasPrevious() && NumberUtils.isCreatable(segment)) {
-          segmentItr.previous();
-          var fieldName = segmentItr.previous();
-          annotatePath = setIndexOnTargetPath(fieldName, annotatePath, Integer.parseInt(segment));
-          segmentItr.next();
-          segmentItr.next(); // Iterate twice to move counter to correct position after calling itr.previous()
-        }
-      }
-      targetPaths.add(annotatePath);
-    }
-    return targetPaths;
-  }
-
-  private static String setIndexOnTargetPath(String fieldName, String targetPath, int index) {
-    // Regex that captures the fields name plus next 3 characters (i.e. fields name plus indexes)
-    var replaceThis = "(" + fieldName + ".{3})";
-    var withThis = fieldName + "[" + index + "].";
-    return targetPath.replaceAll(replaceThis, withThis);
-  }
-
 
   /*
   Checks if a given elastic result is a true match - meaning all the criteria in the batchMetadata are met

@@ -7,7 +7,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataCountryAndContinent;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataCountrySearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -160,22 +159,6 @@ class ElasticSearchRepositoryIT {
   }
 
   @Test
-  void searchByBatchMetadata() throws Exception {
-    // Given
-    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
-    var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
-    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
-    var batchMetadata = givenBatchMetadataCountrySearch();
-
-    // When
-    var result = repository.searchByBatchMetadata(batchMetadata,
-        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
-
-    // Then
-    assertThat(result).isEqualTo(List.of(targetDocument));
-  }
-
-  @Test
   void searchByBatchMetadataExtended() throws Exception {
     // Given
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
@@ -190,52 +173,6 @@ class ElasticSearchRepositoryIT {
     // Then
     assertThat(result).isEqualTo(List.of(targetDocument));
   }
-
-  @Test
-  void testByBatchMetadataSpecimen() throws Exception {
-    // Given
-    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
-    var altDocument = givenElasticDocument("Netherlands kingdom", ID_ALT);
-    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
-    var batchMetadata = givenBatchMetadataCountrySearch();
-
-    // When
-    var result = repository.searchByBatchMetadata(batchMetadata,
-        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
-
-    // Then
-    assertThat(result).isEqualTo(List.of(targetDocument));
-  }
-
-  @Test
-  void testByBatchMetadataMedia() throws Exception {
-    // Given
-    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
-    var altDocument = givenElasticDocument("Netherlands k", ID_ALT);
-    postDocuments(List.of(targetDocument, altDocument), MEDIA_INDEX);
-    var batchMetadata = givenBatchMetadataCountrySearch();
-
-    // When
-    var result = repository.searchByBatchMetadata(batchMetadata, AnnotationTargetType.MEDIA_OBJECT,
-        1, 10);
-
-    // Then
-    assertThat(result).isEqualTo(List.of(targetDocument));
-  }
-
-  @Test
-  void testByBatchNoResults() throws Exception {
-    // Given
-    postDocuments(List.of(givenElasticDocument("OtherCountry", ID_ALT)), DIGITAL_SPECIMEN_INDEX);
-
-    // When
-    var result = repository.searchByBatchMetadata(givenBatchMetadataCountrySearch(),
-        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
-
-    // Then
-    assertThat(result).isEmpty();
-  }
-
 
   public void postDocuments(List<JsonNode> docs, String index) throws IOException {
     var bulkRequest = new BulkRequest.Builder();

@@ -1,29 +1,18 @@
 package eu.dissco.annotationprocessingservice.component;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenSelector;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
-import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.Target;
-import eu.dissco.annotationprocessingservice.exception.BatchingException;
-import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
+
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,61 +32,6 @@ class JsonPathComponentTest {
     jsonPathComponent = new JsonPathComponent(MAPPER, jsonPathConfiguration);
   }
 
-  @Test
-  void testGetAnnotationTargetPathsClassSelector()
-      throws JsonProcessingException, BatchingException {
-    // Given
-    var expected = List.of(
-        Target.builder()
-            .odsId(DOI_PROXY + ID)
-            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .oaSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[0].locality"))
-            .build(),
-        Target.builder()
-            .odsId(DOI_PROXY + ID)
-            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .oaSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[2].locality"))
-            .build());
-
-    var baseTargetClassSelector = Target.builder()
-        .odsId(DOI_PROXY + ID)
-        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .oaSelector(new ClassSelector("digitalSpecimenWrapper.occurrences[1].locality"))
-        .build();
-
-    // When
-    var result = jsonPathComponent.getAnnotationTargets(givenBatchMetadataLatitudeSearch(),
-        givenElasticDocument(),
-        baseTargetClassSelector);
-
-    // Then
-    assertThat(result).hasSameElementsAs(expected);
-  }
-
-  @Test
-  void testGetAnnotationTargetPathsFieldSelector()
-      throws JsonProcessingException, BatchingException {
-    // Given
-    var baseTargetClassSelector = givenOaTarget(ID);
-    var expected = List.of(Target.builder()
-            .odsId(DOI_PROXY + ID)
-            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .oaSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[0].locality"))
-            .build(),
-        Target.builder()
-            .odsId(DOI_PROXY + ID)
-            .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-            .oaSelector(new FieldSelector("digitalSpecimenWrapper.occurrences[2].locality"))
-            .build());
-
-    // When
-    var result = jsonPathComponent.getAnnotationTargets(givenBatchMetadataLatitudeSearch(),
-        givenElasticDocument(),
-        baseTargetClassSelector);
-
-    // Then
-    assertThat(result).hasSameElementsAs(expected);
-  }
 
   @Test
   void testGetAnnotationTargetsExtended() {
@@ -270,43 +204,6 @@ class JsonPathComponentTest {
     assertThat(result).isEqualTo(expected);
   }
 
-  @Test
-  void testBadSelectorType() {
-    // Given
-    var baseTargetClassSelector = Target.builder()
-        .odsId(ID)
-        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .oaSelector(new FragmentSelector())
-        .build();
-    var search = givenBatchMetadataLatitudeSearch();
-    var doc = givenElasticDocument();
-
-    // When
-    assertThrows(BatchingRuntimeException.class, () ->
-        jsonPathComponent.getAnnotationTargets(search,
-            doc,
-            baseTargetClassSelector));
-  }
-
-  @Test
-  void testBadJsonpathFormat() {
-    // Given
-    var batchMetadata = new BatchMetadata(1,
-        "[digitalSpecimenWrapper][occurrences][*]..[location][georeference]['dwc:decimalLatitude']['dwc:value']",
-        "11");
-    var baseTargetClassSelector = Target.builder()
-        .odsId(ID)
-        .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-        .oaSelector(new FieldSelector()
-            .withOdsField("digitalSpecimenWrapper.occurrences[1].locality"))
-        .build();
-
-    // When
-    assertThrows(BatchingException.class, () ->
-        jsonPathComponent.getAnnotationTargets(batchMetadata,
-            givenElasticDocument(),
-            baseTargetClassSelector));
-  }
 
   // Case 0 -> False Positive
   @Test
