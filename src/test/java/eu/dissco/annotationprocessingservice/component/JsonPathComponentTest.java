@@ -2,17 +2,23 @@ package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedOneParam;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedTwoParam;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataSearchParamCountry;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenSelector;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
-
+import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
+import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
+import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,18 +45,10 @@ class JsonPathComponentTest {
     var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
     var expected = List.of(
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
-    var batchMetadata = new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-            "Netherlands"),
-        new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
-            "Correct"
-        )
-    ));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargetsExtended(
+        givenBatchMetadataExtendedTwoParam(),
         givenElasticDocument(),
         baseTarget);
 
@@ -65,18 +63,61 @@ class JsonPathComponentTest {
     var expected = List.of(
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
-    var batchMetadata = new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-            "Netherlands")));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargetsExtended(
+        givenBatchMetadataExtendedOneParam(),
         givenElasticDocument(),
         baseTarget);
 
     // Then
     assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testGetAnnotationTargetsClassSelector() {
+    // Given
+    var baseTarget = givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[0]"));
+    var expected = List.of(
+        givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[0]")),
+        givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[2]")));
+
+    // When
+    var result = jsonPathComponent.getAnnotationTargetsExtended(
+        givenBatchMetadataExtendedOneParam(),
+        givenElasticDocument(),
+        baseTarget);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void testWrongSelectorType() {
+    var baseTarget = givenOaTarget(new FragmentSelector());
+    var doc = givenElasticDocument();
+    var batchMetadata = givenBatchMetadataExtendedOneParam();
+
+    assertThrows(BatchingRuntimeException.class,
+        () -> jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+            doc,
+            baseTarget));
+  }
+
+  @Test
+  void testBadTargetPath() {
+    var baseTarget = givenOaTarget(
+        givenSelector("[digitalSpecimenWrapper][occurrences][1][location]"));
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        new BatchMetadataSearchParam(
+            "[digitalSpecimenWrapper][occurrences][*][location][dwc:country]",
+            "Netherlands")));
+    var doc = givenElasticDocument();
+
+    assertThrows(BatchingRuntimeException.class,
+        () -> jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+            doc,
+            baseTarget));
   }
 
   @Test
@@ -110,9 +151,7 @@ class JsonPathComponentTest {
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-            "Netherlands"),
+        givenBatchMetadataSearchParamCountry(),
         new BatchMetadataSearchParam(
             "digitalSpecimenWrapper.fieldNum",
             "1"

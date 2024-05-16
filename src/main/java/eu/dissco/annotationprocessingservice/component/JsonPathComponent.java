@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.component;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.JsonPath.using;
+import static java.lang.Character.isDigit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,10 +18,8 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
 import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
-import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,7 +31,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +42,7 @@ public class JsonPathComponent {
   private final ObjectMapper mapper;
   private final Configuration jsonPathConfig;
 
-  // Identifies the last field in a dot notation pattern
+  // Identifies the last field in a dot notation pattern (everything before the last period)
   private final Pattern lastKeyPattern = Pattern.compile("[^.]+(?=\\.$)|([^.]+$)");
   // Identifies array fields in a mixed notation pattern
   private final Pattern arrayFieldPattern = Pattern.compile("(\\w+\\.\\d+)");
@@ -156,27 +154,6 @@ public class JsonPathComponent {
     return Optional.empty();
   }
 
-  // Takes the found json path and compares it to indexes that met the criteria of the input parameters
-
-  boolean isValidJsonPath(String jsonPath, List<FieldIndex> validInputIndexes) {
-    var targetArrayFieldMatcher = arrayFieldPattern.matcher(jsonPath);
-    var foundIndexesInTargetJsonPath = new ArrayList<Integer>();
-    while (targetArrayFieldMatcher.find()) {
-      var match = targetArrayFieldMatcher.group();
-      // only get index of json path arrays
-      foundIndexesInTargetJsonPath.add(Integer.parseInt(match.replaceAll("\\D+", "")));
-    }
-    // We take sublists because we may be using fewer indexes than the target path has
-    // e.g. if the target path has occurrence[*]locality[*], but we only used occurrence[*] in our input parameters
-    // Then we would only be able to look at the indexes for occurrence
-    // If this is the case, we log the ambiguity but annotate all localities
-    var targetIndexSublist = foundIndexesInTargetJsonPath
-        .subList(0, validInputIndexes.size());
-    return (validInputIndexes.stream().map(FieldIndex::indexes).toList()
-        .contains(targetIndexSublist));
-  }
-
-
   boolean isValidJsonPath(String jsonPath,
       Pair<List<String>, List<List<Integer>>> validInputIndexes) {
     var targetArrayFieldMatcher = arrayFieldPattern.matcher(jsonPath);
@@ -201,14 +178,13 @@ public class JsonPathComponent {
         .equals(SelectorType.CLASS_SELECTOR);
     List<Target> newTargets = new ArrayList<>();
     for (var targetPath : targetPaths) {
-      var append = targetPath.contains("digitalSpecimenWrapper") ? "" : "$";
       Selector newSelector = null;
       if (isClassSelector) {
         newSelector = new ClassSelector()
-            .withOaClass(append + targetPath);
+            .withOaClass(targetPath);
       } else {
         newSelector = new FieldSelector()
-            .withOdsField(append + targetPath);
+            .withOdsField(targetPath);
       }
       newTargets.add(Target.builder()
           .odsType(baseTarget.getOdsType())
@@ -245,8 +221,10 @@ public class JsonPathComponent {
 
   private String getLastKey(String jsonPath) {
     var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
-    if (lastKeyMatcher.find()) {
-      return lastKeyMatcher.group().replace("\\.", "");
+    lastKeyMatcher.find();
+    var lastKey = lastKeyMatcher.group().replace("\\.", "");
+    if (lastKey.length() < jsonPath.length()) {
+      return lastKey;
     } else {
       log.error("Unable to parse last key of jsonPath {}", jsonPath);
       throw new BatchingRuntimeException();
@@ -432,7 +410,11 @@ public class JsonPathComponent {
       indexMatcher.find();
       jsonPath = jsonPath.replace(match, indexMatcher.group() + "].");
     }
-    return removeTrailingPeriod(jsonPath);
+    jsonPath = removeTrailingPeriod(jsonPath);
+    if (isDigit(jsonPath.charAt(jsonPath.length() - 1))) {
+      jsonPath = jsonPath + "]";
+    }
+    return jsonPath;
   }
 
   private static String removeTrailingPeriod(String jsonPath) {
@@ -448,5 +430,6 @@ public class JsonPathComponent {
       List<String> fields,
       List<Integer> indexes
   ) {
+
   }
 }
