@@ -6,7 +6,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataCountryAndContinent;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedTwoParam;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -164,7 +164,7 @@ class ElasticSearchRepositoryIT {
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
-    var batchMetadata = givenBatchMetadataCountryAndContinent("Netherlands", "Europe");
+    var batchMetadata = givenBatchMetadataExtendedTwoParam();
 
     // When
     var result = repository.searchByBatchMetadataExtended(batchMetadata,

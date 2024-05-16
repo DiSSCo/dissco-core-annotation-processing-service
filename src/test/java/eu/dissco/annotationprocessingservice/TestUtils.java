@@ -333,15 +333,10 @@ public class TestUtils {
         """);
   }
 
-  public static BatchMetadataExtended givenBatchMetadataCountryAndContinent(String country,
-      String continent) {
-    return new BatchMetadataExtended(1, List.of(
-        new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
-            country),
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.dwc:continent",
-            continent)
-    ));
+  public static  BatchMetadataSearchParam givenBatchMetadataSearchParamCountry(){
+    return new BatchMetadataSearchParam(
+        "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+        "Netherlands");
   }
 
   public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
@@ -349,6 +344,20 @@ public class TestUtils {
         List.of(new BatchMetadataSearchParam(
             "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
             "11")));
+  }
+
+  public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam(){
+    return new BatchMetadataExtended(1, List.of(
+        givenBatchMetadataSearchParamCountry(),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
+            "Correct"
+        )));
+  }
+
+  public static BatchMetadataExtended givenBatchMetadataExtendedOneParam(){
+    return new BatchMetadataExtended(1, List.of(
+       givenBatchMetadataSearchParamCountry()));
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled() {
