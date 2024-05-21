@@ -18,7 +18,7 @@
         job_state |
         mjr_target_type |
         error_code |
-        annotation_batch
+        annotation_batch_record
       </includes>
       <forcedTypes>
         <forcedType>

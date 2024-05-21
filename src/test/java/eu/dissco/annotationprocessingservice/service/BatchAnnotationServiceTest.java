@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_3;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
@@ -22,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
-import co.elastic.clients.elasticsearch.core.BulkResponse;
 import eu.dissco.annotationprocessingservice.TestUtils;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
@@ -34,6 +34,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.util.Collections;
 import java.util.List;
@@ -55,13 +56,13 @@ class BatchAnnotationServiceTest {
   @Mock
   private JsonPathComponent jsonPathComponent;
   @Mock
-  private BulkResponse bulkResponse;
+  private AnnotationBatchRecordRepository annotationBatchRecordRepository;
   private BatchAnnotationService batchAnnotationService;
 
   @BeforeEach
   void setup() {
     batchAnnotationService = new BatchAnnotationService(applicationProperties, elasticRepository,
-        kafkaPublisherService, jsonPathComponent);
+        kafkaPublisherService, jsonPathComponent, annotationBatchRecordRepository);
   }
 
 
@@ -90,7 +91,7 @@ class BatchAnnotationServiceTest {
         givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event);
+    batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3);
 
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
@@ -110,7 +111,7 @@ class BatchAnnotationServiceTest {
         givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event);
+    batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3);
 
     // Then
     then(kafkaPublisherService).shouldHaveNoInteractions();
@@ -163,7 +164,7 @@ class BatchAnnotationServiceTest {
         givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,1, pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event);
+    batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3);
 
     // Then
     then(kafkaPublisherService).should().publishBatchAnnotation(batchEventA);
@@ -182,7 +183,8 @@ class BatchAnnotationServiceTest {
 
 
     // When
-    assertThrows(BatchingException.class, () -> batchAnnotationService.applyBatchAnnotations(event));
+    assertThrows(BatchingException.class, () -> batchAnnotationService.applyBatchAnnotations(event,
+        ANNOTATION_HASH_3));
 
     // Then
     then(jsonPathComponent).shouldHaveNoInteractions();
@@ -247,7 +249,7 @@ class BatchAnnotationServiceTest {
         batchMetadataB, AnnotationTargetType.MEDIA_OBJECT, 1, pageSizePlusOne)).willReturn(elasticDocumentsB);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event);
+    batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3);
 
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEventA);
@@ -263,7 +265,7 @@ class BatchAnnotationServiceTest {
 
     // When
     assertThrows(BatchingException.class,
-        () -> batchAnnotationService.applyBatchAnnotations(event));
+        () -> batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3));
   }
 
   @Test
@@ -283,7 +285,7 @@ class BatchAnnotationServiceTest {
         List.of(givenOaTarget(ID)));
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event);
+    batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3);
 
     // Then
     then(kafkaPublisherService).should(times(2)).publishBatchAnnotation(any());
@@ -298,7 +300,7 @@ class BatchAnnotationServiceTest {
         Collections.emptyList());
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event);
+    batchAnnotationService.applyBatchAnnotations(event, ANNOTATION_HASH_3);
 
     // Then
     then(kafkaPublisherService).shouldHaveNoInteractions();

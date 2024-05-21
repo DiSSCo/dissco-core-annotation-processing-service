@@ -9,10 +9,12 @@ import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetT
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,29 +27,34 @@ public class BatchAnnotationService {
   private final ApplicationProperties applicationProperties;
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
- private final JsonPathComponent jsonPathComponent;
+  private final JsonPathComponent jsonPathComponent;
+  private final AnnotationBatchRecordRepository annotationBatchRecordRepository;
 
-  public void applyBatchAnnotations(AnnotationEvent annotationEvent)
+  public void applyBatchAnnotations(AnnotationEvent annotationEvent, UUID batchId)
       throws IOException, BatchingException {
+    long annotationCount = 0L;
     int pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
     for (var batchMetadata : annotationEvent.batchMetadata()) {
       var baseAnnotations = getBaseAnnotation(batchMetadata.placeInBatch(),
           annotationEvent.annotations());
-      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne);
+      annotationCount = annotationCount + runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne);
     }
+    annotationBatchRecordRepository.updateAnnotationBatchRecord(batchId, annotationCount);
   }
 
-  private void runBatchForMetadata(List<Annotation> baseAnnotations, BatchMetadataExtended batchMetadata,
+  private long runBatchForMetadata(List<Annotation> baseAnnotations,
+      BatchMetadataExtended batchMetadata,
       String jobId, int pageSizePlusOne) throws IOException, BatchingException {
     int pageNumber = 1;
     boolean moreBatching = true;
+    long count = 0L;
     while (moreBatching) {
       var targetType = getTargetTypeFromList(baseAnnotations);
       var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
           batchMetadata, targetType, pageNumber, pageSizePlusOne);
       if (annotatedObjects.isEmpty()) {
         log.info("No annotated objects found. Page number: {}", pageNumber);
-        return;
+        return 0L;
       }
       if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
         moreBatching = false;
@@ -62,9 +69,11 @@ public class BatchAnnotationService {
           kafkaService.publishBatchAnnotation(batchEvent);
           log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
         }
+        count = count + annotations.size();
       }
       pageNumber = pageNumber + 1;
     }
+    return count;
   }
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)

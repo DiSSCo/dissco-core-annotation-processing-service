@@ -5,9 +5,9 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatch;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationBatchRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationBatchRecordRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
 
@@ -30,12 +30,13 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AnnotationRecord> ANNOTATION_PK = Internal.createUniqueKey(Annotation.ANNOTATION, DSL.name("annotation_pk"), new TableField[] { Annotation.ANNOTATION.ID }, true);
-    public static final UniqueKey<AnnotationBatchRecord> ANNOTATION_BATCH_PK = Internal.createUniqueKey(AnnotationBatch.ANNOTATION_BATCH, DSL.name("annotation_batch_pk"), new TableField[] { AnnotationBatch.ANNOTATION_BATCH.BATCH_ID }, true);
+    public static final UniqueKey<AnnotationBatchRecordRecord> ANNOTATION_BATCH_PK = Internal.createUniqueKey(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD, DSL.name("annotation_batch_pk"), new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.BATCH_ID }, true);
     public static final UniqueKey<MasJobRecordRecord> MAS_JOB_RECORD_PK = Internal.createUniqueKey(MasJobRecord.MAS_JOB_RECORD, DSL.name("mas_job_record_pk"), new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 
     // -------------------------------------------------------------------------
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
-    public static final ForeignKey<AnnotationBatchRecord, MasJobRecordRecord> ANNOTATION_BATCH__ANNOTATION_BATCH_FK = Internal.createForeignKey(AnnotationBatch.ANNOTATION_BATCH, DSL.name("annotation_batch_fk"), new TableField[] { AnnotationBatch.ANNOTATION_BATCH.JOB_ID }, Keys.MAS_JOB_RECORD_PK, new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
+    public static final ForeignKey<AnnotationRecord, AnnotationBatchRecordRecord> ANNOTATION__ANNOTATION_BATCH_ID_FK = Internal.createForeignKey(Annotation.ANNOTATION, DSL.name("annotation_batch_id_fk"), new TableField[] { Annotation.ANNOTATION.BATCH_ID }, Keys.ANNOTATION_BATCH_PK, new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.BATCH_ID }, true);
+    public static final ForeignKey<AnnotationBatchRecordRecord, MasJobRecordRecord> ANNOTATION_BATCH_RECORD__ANNOTATION_BATCH_FK = Internal.createForeignKey(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD, DSL.name("annotation_batch_fk"), new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.JOB_ID }, Keys.MAS_JOB_RECORD_PK, new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 }

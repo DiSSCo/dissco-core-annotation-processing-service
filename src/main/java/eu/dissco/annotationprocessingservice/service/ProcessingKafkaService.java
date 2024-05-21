@@ -10,6 +10,7 @@ import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -19,6 +20,7 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -29,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,9 +53,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
-      SchemaValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService) {
+      SchemaValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
+      AnnotationBatchRecordRepository annotationBatchRecordRepository) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService);
+        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
+        annotationBatchRecordRepository);
     this.annotationHasher = annotationHasher;
   }
 
@@ -66,40 +71,43 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       masJobRecordService.markEmptyMasJobRecordAsComplete(event.jobId(), isBatchResult);
     } else {
       schemaValidator.validateEvent(event);
+      var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
+      var batchId = getBatchId(masJobRecord, isBatchResult);
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
       var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
           isBatchResult);
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
-          isBatchResult);
+          isBatchResult, batchId);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
-      var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
       checkForTimeoutErrors(masJobRecord.error(), event.jobId());
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
-      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult);
+      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult, batchId);
     }
   }
 
-  private void applyBatchAnnotations(AnnotationEvent event, boolean batchingRequested, boolean isBatchResult) {
+  private void applyBatchAnnotations(AnnotationEvent event, boolean batchingRequested,
+      boolean isBatchResult, Optional<UUID> batchId) {
     if (isBatchResult) {
       return;
     }
     if (batchingRequested) {
-      if (event.batchMetadata() != null) {
+      if (event.batchMetadata() != null && batchId.isPresent()) {
         try {
-          batchAnnotationService.applyBatchAnnotations(event);
+          batchAnnotationService.applyBatchAnnotations(event, batchId.get());
         } catch (IOException | BatchingException e) {
           log.error("Unable to process batch annotations", e);
         }
       } else {
-        log.warn("User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
+        log.warn(
+            "User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
             event.jobId());
       }
     }
   }
 
-  private void checkForTimeoutErrors(ErrorCode errorCode, String jobId){
-    if (ErrorCode.TIMEOUT.equals(errorCode)){
+  private void checkForTimeoutErrors(ErrorCode errorCode, String jobId) {
+    if (ErrorCode.TIMEOUT.equals(errorCode)) {
       log.warn("MJR {} previously marked as timed out. Removing error.", jobId);
     }
   }
@@ -137,18 +145,19 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId,
-      boolean isBatchResult)
+      boolean isBatchResult, Optional<UUID> batchId)
       throws FailedProcessingException {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
     }
     var idMap = postHandles(annotations, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
-    annotations.forEach(p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId));
+    annotations.forEach(
+        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId, batchId));
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
       repository.createAnnotationRecord(annotations);
-    } catch (DataAccessException e){
+    } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackHandleCreation(idList);
       throw new FailedProcessingException();
@@ -160,9 +169,23 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
+      if (batchId.isPresent() && !isBatchResult) {
+        annotationBatchRecordRepository.rollbackAnnotationBatchRecord(batchId.get());
+      }
       throw new FailedProcessingException();
     }
     return idList;
+  }
+
+  private Optional<UUID> getBatchId(MasJobRecord masJobRecord, boolean isBatchResult) {
+    // !( A or B) => (!A and !B), if no batching requested and not batch result
+    if (!(masJobRecord.batchingRequested() || isBatchResult)) {
+      return Optional.empty();
+    }
+    if (isBatchResult) {
+      return annotationBatchRecordRepository.getBatchIdFromMasJobId(masJobRecord.jobId());
+    }
+    return Optional.of(UUID.randomUUID());
   }
 
   private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId,
@@ -199,7 +222,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     try {
       repository.createAnnotationRecord(
           updatedAnnotations.stream().map(UpdatedAnnotation::annotation).toList());
-    } catch (DataAccessException e){
+    } catch (DataAccessException e) {
       log.error("Unable to update annotations in database. Rolling back handle updates", e);
       filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
       throw new FailedProcessingException();
@@ -290,6 +313,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       }
     }
     repository.rollbackAnnotations(idList);
+
   }
 
   private void rollbackUpdatedAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
@@ -307,7 +331,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
     try {
       repository.createAnnotationRecord(currentAnnotationsHashed);
-    } catch (DataAccessException e){
+    } catch (DataAccessException e) {
       log.error("Fatal database exception. Unable to rollback annotations to original state");
     }
 

@@ -84,7 +84,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   void testGetBatchingRequested() {
     // Given
     postMjr(JOB_ID);
-    var expected = new MasJobRecord(false, null);
+    var expected = new MasJobRecord(JOB_ID, false, null);
 
     // When
     var result = repository.getMasJobRecord(JOB_ID);

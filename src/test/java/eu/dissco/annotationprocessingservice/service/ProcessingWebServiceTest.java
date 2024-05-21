@@ -25,6 +25,7 @@ import eu.dissco.annotationprocessingservice.exception.FailedProcessingException
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -64,6 +65,9 @@ class ProcessingWebServiceTest {
   private MasJobRecordService masJobRecordService;
   @Mock
   private BatchAnnotationService batchAnnotationService;
+  @Mock
+  private AnnotationBatchRecordRepository annotationBatchRecordRepository;
+
   private MockedStatic<Instant> mockedStatic;
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingWebService service;
@@ -74,7 +78,7 @@ class ProcessingWebServiceTest {
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService);
+        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordRepository);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);

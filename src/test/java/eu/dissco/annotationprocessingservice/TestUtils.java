@@ -65,6 +65,10 @@ public class TestUtils {
     return new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH);
   }
 
+  public static HashedAnnotation givenHashedAnnotation(UUID batchId){
+    return new HashedAnnotation(givenHashedAnnotation().annotation().setOdsBatchId(batchId), ANNOTATION_HASH);
+  }
+
   public static HashedAnnotation givenHashedAnnotationAlt() {
     return new HashedAnnotation(givenAnnotationProcessedAlt(), ANNOTATION_HASH);
   }

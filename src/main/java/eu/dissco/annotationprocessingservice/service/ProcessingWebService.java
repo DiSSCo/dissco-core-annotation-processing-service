@@ -12,6 +12,7 @@ import eu.dissco.annotationprocessingservice.exception.FailedProcessingException
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -31,9 +32,11 @@ public class ProcessingWebService extends AbstractProcessingService {
       ElasticSearchRepository elasticRepository, KafkaPublisherService kafkaService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
       ApplicationProperties applicationProperties, SchemaValidatorComponent schemaValidator,
-      MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService) {
+      MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
+      AnnotationBatchRecordRepository annotationBatchRecordRepository) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService);
+        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
+        annotationBatchRecordRepository);
   }
 
   public Annotation persistNewAnnotation(Annotation annotation)
@@ -185,8 +188,9 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     try {
       repository.createAnnotationRecord(currentAnnotation);
-    } catch (DataAccessException e){
-      log.error("Fatal exception: unable to revert annotation {} to its original state", currentAnnotation.getOdsId(), e);
+    } catch (DataAccessException e) {
+      log.error("Fatal exception: unable to revert annotation {} to its original state",
+          currentAnnotation.getOdsId(), e);
       throw new FailedProcessingException();
     }
 

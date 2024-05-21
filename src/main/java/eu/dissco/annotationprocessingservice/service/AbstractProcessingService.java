@@ -7,6 +7,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -14,9 +15,12 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+
 
 @RequiredArgsConstructor
 @Slf4j
@@ -31,6 +35,7 @@ public abstract class AbstractProcessingService {
   protected final SchemaValidatorComponent schemaValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
+  protected final AnnotationBatchRecordRepository annotationBatchRecordRepository;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
     annotation.setOdsId(id)
@@ -39,9 +44,10 @@ public abstract class AbstractProcessingService {
         .setOaGenerated(Instant.now());
   }
 
-  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId) {
+  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId, Optional<UUID> batchId) {
     enrichNewAnnotation(annotation, id);
     annotation.setOdsJobId(applicationProperties.getHandleProxy() + jobId);
+    batchId.ifPresent(annotation::setOdsBatchId);
   }
 
   private Generator createGenerator() {
