@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +31,7 @@ class FdoRecordServiceTest {
 
   @BeforeEach
   void setUp() {
-    fdoRecordService = new FdoRecordService(MAPPER);
+    fdoRecordService = new FdoRecordService(MAPPER, new FdoProperties());
   }
 
   @Test

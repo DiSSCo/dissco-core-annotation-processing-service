@@ -62,8 +62,7 @@ class AnnotationControllerTest {
   }
 
   @Test
-  void testUpdateAnnotationIdMismatch()
-      throws Exception {
+  void testUpdateAnnotationIdMismatch() {
     // Given
     var request = givenAnnotationRequest().setOdsId(ID);
     var prefix = ID.split("/")[0];

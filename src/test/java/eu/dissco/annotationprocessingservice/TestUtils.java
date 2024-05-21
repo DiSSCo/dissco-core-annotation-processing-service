@@ -216,10 +216,8 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "annotation",
+              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
@@ -234,10 +232,8 @@ public class TestUtils {
     var jsonNode = MAPPER.readTree("""
         {
             "data": {
-              "type": "annotation",
+              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
@@ -250,10 +246,8 @@ public class TestUtils {
     var jsonNode2 = MAPPER.readTree("""
         {
             "data": {
-              "type": "annotation",
+              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
@@ -270,10 +264,8 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "annotation",
+              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                 "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
@@ -289,10 +281,8 @@ public class TestUtils {
     var node1 = MAPPER.readTree("""
         {
             "data": {
-              "type": "annotation",
+              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                 "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                 "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
@@ -306,10 +296,8 @@ public class TestUtils {
     var node2 = MAPPER.readTree("""
           {
             "data": {
-              "type": "annotation",
+              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
-               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
