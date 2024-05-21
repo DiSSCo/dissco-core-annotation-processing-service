@@ -156,7 +156,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testArchiveHandle() throws Exception {
+  void testArchiveHandle() {
     // Given
     var requestBody = MAPPER.createObjectNode();
     mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
@@ -269,7 +269,6 @@ class HandleComponentTest {
             "type": "mediaObject",
             "id":"20.5000.1025/KZL-VC0-ZK2",
             "attributes": {
-               "fdoProfile": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "subjectDigitalObjectId": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
                "annotationTopic":"20.5000.1025/460-A7R-QMJ",
