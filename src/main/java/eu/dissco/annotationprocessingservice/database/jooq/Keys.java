@@ -5,10 +5,13 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatch;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
 
+import org.jooq.ForeignKey;
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -27,5 +30,12 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AnnotationRecord> ANNOTATION_PK = Internal.createUniqueKey(Annotation.ANNOTATION, DSL.name("annotation_pk"), new TableField[] { Annotation.ANNOTATION.ID }, true);
+    public static final UniqueKey<AnnotationBatchRecord> ANNOTATION_BATCH_PK = Internal.createUniqueKey(AnnotationBatch.ANNOTATION_BATCH, DSL.name("annotation_batch_pk"), new TableField[] { AnnotationBatch.ANNOTATION_BATCH.BATCH_ID }, true);
     public static final UniqueKey<MasJobRecordRecord> MAS_JOB_RECORD_PK = Internal.createUniqueKey(MasJobRecord.MAS_JOB_RECORD, DSL.name("mas_job_record_pk"), new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
+
+    // -------------------------------------------------------------------------
+    // FOREIGN KEY definitions
+    // -------------------------------------------------------------------------
+
+    public static final ForeignKey<AnnotationBatchRecord, MasJobRecordRecord> ANNOTATION_BATCH__ANNOTATION_BATCH_FK = Internal.createForeignKey(AnnotationBatch.ANNOTATION_BATCH, DSL.name("annotation_batch_fk"), new TableField[] { AnnotationBatch.ANNOTATION_BATCH.JOB_ID }, Keys.MAS_JOB_RECORD_PK, new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 }
