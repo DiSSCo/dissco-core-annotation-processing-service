@@ -1,8 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ANNOTATION_HASH;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.DIGITAL_OBJECT_TYPE;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.FDO_PROFILE;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.MOTIVATION;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TARGET_PID;
@@ -14,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +26,7 @@ public class FdoRecordService {
 
   private final ObjectMapper mapper;
 
+  private final FdoProperties fdoProperties;
   private static final String ATTRIBUTES = "attributes";
   private static final String DATA = "data";
   private static final String ID = "id";
@@ -47,7 +47,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation, annotationHash);
-    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
+    data.put(TYPE.getAttribute(), fdoProperties.getType());
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);
     return request;
@@ -69,7 +69,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation, annotationHash);
-    data.put(TYPE.getAttribute(), TYPE.getDefaultValue());
+    data.put(TYPE.getAttribute(), fdoProperties.getType());
     data.set(ATTRIBUTES, attributes);
     data.put(ID, annotation.getOdsId());
     request.set(DATA, data);
@@ -89,9 +89,7 @@ public class FdoRecordService {
 
   private JsonNode generateAttributes(Annotation annotation, UUID annotationHash) {
     var attributes = mapper.createObjectNode();
-    attributes.put(FDO_PROFILE.getAttribute(), FDO_PROFILE.getDefaultValue());
-    attributes.put(DIGITAL_OBJECT_TYPE.getAttribute(), DIGITAL_OBJECT_TYPE.getDefaultValue());
-    attributes.put(ISSUED_FOR_AGENT.getAttribute(), ISSUED_FOR_AGENT.getDefaultValue());
+    attributes.put(ISSUED_FOR_AGENT.getAttribute(), fdoProperties.getIssuedForAgent());
     attributes.put(TARGET_PID.getAttribute(), annotation.getOaTarget().getOdsId());
     attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaTarget().getOdsType().toString());
     attributes.put(MOTIVATION.getAttribute(), annotation.getOaMotivation().toString());

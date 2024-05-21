@@ -96,8 +96,7 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetPathsBadBatchMetadata()
-      throws JsonProcessingException {
+  void testGetAnnotationTargetPathsBadBatchMetadata() {
     // Given
     var baseTargetClassSelector = Target.builder()
         .odsId(HANDLE_PROXY + ID)
@@ -133,7 +132,7 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testBadJsonpathFormat() throws JsonProcessingException {
+  void testBadJsonpathFormat() {
     // Given
     var batchMetadata = new BatchMetadata(1, "[digitalSpecimenWrapper][occurrences][*][location][georeference]['dwc:decimalLatitude']['dwc:value']", "11");
     var baseTargetClassSelector = Target.builder()
