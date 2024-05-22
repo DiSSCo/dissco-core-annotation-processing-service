@@ -13,6 +13,7 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRep
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class BatchAnnotationService {
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
   private final JsonPathComponent jsonPathComponent;
-  private final AnnotationBatchRecordRepository annotationBatchRecordRepository;
+  private final AnnotationBatchRecordService annotationBatchRecordService;
 
   public void applyBatchAnnotations(AnnotationEvent annotationEvent, UUID batchId)
       throws IOException, BatchingException {
@@ -37,9 +38,10 @@ public class BatchAnnotationService {
     for (var batchMetadata : annotationEvent.batchMetadata()) {
       var baseAnnotations = getBaseAnnotation(batchMetadata.placeInBatch(),
           annotationEvent.annotations());
-      annotationCount = annotationCount + runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne);
+      annotationCount = annotationCount + runBatchForMetadata(baseAnnotations, batchMetadata,
+          annotationEvent.jobId(), pageSizePlusOne);
     }
-    annotationBatchRecordRepository.updateAnnotationBatchRecord(batchId, annotationCount);
+    annotationBatchRecordService.updateAnnotationBatchRecord(batchId, annotationCount);
   }
 
   private long runBatchForMetadata(List<Annotation> baseAnnotations,

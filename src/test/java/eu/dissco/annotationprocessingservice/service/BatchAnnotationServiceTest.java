@@ -56,13 +56,13 @@ class BatchAnnotationServiceTest {
   @Mock
   private JsonPathComponent jsonPathComponent;
   @Mock
-  private AnnotationBatchRecordRepository annotationBatchRecordRepository;
+  private AnnotationBatchRecordService annotationBatchRecordService;
   private BatchAnnotationService batchAnnotationService;
 
   @BeforeEach
   void setup() {
     batchAnnotationService = new BatchAnnotationService(applicationProperties, elasticRepository,
-        kafkaPublisherService, jsonPathComponent, annotationBatchRecordRepository);
+        kafkaPublisherService, jsonPathComponent, annotationBatchRecordService);
   }
 
 

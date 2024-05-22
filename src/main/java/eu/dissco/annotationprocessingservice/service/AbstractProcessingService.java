@@ -7,7 +7,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
-import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -35,7 +34,7 @@ public abstract class AbstractProcessingService {
   protected final SchemaValidatorComponent schemaValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
-  protected final AnnotationBatchRecordRepository annotationBatchRecordRepository;
+  protected final AnnotationBatchRecordService annotationBatchRecordService;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
     annotation.setOdsId(id)

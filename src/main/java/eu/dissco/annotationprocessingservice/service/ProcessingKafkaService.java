@@ -54,10 +54,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
       SchemaValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordRepository annotationBatchRecordRepository) {
+      AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordRepository);
+        annotationBatchRecordService);
     this.annotationHasher = annotationHasher;
   }
 
@@ -72,9 +72,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     } else {
       schemaValidator.validateEvent(event);
       var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
-      var batchId = getBatchId(masJobRecord, isBatchResult);
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
+      var batchId = annotationBatchRecordService.getBatchId(masJobRecord, isBatchResult, processResult.newAnnotations());
       var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
           isBatchResult);
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
@@ -157,6 +157,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
       repository.createAnnotationRecord(annotations);
+      //annotationBatchRecordService.createNewAnnotationBatchRecord(batchId, annotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackHandleCreation(idList);
@@ -169,23 +170,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
-      if (batchId.isPresent() && !isBatchResult) {
-        annotationBatchRecordRepository.rollbackAnnotationBatchRecord(batchId.get());
-      }
+      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchId, isBatchResult);
       throw new FailedProcessingException();
     }
     return idList;
-  }
-
-  private Optional<UUID> getBatchId(MasJobRecord masJobRecord, boolean isBatchResult) {
-    // !( A or B) => (!A and !B), if no batching requested and not batch result
-    if (!(masJobRecord.batchingRequested() || isBatchResult)) {
-      return Optional.empty();
-    }
-    if (isBatchResult) {
-      return annotationBatchRecordRepository.getBatchIdFromMasJobId(masJobRecord.jobId());
-    }
-    return Optional.of(UUID.randomUUID());
   }
 
   private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId,

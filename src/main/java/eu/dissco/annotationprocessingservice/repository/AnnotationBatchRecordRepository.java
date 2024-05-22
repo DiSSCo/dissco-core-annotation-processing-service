@@ -5,6 +5,7 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION_BATCH_RECORD;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -50,11 +51,11 @@ public class AnnotationBatchRecordRepository {
         .execute();
   }
 
-  public Optional<UUID> getBatchIdFromMasJobId(String jobId) {
+  public List<UUID> getBatchIdFromMasJobId(String jobId) {
     return context.select(ANNOTATION_BATCH_RECORD.BATCH_ID)
         .from(ANNOTATION_BATCH_RECORD)
         .where(ANNOTATION_BATCH_RECORD.JOB_ID.eq(jobId))
-        .fetchOptional(Record1::value1);
+        .fetch(Record1::value1);
   }
 
 }
