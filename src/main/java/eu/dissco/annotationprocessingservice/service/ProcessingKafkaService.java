@@ -74,27 +74,30 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
-      var batchId = annotationBatchRecordService.getBatchId(masJobRecord, isBatchResult, processResult.newAnnotations());
+      var newAnnotations = processResult.newAnnotations().stream().map(HashedAnnotation::annotation)
+          .toList();
+      var batchIds = annotationBatchRecordService.getBatchId(masJobRecord, isBatchResult, newAnnotations);
+      annotationBatchRecordService.createNewAnnotationBatchRecord(batchIds, newAnnotations, isBatchResult);
       var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
           isBatchResult);
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
-          isBatchResult, batchId);
+          isBatchResult, batchIds);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
       checkForTimeoutErrors(masJobRecord.error(), event.jobId());
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
-      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult, batchId);
+      applyBatchAnnotations(event, masJobRecord.batchingRequested(), isBatchResult, batchIds);
     }
   }
 
   private void applyBatchAnnotations(AnnotationEvent event, boolean batchingRequested,
-      boolean isBatchResult, Optional<UUID> batchId) {
+      boolean isBatchResult, Optional<Map<String, UUID>> batchIds) {
     if (isBatchResult) {
       return;
     }
     if (batchingRequested) {
-      if (event.batchMetadata() != null && batchId.isPresent()) {
+      if (event.batchMetadata() != null && batchIds.isPresent()) {
         try {
-          batchAnnotationService.applyBatchAnnotations(event, batchId.get());
+          batchAnnotationService.applyBatchAnnotations(event, batchIds.get());
         } catch (IOException | BatchingException e) {
           log.error("Unable to process batch annotations", e);
         }
@@ -145,7 +148,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId,
-      boolean isBatchResult, Optional<UUID> batchId)
+      boolean isBatchResult, Optional<Map<String, UUID>> batchIds)
       throws FailedProcessingException {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
@@ -153,7 +156,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     var idMap = postHandles(annotations, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
     annotations.forEach(
-        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId, batchId));
+        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), jobId, batchIds));
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
       repository.createAnnotationRecord(annotations);
@@ -170,7 +173,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
-      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchId, isBatchResult);
+      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds, isBatchResult);
       throw new FailedProcessingException();
     }
     return idList;

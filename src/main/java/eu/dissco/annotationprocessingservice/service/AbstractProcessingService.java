@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -43,10 +44,11 @@ public abstract class AbstractProcessingService {
         .setOaGenerated(Instant.now());
   }
 
-  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId, Optional<UUID> batchId) {
+  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId,
+      Optional<Map<String, UUID>> batchIds) {
     enrichNewAnnotation(annotation, id);
     annotation.setOdsJobId(applicationProperties.getHandleProxy() + jobId);
-    batchId.ifPresent(annotation::setOdsBatchId);
+    batchIds.ifPresent(idMap -> annotation.setOdsBatchId(idMap.get(id)));
   }
 
   private Generator createGenerator() {

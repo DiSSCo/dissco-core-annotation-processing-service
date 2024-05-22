@@ -188,7 +188,7 @@ class ProcessingKafkaServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.getBatchId(eq(mjr), eq(true), anyList())).willReturn(
-        Optional.of(ANNOTATION_HASH_3));
+        Optional.of(Map.of(ID, ANNOTATION_HASH_3)));
 
     // When
     service.handleMessage(event);
@@ -324,7 +324,7 @@ class ProcessingKafkaServiceTest {
     then(handleComponent).should().rollbackHandleCreation(any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
     then(annotationBatchRecordService).should()
-        .rollbackAnnotationBatchRecord(Optional.of(ANNOTATION_HASH_3), false);
+        .rollbackAnnotationBatchRecord(Optional.of(Map.of(ID, ANNOTATION_HASH_3)), false);
   }
 
   @Test
@@ -769,7 +769,7 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(ANNOTATION_HASH_3));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
-    then(batchAnnotationService).should().applyBatchAnnotations(event, ANNOTATION_HASH_3);
+    then(batchAnnotationService).should().applyBatchAnnotations(event, Map.of(ID, ANNOTATION_HASH_3));
   }
 
   @Test
@@ -823,7 +823,7 @@ class ProcessingKafkaServiceTest {
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, true, null));
     doThrow(BatchingException.class).when(batchAnnotationService).applyBatchAnnotations(event,
-        ANNOTATION_HASH_3);
+        Map.of(ID, ANNOTATION_HASH_3));
 
     // When
     assertDoesNotThrow(() -> service.handleMessage(event));

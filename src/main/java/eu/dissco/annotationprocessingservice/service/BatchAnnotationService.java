@@ -15,7 +15,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,32 +34,33 @@ public class BatchAnnotationService {
   private final JsonPathComponent jsonPathComponent;
   private final AnnotationBatchRecordService annotationBatchRecordService;
 
-  public void applyBatchAnnotations(AnnotationEvent annotationEvent, UUID batchId)
+  public void applyBatchAnnotations(AnnotationEvent annotationEvent, Map<String, UUID> batchIds)
       throws IOException, BatchingException {
-    long annotationCount = 0L;
     int pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
     for (var batchMetadata : annotationEvent.batchMetadata()) {
       var baseAnnotations = getBaseAnnotation(batchMetadata.placeInBatch(),
           annotationEvent.annotations());
-      annotationCount = annotationCount + runBatchForMetadata(baseAnnotations, batchMetadata,
-          annotationEvent.jobId(), pageSizePlusOne);
+      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne, batchIds);
     }
-    annotationBatchRecordService.updateAnnotationBatchRecord(batchId, annotationCount);
   }
 
-  private long runBatchForMetadata(List<Annotation> baseAnnotations,
-      BatchMetadataExtended batchMetadata,
-      String jobId, int pageSizePlusOne) throws IOException, BatchingException {
+  private void runBatchForMetadata(List<Annotation> baseAnnotations,
+      BatchMetadataExtended batchMetadata, String jobId, int pageSizePlusOne,
+      Map<String, UUID> batchIds) throws IOException, BatchingException {
     int pageNumber = 1;
     boolean moreBatching = true;
-    long count = 0L;
+    HashMap<UUID, Long> batchCount = batchIds.entrySet().stream().collect(Collectors.toMap(
+        Entry::getValue,
+        value -> 0L,
+        (left, right) -> left, HashMap::new
+    ));
     while (moreBatching) {
       var targetType = getTargetTypeFromList(baseAnnotations);
       var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
           batchMetadata, targetType, pageNumber, pageSizePlusOne);
       if (annotatedObjects.isEmpty()) {
         log.info("No annotated objects found. Page number: {}", pageNumber);
-        return 0L;
+        return;
       }
       if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
         moreBatching = false;
@@ -64,18 +68,19 @@ public class BatchAnnotationService {
       log.info("Successfully identified {} {}s to apply batch annotations to",
           annotatedObjects.size(), targetType);
       for (var baseAnnotation : baseAnnotations) {
+        var batchId = batchIds.get(baseAnnotation.getOdsId());
         var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
             annotatedObjects);
         if (!annotations.isEmpty()) {
           var batchEvent = new AnnotationEvent(annotations, jobId, null, true);
           kafkaService.publishBatchAnnotation(batchEvent);
           log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
+          batchCount.put(batchId, batchCount.get(batchId) + annotations.size());
         }
-        count = count + annotations.size();
       }
       pageNumber = pageNumber + 1;
     }
-    return count;
+    annotationBatchRecordService.updateAnnotationBatchRecord(batchCount);
   }
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)

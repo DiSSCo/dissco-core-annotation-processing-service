@@ -24,6 +24,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class TestUtils {
@@ -434,4 +435,9 @@ public class TestUtils {
       throw new RuntimeException();
     }
   }
+
+  public static Map<String, UUID> givenBatchIdMap(){
+    return Map.of(ID, ANNOTATION_HASH_3);
+  }
+
 }

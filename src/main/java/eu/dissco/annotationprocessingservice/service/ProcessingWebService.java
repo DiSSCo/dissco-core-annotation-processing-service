@@ -33,10 +33,10 @@ public class ProcessingWebService extends AbstractProcessingService {
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
       ApplicationProperties applicationProperties, SchemaValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordRepository annotationBatchRecordRepository) {
+      AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordRepository);
+        annotationBatchRecordService);
   }
 
   public Annotation persistNewAnnotation(Annotation annotation)
