@@ -73,8 +73,7 @@ public class JsonPathComponent {
 
   private List<String> getAnnotationTargetPaths(
       Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
-      DocumentContext context)
-      throws BatchingRuntimeException {
+      DocumentContext context) throws BatchingRuntimeException {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
     var arrayFields = new ArrayList<String>();
@@ -120,7 +119,8 @@ public class JsonPathComponent {
       occurrence[C] = found at night        -> valid indexes [1] (C = 1)
   Given the targetPath:
       occurrence[X]locality[Y]country
-   We want to find the values of X and Y in our target path. Only the indexes
+   We want to find the values of X and Y in our target path. Only the indexes that are in both paths
+   meet the criteria for both paths.
 
    We find our indexes by comparing the array fields in the target path (targetArrays) with the array
    fields in the input paths. The indexed input with the greatest number of array fields in common
