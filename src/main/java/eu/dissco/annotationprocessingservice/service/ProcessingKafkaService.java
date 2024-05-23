@@ -10,7 +10,6 @@ import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;

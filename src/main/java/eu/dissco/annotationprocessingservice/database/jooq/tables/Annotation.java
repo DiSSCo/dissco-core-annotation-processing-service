@@ -8,13 +8,11 @@ import eu.dissco.annotationprocessingservice.database.jooq.Indexes;
 import eu.dissco.annotationprocessingservice.database.jooq.Keys;
 import eu.dissco.annotationprocessingservice.database.jooq.Public;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
-
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
-
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Function19;

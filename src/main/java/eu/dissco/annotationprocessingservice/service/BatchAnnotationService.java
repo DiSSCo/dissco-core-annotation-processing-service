@@ -110,7 +110,7 @@ public class BatchAnnotationService {
       throws BatchingException {
     var batchAnnotations = new ArrayList<Annotation>();
     for (var annotatedObject : annotatedObjects) {
-      var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
+      var targets = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, annotatedObject,
           baseAnnotation.getOaTarget());
       batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }

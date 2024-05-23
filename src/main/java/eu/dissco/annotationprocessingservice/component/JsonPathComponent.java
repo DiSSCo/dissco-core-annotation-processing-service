@@ -19,6 +19,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
 import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -195,7 +196,7 @@ public class JsonPathComponent {
     return newTargets;
   }
 
-  private String getTargetPath(Target baseTarget) throws BatchingException {
+  private String getTargetPath(Target baseTarget) throws BatchingRuntimeException {
     var selectorType = baseTarget.getOaSelector().getOdsType();
     switch (selectorType) {
       case CLASS_SELECTOR -> {
@@ -208,7 +209,7 @@ public class JsonPathComponent {
       }
       default -> {
         log.error("Unable to batch annotations with selector type {}", selectorType);
-        throw new BatchingException();
+        throw new BatchingRuntimeException();
       }
     }
   }
@@ -227,7 +228,7 @@ public class JsonPathComponent {
       return lastKey;
     } else {
       log.error("Unable to parse last key of jsonPath {}", jsonPath);
-      throw new BatchingException();
+      throw new BatchingRuntimeException();
     }
   }
 
