@@ -8,7 +8,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
@@ -36,7 +37,7 @@ public class TestUtils {
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
-      "b3dada2d-396b-cab2-665e-125659fc7ae6");
+      "3a36d684-deb8-8779-2753-caef497e9ed8");
 
   public static final UUID ANNOTATION_HASH_2 = UUID.fromString(
       "f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
@@ -72,11 +73,12 @@ public class TestUtils {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
   }
 
-  public static Annotation givenAnnotationProcessedWeb(){
+  public static Annotation givenAnnotationProcessedWeb() {
     return givenAnnotationProcessedWeb(ID, CREATOR, TARGET_ID);
   }
 
-  public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId, String targetId){
+  public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId,
+      String targetId) {
     return Annotation.builder()
         .odsId(annotationId)
         .odsVersion(1)
@@ -143,15 +145,16 @@ public class TestUtils {
 
   public static Target givenOaTarget(String targetId, AnnotationTargetType targetType) {
     return Target.builder()
-        .odsId(HANDLE_PROXY + targetId)
+        .odsId(DOI_PROXY + targetId)
         .oaSelector(givenSelector())
         .odsType(targetType)
         .build();
   }
 
-  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType, Selector selector) {
+  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType,
+      Selector selector) {
     return Target.builder()
-        .odsId(HANDLE_PROXY + targetId)
+        .odsId(DOI_PROXY + targetId)
         .oaSelector(selector)
         .odsType(targetType)
         .build();
@@ -161,6 +164,16 @@ public class TestUtils {
     return new FieldSelector()
         .withOdsField("digitalSpecimenWrapper.occurrences[1].locality");
   }
+
+  public static Target givenOaTarget(Selector selector) {
+    return givenOaTarget(ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
+  }
+
+  public static FieldSelector givenSelector(String field) {
+    return new FieldSelector()
+        .withOdsField(field);
+  }
+
 
   public static Creator givenCreator(String userId) {
     return Creator.builder()
@@ -206,7 +219,7 @@ public class TestUtils {
               "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:commenting"
               }
@@ -222,10 +235,10 @@ public class TestUtils {
               "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:commenting",
-               "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
+               "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               }
             }
           }
@@ -236,10 +249,10 @@ public class TestUtils {
               "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:editing",
-               "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
+               "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               }
             }
           }
@@ -254,7 +267,7 @@ public class TestUtils {
               "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                 "issuedForAgent": "https://ror.org/0566bfb96",
-                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
+                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                 "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                 "motivation":"oa:commenting"
             },
@@ -271,10 +284,10 @@ public class TestUtils {
               "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                 "issuedForAgent": "https://ror.org/0566bfb96",
-                "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
+                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                 "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                 "motivation":"oa:commenting",
-                "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
+                "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               },
             "id":"20.5000.1025/KZL-VC0-ZK2"
           }
@@ -286,10 +299,10 @@ public class TestUtils {
               "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://hdl.handle.net/20.5000.1025/QRS-123-ABC",
+               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                "motivation":"oa:editing",
-                "annotationHash":"b3dada2d-396b-cab2-665e-125659fc7ae6"
+                "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               },
               "id":"20.5000.1025/KZL-VC0-ZK2"
           }
@@ -308,21 +321,37 @@ public class TestUtils {
         """);
   }
 
-  public static BatchMetadata givenBatchMetadataLatitudeSearch() {
-    return new BatchMetadata(1,
-        "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-        "11");
-  }
-
-  public static BatchMetadata givenBatchMetadataCountrySearch() {
-    return new BatchMetadata(1, "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+  public static  BatchMetadataSearchParam givenBatchMetadataSearchParamCountry(){
+    return new BatchMetadataSearchParam(
+        "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
         "Netherlands");
   }
 
-  public static AnnotationEvent givenAnnotationEventBatchEnabled(){
+  public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
+    return new BatchMetadataExtended(1,
+        List.of(new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
+            "11")));
+  }
+
+  public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam(){
+    return new BatchMetadataExtended(1, List.of(
+        givenBatchMetadataSearchParamCountry(),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
+            "Correct"
+        )));
+  }
+
+  public static BatchMetadataExtended givenBatchMetadataExtendedOneParam(){
+    return new BatchMetadataExtended(1, List.of(
+       givenBatchMetadataSearchParamCountry()));
+  }
+
+  public static AnnotationEvent givenAnnotationEventBatchEnabled() {
     return new AnnotationEvent(List.of(givenAnnotationRequest()
         .setPlaceInBatch(1)), JOB_ID,
-        List.of(givenBatchMetadataLatitudeSearch()), null);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
   }
 
   public static JsonNode givenElasticDocument() {
@@ -350,51 +379,53 @@ public class TestUtils {
                         "annotateTarget":"this",
                         "location": {
                           "dwc:country": \"""" + country + """
-",
-              "georeference": {
-                "dwc:decimalLatitude": {
-                  "dwc:value":11
-                },
-                "dwc:decimalLongitude": "10",
-                "dwc":["1"]
-              },
-              "locality":"known"
-            }
-          },
-          {
-            "dwc:occurrenceRemarks": "Incorrect",
-            "annotateTarget":"this",
-            "location": {
-              "dwc:country": "Unknown",
-              "georeference": {
-                "dwc:decimalLatitude": {
-                  "dwc:value":10
-                },
-                "dwc:decimalLongitude": "10"
-              },
-              "locality":"unknown"
-            }
-          },
-          {
-            "dwc:occurrenceRemarks": "Correct",
-            "blah":10,
-            "annotateTarget":"this",
-            "location": {
-              "dwc:country": \"""" + country + """
-",
-                    "georeference": {
-                      "dwc:decimalLatitude": {
-                        "dwc:value":11
-                      },
-                      "dwc:decimalLongitude": "10.1",
-                      "test":"hello"
+          ",
+                        "dwc:continent":"Europe",
+                        "georeference": {
+                          "dwc:decimalLatitude": {
+                            "dwc:value":11
+                          },
+                          "dwc:decimalLongitude": "10",
+                          "dwc":["1"]
+                        },
+                        "locality":"known"
+                      }
                     },
-                    "locality":"unknown"
-                  }
-                }
-              ]
-            }
-          }""");
+                    {
+                      "dwc:occurrenceRemarks": "Incorrect",
+                      "annotateTarget":"this",
+                      "location": {
+                        "dwc:country": "Unknown",
+                         "dwc:continent":"Error",
+                        "georeference": {
+                          "dwc:decimalLatitude": {
+                            "dwc:value":10
+                          },
+                          "dwc:decimalLongitude": "10"
+                        },
+                        "locality":"unknown"
+                      }
+                    },
+                    {
+                      "dwc:occurrenceRemarks": "Half Correct",
+                      "annotateTarget":"this",
+                      "location": {
+                        "dwc:country": \"""" + country + """
+          ",
+                              "dwc:continent":"Unknown",
+                              "georeference": {
+                                "dwc:decimalLatitude": {
+                                  "dwc:value":11
+                                },
+                                "dwc:decimalLongitude": "10.1",
+                                "test":"hello"
+                              },
+                              "locality":"unknown"
+                            }
+                          }
+                        ]
+                      }
+                    }""");
     } catch (JsonProcessingException e) {
       throw new RuntimeException();
     }

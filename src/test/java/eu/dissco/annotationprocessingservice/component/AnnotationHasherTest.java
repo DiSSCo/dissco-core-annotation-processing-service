@@ -73,7 +73,7 @@ class AnnotationHasherTest {
     // Given
     var selector = new ClassSelector()
         .withOaClass("ClassName");
-    var expected = UUID.fromString("753ad133-4212-e03b-00e7-b757957901fd");
+    var expected = UUID.fromString("9906d693-479d-e4db-0790-323ae64a7565");
 
     // When
     var result = annotationHasher.getAnnotationHash(

@@ -8,7 +8,6 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
-
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;

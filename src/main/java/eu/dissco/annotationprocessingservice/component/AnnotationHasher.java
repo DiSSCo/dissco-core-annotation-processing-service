@@ -4,12 +4,11 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component

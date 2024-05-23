@@ -13,7 +13,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEve
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataLatitudeSearch;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
@@ -678,7 +678,7 @@ class ProcessingKafkaServiceTest {
   void testNewMessageBatchEnabled() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, List.of(givenBatchMetadataLatitudeSearch()),
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, List.of(givenBatchMetadataExtendedLatitudeSearch()),
         false);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
@@ -734,7 +734,7 @@ class ProcessingKafkaServiceTest {
   void testNewMessageBatchEnabledBatchingException() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, List.of(givenBatchMetadataLatitudeSearch()),
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, List.of(givenBatchMetadataExtendedLatitudeSearch()),
         false);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());

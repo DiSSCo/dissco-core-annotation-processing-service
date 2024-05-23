@@ -1,10 +1,9 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
@@ -14,7 +13,6 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +25,7 @@ public class BatchAnnotationService {
   private final ApplicationProperties applicationProperties;
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
-  private final JsonPathComponent jsonPathComponent;
+ private final JsonPathComponent jsonPathComponent;
 
   public void applyBatchAnnotations(AnnotationEvent annotationEvent)
       throws IOException, BatchingException {
@@ -39,13 +37,13 @@ public class BatchAnnotationService {
     }
   }
 
-  private void runBatchForMetadata(List<Annotation> baseAnnotations, BatchMetadata batchMetadata,
+  private void runBatchForMetadata(List<Annotation> baseAnnotations, BatchMetadataExtended batchMetadata,
       String jobId, int pageSizePlusOne) throws IOException, BatchingException {
     int pageNumber = 1;
     boolean moreBatching = true;
     while (moreBatching) {
       var targetType = getTargetTypeFromList(baseAnnotations);
-      var annotatedObjects = elasticRepository.searchByBatchMetadata(
+      var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
           batchMetadata, targetType, pageNumber, pageSizePlusOne);
       if (annotatedObjects.isEmpty()) {
         log.info("No annotated objects found. Page number: {}", pageNumber);
@@ -59,11 +57,11 @@ public class BatchAnnotationService {
       for (var baseAnnotation : baseAnnotations) {
         var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
             annotatedObjects);
-        annotations = moreBatching ? annotations.subList(0,
-            applicationProperties.getBatchPageSize()) : annotations;
-        var batchEvent = new AnnotationEvent(annotations, jobId, null, true);
-        kafkaService.publishBatchAnnotation(batchEvent);
-        log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
+        if (!annotations.isEmpty()) {
+          var batchEvent = new AnnotationEvent(annotations, jobId, null, true);
+          kafkaService.publishBatchAnnotation(batchEvent);
+          log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
+        }
       }
       pageNumber = pageNumber + 1;
     }
@@ -93,11 +91,10 @@ public class BatchAnnotationService {
   }
 
   private List<Annotation> generateBatchAnnotations(Annotation baseAnnotation,
-      BatchMetadata batchMetadata, List<JsonNode> annotatedObjects)
-      throws BatchingException, JsonProcessingException {
+      BatchMetadataExtended batchMetadata, List<JsonNode> annotatedObjects) {
     var batchAnnotations = new ArrayList<Annotation>();
     for (var annotatedObject : annotatedObjects) {
-      var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
+      var targets = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, annotatedObject,
           baseAnnotation.getOaTarget());
       batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }

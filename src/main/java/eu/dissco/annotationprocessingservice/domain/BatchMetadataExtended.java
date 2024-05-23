@@ -1,12 +1,12 @@
 package eu.dissco.annotationprocessingservice.domain;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 @NotNull
-public record BatchMetadata(
+public record BatchMetadataExtended(
     Integer placeInBatch,
-    String inputField,
-    String inputValue
+    List<BatchMetadataSearchParam> searchParams
 ) {
 
 }
