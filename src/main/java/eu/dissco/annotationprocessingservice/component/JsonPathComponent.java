@@ -18,7 +18,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
 import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
-import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
+import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,15 +51,15 @@ public class JsonPathComponent {
   private final Pattern digitPattern = Pattern.compile("\\d");
 
 
-  public List<Target> getAnnotationTargetsExtended(BatchMetadataExtended batchMetadata,
-      JsonNode annotatedObject, Target baseTarget) {
+  public List<Target> getAnnotationTargets(BatchMetadataExtended batchMetadata,
+      JsonNode annotatedObject, Target baseTarget) throws BatchingException {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
     DocumentContext context;
     try {
       context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
     } catch (JsonProcessingException e) {
       log.error("Unable to read jsonPath", e);
-      throw new BatchingRuntimeException();
+      throw new BatchingException();
     }
     if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
       log.warn("False positive detected");
@@ -73,7 +73,7 @@ public class JsonPathComponent {
 
   private List<String> getAnnotationTargetPaths(
       Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
-      DocumentContext context) throws BatchingRuntimeException {
+      DocumentContext context) throws BatchingException {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
     var arrayFields = new ArrayList<String>();
@@ -195,7 +195,7 @@ public class JsonPathComponent {
     return newTargets;
   }
 
-  private String getTargetPath(Target baseTarget) throws BatchingRuntimeException {
+  private String getTargetPath(Target baseTarget) throws BatchingException {
     var selectorType = baseTarget.getOaSelector().getOdsType();
     switch (selectorType) {
       case CLASS_SELECTOR -> {
@@ -208,18 +208,18 @@ public class JsonPathComponent {
       }
       default -> {
         log.error("Unable to batch annotations with selector type {}", selectorType);
-        throw new BatchingRuntimeException();
+        throw new BatchingException();
       }
     }
   }
 
-  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) {
+  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) throws BatchingException {
     var targetField = getLastKey(batchMetadata.inputField());
     var targetValue = batchMetadata.inputValue();
     return filter(where(targetField).is(targetValue));
   }
 
-  private String getLastKey(String jsonPath) {
+  private String getLastKey(String jsonPath) throws BatchingException {
     var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
     lastKeyMatcher.find();
     var lastKey = lastKeyMatcher.group().replace("\\.", "");
@@ -227,7 +227,7 @@ public class JsonPathComponent {
       return lastKey;
     } else {
       log.error("Unable to parse last key of jsonPath {}", jsonPath);
-      throw new BatchingRuntimeException();
+      throw new BatchingException();
     }
   }
 
@@ -244,7 +244,7 @@ public class JsonPathComponent {
   3. Check that there is at least one common sequence of indexes that fulfills each batch parameter (that has a common array field)
    */
   private boolean isTrueMatch(BatchMetadataExtended batchMetadata,
-      HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) {
+      HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) throws BatchingException {
     HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
     for (var param : batchMetadata.searchParams()) {
       var validPaths = new HashSet<String>(

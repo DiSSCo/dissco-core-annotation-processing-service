@@ -9,7 +9,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetT
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
-import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ public class BatchAnnotationService {
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
   private final JsonPathComponent jsonPathComponent;
-  private final AnnotationBatchRecordService annotationBatchRecordService;
 
   public void applyBatchAnnotations(AnnotationEvent annotationEvent, Map<String, UUID> batchIds)
       throws IOException, BatchingException {
@@ -40,7 +38,8 @@ public class BatchAnnotationService {
     for (var batchMetadata : annotationEvent.batchMetadata()) {
       var baseAnnotations = getBaseAnnotation(batchMetadata.placeInBatch(),
           annotationEvent.annotations());
-      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne, batchIds);
+      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne,
+          batchIds);
     }
   }
 
@@ -72,15 +71,15 @@ public class BatchAnnotationService {
         var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
             annotatedObjects);
         if (!annotations.isEmpty()) {
-          var batchEvent = new AnnotationEvent(annotations, jobId, null, true);
+          var batchEvent = new AnnotationEvent(annotations, jobId, null, batchId);
           kafkaService.publishBatchAnnotation(batchEvent);
-          log.info("Successfully published {} batch annotations to queue", annotatedObjects.size());
+          log.info("Successfully published {} batch annotations to queue",
+              annotatedObjects.size());
           batchCount.put(batchId, batchCount.get(batchId) + annotations.size());
         }
       }
       pageNumber = pageNumber + 1;
     }
-    annotationBatchRecordService.updateAnnotationBatchRecord(batchCount);
   }
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)
@@ -107,10 +106,11 @@ public class BatchAnnotationService {
   }
 
   private List<Annotation> generateBatchAnnotations(Annotation baseAnnotation,
-      BatchMetadataExtended batchMetadata, List<JsonNode> annotatedObjects) {
+      BatchMetadataExtended batchMetadata, List<JsonNode> annotatedObjects)
+      throws BatchingException {
     var batchAnnotations = new ArrayList<Annotation>();
     for (var annotatedObject : annotatedObjects) {
-      var targets = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, annotatedObject,
+      var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
           baseAnnotation.getOaTarget());
       batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }
@@ -127,7 +127,9 @@ public class BatchAnnotationService {
           .oaCreator(baseAnnotation.getOaCreator())
           .oaBody(baseAnnotation.getOaBody())
           .odsAggregateRating(baseAnnotation.getOdsAggregateRating())
-          .oaTarget(target).build());
+          .oaTarget(target)
+          .odsBatchId(baseAnnotation.getOdsBatchId())
+          .build());
     }
     return newAnnotations;
   }

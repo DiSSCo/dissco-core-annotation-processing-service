@@ -37,7 +37,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
-import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.util.Collections;
 import java.util.List;
@@ -59,14 +58,12 @@ class BatchAnnotationServiceTest {
   private KafkaPublisherService kafkaPublisherService;
   @Mock
   private JsonPathComponent jsonPathComponent;
-  @Mock
-  private AnnotationBatchRecordService annotationBatchRecordService;
   private BatchAnnotationService batchAnnotationService;
 
   @BeforeEach
   void setup() {
     batchAnnotationService = new BatchAnnotationService(applicationProperties, elasticRepository,
-        kafkaPublisherService, jsonPathComponent, annotationBatchRecordService);
+        kafkaPublisherService, jsonPathComponent);
   }
 
 
@@ -100,8 +97,6 @@ class BatchAnnotationServiceTest {
 
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
-    then(annotationBatchRecordService).should()
-        .updateAnnotationBatchRecord(Map.of(ANNOTATION_HASH_3, (long) 3));
   }
 
   @Test
@@ -112,7 +107,7 @@ class BatchAnnotationServiceTest {
     int pageSize = annotatableIds.size();
     int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
-    given(jsonPathComponent.getAnnotationTargetsExtended(any(), any(), any())).willReturn(
+    given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
         Collections.emptyList());
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
@@ -188,7 +183,6 @@ class BatchAnnotationServiceTest {
     // Then
     then(kafkaPublisherService).should().publishBatchAnnotation(batchEventA);
     then(kafkaPublisherService).should().publishBatchAnnotation(batchEventB);
-    then(annotationBatchRecordService).should().updateAnnotationBatchRecord(batchCount);
   }
 
   @Test
@@ -305,7 +299,7 @@ class BatchAnnotationServiceTest {
     given(elasticRepository.searchByBatchMetadataExtended(
         givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 2,
         pageSizePlusOne)).willReturn(elasticPageTwo);
-    given(jsonPathComponent.getAnnotationTargetsExtended(any(), any(), any())).willReturn(
+    given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
         List.of(givenOaTarget(ID)));
 
     // When
@@ -332,13 +326,13 @@ class BatchAnnotationServiceTest {
     then(jsonPathComponent).shouldHaveNoInteractions();
   }
 
-  private void givenJsonPathResponse(List<String> ids) {
+  private void givenJsonPathResponse(List<String> ids) throws BatchingException {
     givenJsonPathResponse(ids, givenOaTarget(TARGET_ID));
   }
 
-  private void givenJsonPathResponse(List<String> ids, Target target) {
+  private void givenJsonPathResponse(List<String> ids, Target target) throws BatchingException {
     for (var id : ids) {
-      given(jsonPathComponent.getAnnotationTargetsExtended(any(), eq(givenElasticDocument(id)),
+      given(jsonPathComponent.getAnnotationTargets(any(), eq(givenElasticDocument(id)),
           eq(target))).willReturn(List.of(givenOaTarget(id)));
     }
   }

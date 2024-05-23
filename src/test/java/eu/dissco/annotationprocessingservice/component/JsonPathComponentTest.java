@@ -47,7 +47,7 @@ class JsonPathComponentTest {
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(
+    var result = jsonPathComponent.getAnnotationTargets(
         givenBatchMetadataExtendedTwoParam(),
         givenElasticDocument(),
         baseTarget);
@@ -65,7 +65,7 @@ class JsonPathComponentTest {
         givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(
+    var result = jsonPathComponent.getAnnotationTargets(
         givenBatchMetadataExtendedOneParam(),
         givenElasticDocument(),
         baseTarget);
@@ -83,7 +83,7 @@ class JsonPathComponentTest {
         givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[2]")));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(
+    var result = jsonPathComponent.getAnnotationTargets(
         givenBatchMetadataExtendedOneParam(),
         givenElasticDocument(),
         baseTarget);
@@ -99,7 +99,7 @@ class JsonPathComponentTest {
     var batchMetadata = givenBatchMetadataExtendedOneParam();
 
     assertThrows(BatchingRuntimeException.class,
-        () -> jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        () -> jsonPathComponent.getAnnotationTargets(batchMetadata,
             doc,
             baseTarget));
   }
@@ -115,7 +115,7 @@ class JsonPathComponentTest {
     var doc = givenElasticDocument();
 
     assertThrows(BatchingRuntimeException.class,
-        () -> jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+        () -> jsonPathComponent.getAnnotationTargets(batchMetadata,
             doc,
             baseTarget));
   }
@@ -135,7 +135,7 @@ class JsonPathComponentTest {
     ));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata,
         givenElasticDocument(),
         baseTarget);
 
@@ -158,7 +158,7 @@ class JsonPathComponentTest {
         )));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata,
         givenElasticDocument(),
         baseTarget);
 
@@ -186,7 +186,7 @@ class JsonPathComponentTest {
         )));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata,
         givenNestedNode(),
         baseTarget);
 
@@ -209,7 +209,7 @@ class JsonPathComponentTest {
         )));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata,
         givenNestedNode(),
         baseTarget);
 
@@ -235,7 +235,7 @@ class JsonPathComponentTest {
         )));
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata,
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata,
         givenNestedNode(),
         baseTarget);
 
@@ -256,7 +256,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         givenOaTarget(ID));
 
     // Then
@@ -276,7 +276,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -298,7 +298,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -320,7 +320,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -343,7 +343,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -370,7 +370,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -391,7 +391,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -414,7 +414,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -438,7 +438,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -461,7 +461,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -493,7 +493,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -522,7 +522,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -550,7 +550,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
@@ -577,7 +577,7 @@ class JsonPathComponentTest {
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, givenCaseNode(),
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
         baseTarget);
 
     // Then
