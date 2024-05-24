@@ -1,8 +1,14 @@
 package eu.dissco.annotationprocessingservice.repository;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
+import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
 import static org.testcontainers.containers.PostgreSQLContainer.IMAGE;
 
 import com.zaxxer.hikari.HikariDataSource;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
 import org.flywaydb.core.Flyway;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
@@ -41,4 +47,14 @@ public class BaseRepositoryIT {
   void disposeDataSource() {
     dataSource.close();
   }
+
+  protected void postMjr(String jobId) {
+    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
+            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
+            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED)
+        .values(jobId, JobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
+            CREATED, false)
+        .execute();
+  }
+
 }

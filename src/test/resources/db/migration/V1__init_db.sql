@@ -23,7 +23,6 @@ create table annotation
     batch_id         uuid
 );
 
-
 create type job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
 create type mjr_target_type as enum ('DIGITAL_SPECIMEN', 'MEDIA_OBJECT');
 create type error_code as enum ('TIMEOUT', 'DISSCO_EXCEPTION');
@@ -44,5 +43,21 @@ create table mas_job_record
     batching_requested boolean,
     error              error_code,
     time_to_live       timestamp with time zone
+);
+
+create table annotation_batch_record
+(
+    batch_id             uuid                     not null
+        constraint annotation_batch_pk
+            primary key,
+    creator_user         text                     not null,
+    creator_mas          text,
+    parent_annotation_id text                     not null,
+    created_on           timestamp with time zone not null,
+    last_updated         timestamp with time zone,
+    job_id               text
+        constraint annotation_batch_fk
+            references mas_job_record,
+    batch_quantity       bigint
 );
 
