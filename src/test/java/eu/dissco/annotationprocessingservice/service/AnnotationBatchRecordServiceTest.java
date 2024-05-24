@@ -11,17 +11,12 @@ import static org.mockito.Mockito.mockStatic;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -80,7 +75,7 @@ class AnnotationBatchRecordServiceTest {
   }
 
   @Test
-  void testUpdateAnnotationBatchRecord(){
+  void testUpdateAnnotationBatchRecord() {
     // When
     service.updateAnnotationBatchRecord(BATCH_ID, 1L);
 
@@ -89,32 +84,22 @@ class AnnotationBatchRecordServiceTest {
   }
 
   @Test
-  void testRollbackAnnotationBatchRecord(){
+  void testRollbackAnnotationBatchRecord() {
     // When
-    service.rollbackAnnotationBatchRecord(Optional.of(givenBatchIdMap()), false);
+    service.rollbackAnnotationBatchRecord(Optional.of(givenBatchIdMap()));
 
     // Then
     then(repository).should().rollbackAnnotationBatchRecord(Set.of(BATCH_ID));
   }
 
-  @ParameterizedTest
-  @MethodSource("doNotRollback")
-  void testRollbackAnnotationBatchRecordNoInteractions(Optional<Map<String, UUID>> batchIds, boolean isBatchResult){
+  @Test
+  void testRollbackAnnotationBatchRecordNoInteractions() {
     // When
-    service.rollbackAnnotationBatchRecord(batchIds, isBatchResult);
+    service.rollbackAnnotationBatchRecord(Optional.empty());
 
     // Then
     then(repository).shouldHaveNoInteractions();
   }
-
-  private static Stream<Arguments> doNotRollback(){
-    return Stream.of(
-        Arguments.of(Optional.empty(), true),
-        Arguments.of(Optional.empty(), false),
-        Arguments.of(Optional.of(givenBatchIdMap()), true)
-    );
-  }
-
 
 
 }

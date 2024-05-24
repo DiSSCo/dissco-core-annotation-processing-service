@@ -156,7 +156,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
     }
-    var idMap = postHandles(annotations, jobId, isBatchResult);
+    var idMap = postHandles(annotations, jobId, isBatchResult, batchIds);
     var idList = idMap.values().stream().toList();
     annotations.forEach(
         p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), event, batchIds));
@@ -165,6 +165,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       repository.createAnnotationRecord(annotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
+      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       rollbackHandleCreation(idList);
       throw new FailedProcessingException();
     }
@@ -175,20 +176,21 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
-      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds, isBatchResult);
+      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       throw new FailedProcessingException();
     }
     return idList;
   }
 
   private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId,
-      boolean isBatchResult)
+      boolean isBatchResult, Optional<Map<String, UUID>> batchIds)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {
       return handleComponent.postHandles(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
+      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }

@@ -54,11 +54,9 @@ public class AnnotationBatchRecordService {
     repository.updateAnnotationBatchRecord(batchId, batchIdCount);
   }
 
-  public void rollbackAnnotationBatchRecord(Optional<Map<String, UUID>> batchIds,
-      boolean isBatchResult) {
-    if (batchIds.isPresent() && !isBatchResult) {
-      repository.rollbackAnnotationBatchRecord(new HashSet<>(batchIds.get().values()));
-    }
+  public void rollbackAnnotationBatchRecord(Optional<Map<String, UUID>> batchIds) {
+    batchIds.ifPresent(stringUUIDMap -> repository.rollbackAnnotationBatchRecord(
+        new HashSet<>(stringUUIDMap.values())));
   }
 
 }
