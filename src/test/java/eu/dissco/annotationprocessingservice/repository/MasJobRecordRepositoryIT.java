@@ -31,7 +31,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(MAS_JOB_RECORD).execute();
+    context.truncate(MAS_JOB_RECORD).cascade().execute();
   }
 
   @Test
