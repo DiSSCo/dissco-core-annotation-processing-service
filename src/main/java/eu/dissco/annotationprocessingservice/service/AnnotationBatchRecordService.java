@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import java.time.Instant;
@@ -23,17 +22,24 @@ import org.springframework.stereotype.Service;
 public class AnnotationBatchRecordService {
 
   private final AnnotationBatchRecordRepository repository;
+  public Optional<Map<String, UUID>> mintBatchIds(List<Annotation> newAnnotations,
+      boolean batchingRequested, AnnotationEvent event) {
+    Optional<Map<String, UUID>> batchIds =
+        batchingRequested && event.batchId() == null ? Optional.of(newAnnotations.stream().collect(Collectors.toMap(
+            Annotation::getOdsId,
+            value -> UUID.randomUUID()
+        ))) : Optional.empty();
+    batchIds.ifPresent(
+        stringUUIDMap -> createNewAnnotationBatchRecord(stringUUIDMap, newAnnotations));
+    return batchIds;
+  }
 
-  public void createNewAnnotationBatchRecord(Optional<Map<String, UUID>> batchIds,
-      List<Annotation> annotations,
-      boolean isBatchResult) {
-    if (isBatchResult || batchIds.isEmpty()) {
-      return;
-    }
+  private void createNewAnnotationBatchRecord(Map<String, UUID> batchIds,
+      List<Annotation> annotations) {
     var batchRecords = new ArrayList<AnnotationBatchRecord>();
     for (var annotation : annotations) {
       batchRecords.add(new AnnotationBatchRecord(
-          batchIds.get().get(annotation.getOdsId()),
+          batchIds.get(annotation.getOdsId()),
           annotation.getOaCreator().getOdsId(),
           annotation.getAsGenerator().getOdsId(),
           annotation.getOdsId(),
@@ -46,10 +52,6 @@ public class AnnotationBatchRecordService {
 
   public void updateAnnotationBatchRecord(UUID batchId, long batchIdCount) {
     repository.updateAnnotationBatchRecord(batchId, batchIdCount);
-    /*batchIdCount.entrySet().stream().filter(e -> e.getValue() > 0)
-        .forEach(e -> repository.updateAnnotationBatchRecord(e.getKey(), e.getValue()));
-
-     */
   }
 
   public void rollbackAnnotationBatchRecord(Optional<Map<String, UUID>> batchIds,
@@ -57,22 +59,6 @@ public class AnnotationBatchRecordService {
     if (batchIds.isPresent() && !isBatchResult) {
       repository.rollbackAnnotationBatchRecord(new HashSet<>(batchIds.get().values()));
     }
-  }
-
-  public Optional<Map<String, UUID>> getBatchId(MasJobRecord masJobRecord, List<Annotation> newAnnotations, AnnotationEvent event) {
-    // If no batching requested and not batch result
-    if (!masJobRecord.batchingRequested() && event.batchId() == null) {
-      return Optional.empty();
-    }
-    if (event.batchId() != null) {
-      /*return Map.of(
-        todo resolve
-      )*/
-    }
-    return Optional.of(newAnnotations.stream().collect(Collectors.toMap(
-        Annotation::getOdsId,
-        value -> UUID.randomUUID()
-    )));
   }
 
 }

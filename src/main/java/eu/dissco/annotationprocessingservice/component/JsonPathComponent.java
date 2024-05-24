@@ -74,7 +74,7 @@ public class JsonPathComponent {
 
   private List<String> getAnnotationTargetPaths(
       Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
-      DocumentContext context) throws BatchingException {
+      DocumentContext context) {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
     var arrayFields = new ArrayList<String>();
@@ -214,13 +214,13 @@ public class JsonPathComponent {
     }
   }
 
-  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) throws BatchingException {
+  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) {
     var targetField = getLastKey(batchMetadata.inputField());
     var targetValue = batchMetadata.inputValue();
     return filter(where(targetField).is(targetValue));
   }
 
-  private String getLastKey(String jsonPath) throws BatchingException {
+  private String getLastKey(String jsonPath) {
     var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
     lastKeyMatcher.find();
     var lastKey = lastKeyMatcher.group().replace("\\.", "");
@@ -245,7 +245,7 @@ public class JsonPathComponent {
   3. Check that there is at least one common sequence of indexes that fulfills each batch parameter (that has a common array field)
    */
   private boolean isTrueMatch(BatchMetadataExtended batchMetadata,
-      HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) throws BatchingException {
+      HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) {
     HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
     for (var param : batchMetadata.searchParams()) {
       var validPaths = new HashSet<String>(

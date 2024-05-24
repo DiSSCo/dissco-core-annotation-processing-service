@@ -40,7 +40,7 @@ class JsonPathComponentTest {
 
 
   @Test
-  void testGetAnnotationTargetsExtended() {
+  void testGetAnnotationTargetsExtended() throws Exception {
     // Given
     var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
     var expected = List.of(
@@ -57,7 +57,7 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetsExtendedOneBatchMetadata() {
+  void testGetAnnotationTargetsExtendedOneBatchMetadata() throws Exception {
     // Given
     var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
     var expected = List.of(
@@ -75,7 +75,7 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetsClassSelector() {
+  void testGetAnnotationTargetsClassSelector() throws Exception {
     // Given
     var baseTarget = givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[0]"));
     var expected = List.of(
@@ -121,7 +121,7 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetsExtendedFalsePositive() {
+  void testGetAnnotationTargetsExtendedFalsePositive() throws Exception {
     // Given
     var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
@@ -144,7 +144,7 @@ class JsonPathComponentTest {
   }
 
   @Test
-  void testGetAnnotationTargetsExtendedOneSharedIndexWithTarget() {
+  void testGetAnnotationTargetsExtendedOneSharedIndexWithTarget() throws Exception {
     // Given
     var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
     var expected = List.of(

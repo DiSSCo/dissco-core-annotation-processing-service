@@ -1,7 +1,8 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
-import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_3;
+
+import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
@@ -10,9 +11,8 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchIdMap;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBaseAnnotationForBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
@@ -36,11 +36,11 @@ import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetT
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,9 +83,10 @@ class BatchAnnotationServiceTest {
             .dcTermsCreated(CREATED)
             .oaCreator(givenCreator(CREATOR))
             .odsAggregateRating(givenAggregationRating())
+            .odsBatchId(BATCH_ID)
             .build()
     ).toList();
-    var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null, true);
+    var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null, BATCH_ID);
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
@@ -93,7 +94,7 @@ class BatchAnnotationServiceTest {
         pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event, givenBatchIdMap());
+    batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
@@ -115,7 +116,7 @@ class BatchAnnotationServiceTest {
         pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event, givenBatchIdMap());
+    batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
     then(kafkaPublisherService).shouldHaveNoInteractions();
@@ -127,23 +128,12 @@ class BatchAnnotationServiceTest {
     // Given
     int placeInBatch = 1;
     var annotationBodyB = givenOaBody("Alt value");
-    var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(placeInBatch);
-    var baseAnnotationB = givenAnnotationRequest()
-        .setPlaceInBatch(placeInBatch)
+    var baseAnnotationA =  givenBaseAnnotationForBatch(placeInBatch, ID, BATCH_ID);
+    var baseAnnotationB = givenBaseAnnotationForBatch(placeInBatch, ID_ALT, BATCH_ID_ALT)
         .setOaBody(annotationBodyB);
-    var batchIds = Map.of(
-        baseAnnotationA.getOdsId(), ANNOTATION_HASH_3,
-        baseAnnotationB.getOdsId(), ANNOTATION_HASH_2
-    );
-    var batchCount = Map.of(
-        ANNOTATION_HASH_3, (long) 3,
-        ANNOTATION_HASH_2, (long) 3
-    );
-
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
     var annotatableIds = List.of("0", "1", "2");
-
     int pageSize = annotatableIds.size();
     int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
@@ -155,6 +145,7 @@ class BatchAnnotationServiceTest {
             .dcTermsCreated(CREATED)
             .oaCreator(givenCreator(CREATOR))
             .odsAggregateRating(givenAggregationRating())
+            .odsBatchId(BATCH_ID)
             .build()
     ).toList();
     var batchAnnotationsB = annotatableIds.stream().map(id ->
@@ -165,11 +156,12 @@ class BatchAnnotationServiceTest {
             .dcTermsCreated(CREATED)
             .oaCreator(givenCreator(CREATOR))
             .odsAggregateRating(givenAggregationRating())
+            .odsBatchId(BATCH_ID_ALT)
             .build()
     ).toList();
 
-    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, true);
-    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, true);
+    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, BATCH_ID);
+    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
 
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -178,7 +170,7 @@ class BatchAnnotationServiceTest {
         pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event, batchIds);
+    batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
     then(kafkaPublisherService).should().publishBatchAnnotation(batchEventA);
@@ -196,8 +188,8 @@ class BatchAnnotationServiceTest {
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
 
     // When
-    assertThrows(BatchingException.class, () -> batchAnnotationService.applyBatchAnnotations(event,
-        givenBatchIdMap()));
+    assertThrows(ConflictException.class, () -> batchAnnotationService.applyBatchAnnotations(event
+    ));
 
     // Then
     then(jsonPathComponent).shouldHaveNoInteractions();
@@ -218,14 +210,12 @@ class BatchAnnotationServiceTest {
             "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
             "12")));
     var batchMetadataList = List.of(batchMetadataA, batchMetadataB);
-    var baseAnnotationA = givenAnnotationRequest().setPlaceInBatch(1);
-    var baseAnnotationB = givenAnnotationRequest()
+    var baseAnnotationA = givenBaseAnnotationForBatch(1, ID, BATCH_ID);
+    var baseAnnotationB = givenBaseAnnotationForBatch(2, ID, BATCH_ID_ALT)
         .setOaBody(annotationBodyB)
-        .setOaTarget(annotationTargetB)
-        .setPlaceInBatch(2);
-
+        .setOaTarget(annotationTargetB);
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
-        batchMetadataList, false);
+        batchMetadataList, null);
 
     int pageSize = annotatableIdsA.size();
     int pageSizePlusOne = pageSize + 1;
@@ -239,6 +229,7 @@ class BatchAnnotationServiceTest {
             .dcTermsCreated(CREATED)
             .oaCreator(givenCreator(CREATOR))
             .odsAggregateRating(givenAggregationRating())
+            .odsBatchId(BATCH_ID)
             .build()
     ).toList();
 
@@ -250,10 +241,11 @@ class BatchAnnotationServiceTest {
             .dcTermsCreated(CREATED)
             .oaCreator(givenCreator(CREATOR))
             .odsAggregateRating(givenAggregationRating())
+            .odsBatchId(BATCH_ID_ALT)
             .build()
     ).toList();
-    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, true);
-    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, true);
+    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, BATCH_ID);
+    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -265,7 +257,7 @@ class BatchAnnotationServiceTest {
         elasticDocumentsB);
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event, givenBatchIdMap());
+    batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEventA);
@@ -277,11 +269,11 @@ class BatchAnnotationServiceTest {
   void testApplyBatchAnnotationsMissingPlaceInBatch() {
     // Given
     var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()), false);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
 
     // When
-    assertThrows(BatchingException.class,
-        () -> batchAnnotationService.applyBatchAnnotations(event, givenBatchIdMap()));
+    assertThrows(ConflictException.class,
+        () -> batchAnnotationService.applyBatchAnnotations(event));
   }
 
   @Test
@@ -303,7 +295,7 @@ class BatchAnnotationServiceTest {
         List.of(givenOaTarget(ID)));
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event, givenBatchIdMap());
+    batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
     then(kafkaPublisherService).should(times(2)).publishBatchAnnotation(any());
@@ -319,7 +311,7 @@ class BatchAnnotationServiceTest {
         Collections.emptyList());
 
     // When
-    batchAnnotationService.applyBatchAnnotations(event, givenBatchIdMap());
+    batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
     then(kafkaPublisherService).shouldHaveNoInteractions();

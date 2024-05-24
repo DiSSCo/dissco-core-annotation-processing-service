@@ -8,16 +8,12 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,75 +28,76 @@ public class BatchAnnotationService {
   private final KafkaPublisherService kafkaService;
   private final JsonPathComponent jsonPathComponent;
 
-  public void applyBatchAnnotations(AnnotationEvent annotationEvent, Map<String, UUID> batchIds)
-      throws IOException, BatchingException {
+  public void applyBatchAnnotations(AnnotationEvent annotationEvent)
+      throws IOException, ConflictException, BatchingException {
     int pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
     for (var batchMetadata : annotationEvent.batchMetadata()) {
       var baseAnnotations = getBaseAnnotation(batchMetadata.placeInBatch(),
           annotationEvent.annotations());
-      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne,
-          batchIds);
+      runBatchForMetadata(baseAnnotations, batchMetadata, annotationEvent.jobId(), pageSizePlusOne);
     }
   }
 
   private void runBatchForMetadata(List<Annotation> baseAnnotations,
-      BatchMetadataExtended batchMetadata, String jobId, int pageSizePlusOne,
-      Map<String, UUID> batchIds) throws IOException, BatchingException {
+      BatchMetadataExtended batchMetadata, String jobId, int pageSizePlusOne) throws IOException, ConflictException, BatchingException {
     int pageNumber = 1;
     boolean moreBatching = true;
-    HashMap<UUID, Long> batchCount = batchIds.entrySet().stream().collect(Collectors.toMap(
-        Entry::getValue,
-        value -> 0L,
-        (left, right) -> left, HashMap::new
-    ));
+    int errorCount = 0;
     while (moreBatching) {
-      var targetType = getTargetTypeFromList(baseAnnotations);
-      var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
-          batchMetadata, targetType, pageNumber, pageSizePlusOne);
-      if (annotatedObjects.isEmpty()) {
-        log.info("No annotated objects found. Page number: {}", pageNumber);
-        return;
-      }
-      if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
-        moreBatching = false;
-      }
-      log.info("Successfully identified {} {}s to apply batch annotations to",
-          annotatedObjects.size(), targetType);
-      for (var baseAnnotation : baseAnnotations) {
-        var batchId = batchIds.get(baseAnnotation.getOdsId());
-        var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
-            annotatedObjects);
-        if (!annotations.isEmpty()) {
-          var batchEvent = new AnnotationEvent(annotations, jobId, null, batchId);
-          kafkaService.publishBatchAnnotation(batchEvent);
-          log.info("Successfully published {} batch annotations to queue",
-              annotatedObjects.size());
-          batchCount.put(batchId, batchCount.get(batchId) + annotations.size());
+      try {
+        var targetType = getTargetTypeFromList(baseAnnotations);
+        var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
+            batchMetadata, targetType, pageNumber, pageSizePlusOne);
+        if (annotatedObjects.isEmpty()) {
+          log.info("No annotated objects found. Page number: {}", pageNumber);
+          return;
+        }
+        if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
+          moreBatching = false;
+        }
+        log.info("Successfully identified {} {}s to apply batch annotations to",
+            annotatedObjects.size(), targetType);
+        for (var baseAnnotation : baseAnnotations) {
+          // Find our batch id based on the parent annotation
+          var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
+              annotatedObjects);
+          if (!annotations.isEmpty()) {
+            var batchEvent = new AnnotationEvent(annotations, jobId, null, baseAnnotation.getOdsBatchId());
+            kafkaService.publishBatchAnnotation(batchEvent);
+            log.info("Successfully published {} batch annotations to queue",
+                annotatedObjects.size());
+          }
+        }
+        pageNumber = pageNumber + 1;
+      } catch (BatchingException e) {
+        errorCount = errorCount + 1;
+        if (errorCount > 20) {
+          throw e;
         }
       }
-      pageNumber = pageNumber + 1;
     }
+
   }
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)
-      throws BatchingException {
+      throws ConflictException {
     var types = baseAnnotations.stream().map(p -> p.getOaTarget().getOdsType()).distinct().toList();
     if (types.size() != 1) {
       log.error("Annotations corresponding to the same batch metadata have different types: {}",
           types);
-      throw new BatchingException();
+      throw new ConflictException();
     }
     return types.get(0);
   }
 
   private List<Annotation> getBaseAnnotation(Integer placeInBatch, List<Annotation> annotations)
-      throws BatchingException {
+      throws ConflictException {
     var subAnnotations = annotations.stream().filter(p -> placeInBatch.equals(p.getPlaceInBatch()))
         .toList();
     if (subAnnotations.isEmpty()) {
       log.error("Unable to find batch metadata for annotation with placeInBatch {}",
           placeInBatch);
-      throw new BatchingException();
+      throw new ConflictException();
     }
     return subAnnotations;
   }
@@ -110,7 +107,7 @@ public class BatchAnnotationService {
       throws BatchingException {
     var batchAnnotations = new ArrayList<Annotation>();
     for (var annotatedObject : annotatedObjects) {
-      var targets = jsonPathComponent.getAnnotationTargetsExtended(batchMetadata, annotatedObject,
+      var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
           baseAnnotation.getOaTarget());
       batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }

@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_3;
+import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
@@ -25,7 +26,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -54,7 +54,6 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Body;
 import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
-import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -141,7 +140,6 @@ class ProcessingKafkaServiceTest {
     mockedStatic.close();
     mockedClock.close();
     mockedUuid.close();
-    ;
   }
 
   @Test
@@ -174,7 +172,7 @@ class ProcessingKafkaServiceTest {
   @Test
   void testNewMessageIsBatchResult() throws Exception {
     // Given
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null, true);
+    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID, null, BATCH_ID);
     var mjr = new MasJobRecord(JOB_ID, true, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
@@ -187,18 +185,18 @@ class ProcessingKafkaServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.getBatchId(eq(mjr), anyList())).willReturn(
-        Optional.of(Map.of(ID, ANNOTATION_HASH_3)));
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(true), eq(event))).willReturn(Optional.empty());
 
     // When
     service.handleMessage(event);
 
     // Then
     then(repository).should()
-        .createAnnotationRecord(List.of(givenHashedAnnotation(ANNOTATION_HASH_3)));
+        .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(ANNOTATION_HASH_3));
+        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), true);
+    then(annotationBatchRecordService).should().updateAnnotationBatchRecord(BATCH_ID, 1);
     then(batchAnnotationService).shouldHaveNoInteractions();
   }
 
@@ -312,7 +310,7 @@ class ProcessingKafkaServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.getBatchId(eq(mjr), any())).willReturn(
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(true), eq(givenAnnotationEvent()))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
@@ -326,7 +324,7 @@ class ProcessingKafkaServiceTest {
     then(handleComponent).should().rollbackHandleCreation(any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
     then(annotationBatchRecordService).should()
-        .rollbackAnnotationBatchRecord(Optional.of(Map.of(ID, ANNOTATION_HASH_3)), false);
+        .rollbackAnnotationBatchRecord(Optional.of(givenBatchIdMap()), false);
   }
 
   @Test
@@ -747,8 +745,7 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()),
-        false);
+        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
     var mjr = new MasJobRecord(JOB_ID, true, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
@@ -761,7 +758,7 @@ class ProcessingKafkaServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.getBatchId(eq(mjr), any())).willReturn(
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(true), eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
@@ -769,20 +766,19 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(repository).should()
-        .createAnnotationRecord(List.of(givenHashedAnnotation(ANNOTATION_HASH_3)));
+        .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(ANNOTATION_HASH_3));
+        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).should()
-        .applyBatchAnnotations(event, Map.of(ID, ANNOTATION_HASH_3));
+        .applyBatchAnnotations(event);
   }
 
   @Test
   void testNewMessageBatchEnabledNoMetadata() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, null,
-        false);
+    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID, null, null);
     var mjr = new MasJobRecord(JOB_ID, true, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
@@ -795,7 +791,7 @@ class ProcessingKafkaServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.getBatchId(eq(mjr), any())).willReturn(
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(true), eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
@@ -803,46 +799,11 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(repository).should()
-        .createAnnotationRecord(List.of(givenHashedAnnotation(ANNOTATION_HASH_3)));
+        .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(ANNOTATION_HASH_3));
+        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).shouldHaveNoInteractions();
-  }
-
-  @Test
-  void testNewMessageBatchEnabledBatchingException() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest();
-    var event = new AnnotationEvent(List.of(annotationRequest), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()),
-        false);
-    var mjr = new MasJobRecord(JOB_ID, true, null);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
-    given(handleComponent.postHandles(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
-    given(bulkResponse.errors()).willReturn(false);
-    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getHandleProxy()).willReturn(HANDLE_PROXY);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    doThrow(BatchingException.class).when(batchAnnotationService).applyBatchAnnotations(event,
-        Map.of(ID, ANNOTATION_HASH_3));
-    given(annotationBatchRecordService.getBatchId(eq(mjr), any())).willReturn(
-        Optional.of(givenBatchIdMap()));
-
-    // When
-    assertDoesNotThrow(() -> service.handleMessage(event));
-
-    // Then
-    then(repository).should()
-        .createAnnotationRecord(List.of(givenHashedAnnotation(ANNOTATION_HASH_3)));
-    then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(ANNOTATION_HASH_3));
-    then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
   }
 
   @Test
@@ -892,6 +853,7 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     var mjr = new MasJobRecord(JOB_ID, true, ErrorCode.TIMEOUT);
+    var event = givenAnnotationEvent(annotationRequest);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandles(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
@@ -904,17 +866,17 @@ class ProcessingKafkaServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr
     );
-    given(annotationBatchRecordService.getBatchId(eq(mjr), any())).willReturn(
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(true), eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
-    service.handleMessage(givenAnnotationEvent(annotationRequest));
+    service.handleMessage(event);
 
     // Then
     then(repository).should()
-        .createAnnotationRecord(List.of(givenHashedAnnotation(ANNOTATION_HASH_3)));
+        .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(ANNOTATION_HASH_3));
+        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
   }
 }
