@@ -25,7 +25,6 @@ import eu.dissco.annotationprocessingservice.exception.FailedProcessingException
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
-import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
