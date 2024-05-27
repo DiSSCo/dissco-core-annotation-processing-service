@@ -22,15 +22,19 @@ import org.springframework.stereotype.Service;
 public class AnnotationBatchRecordService {
 
   private final AnnotationBatchRecordRepository repository;
+
   public Optional<Map<String, UUID>> mintBatchIds(List<Annotation> newAnnotations,
       boolean batchingRequested, AnnotationEvent event) {
-    Optional<Map<String, UUID>> batchIds =
-        batchingRequested && event.batchId() == null ? Optional.of(newAnnotations.stream().collect(Collectors.toMap(
-            Annotation::getOdsId,
-            value -> UUID.randomUUID()
-        ))) : Optional.empty();
-    batchIds.ifPresent(
-        stringUUIDMap -> createNewAnnotationBatchRecord(stringUUIDMap, newAnnotations));
+    Optional<Map<String, UUID>> batchIds;
+    if (batchingRequested && event.batchId() == null) {
+      batchIds = Optional.of(newAnnotations.stream().collect(Collectors.toMap(
+          Annotation::getOdsId,
+          value -> UUID.randomUUID()
+      )));
+      createNewAnnotationBatchRecord(batchIds.get(), newAnnotations);
+    } else {
+      batchIds = Optional.empty();
+    }
     return batchIds;
   }
 

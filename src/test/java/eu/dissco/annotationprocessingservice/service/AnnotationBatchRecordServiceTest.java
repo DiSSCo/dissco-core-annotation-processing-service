@@ -25,8 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AnnotationBatchRecordServiceTest {
 
   @Mock
-  AnnotationBatchRecordRepository repository;
-  AnnotationBatchRecordService service;
+  private AnnotationBatchRecordRepository repository;
+  private AnnotationBatchRecordService service;
 
   @BeforeEach
   void setup() {
