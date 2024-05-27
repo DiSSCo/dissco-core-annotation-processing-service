@@ -8,7 +8,9 @@ import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.MjrTargetType;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
+
 import java.time.Instant;
+
 import org.jooq.Field;
 import org.jooq.JSONB;
 import org.jooq.Record1;

@@ -59,14 +59,14 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
     public final TableField<AnnotationBatchRecordRecord, UUID> BATCH_ID = createField(DSL.name("batch_id"), SQLDataType.UUID.nullable(false), this, "");
 
     /**
-     * The column <code>public.annotation_batch_record.creator_user</code>.
+     * The column <code>public.annotation_batch_record.creator_id</code>.
      */
-    public final TableField<AnnotationBatchRecordRecord, String> CREATOR_USER = createField(DSL.name("creator_user"), SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<AnnotationBatchRecordRecord, String> CREATOR_ID = createField(DSL.name("creator_id"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.annotation_batch_record.creator_mas</code>.
+     * The column <code>public.annotation_batch_record.generator_id</code>.
      */
-    public final TableField<AnnotationBatchRecordRecord, String> CREATOR_MAS = createField(DSL.name("creator_mas"), SQLDataType.CLOB, this, "");
+    public final TableField<AnnotationBatchRecordRecord, String> GENERATOR_ID = createField(DSL.name("generator_id"), SQLDataType.CLOB, this, "");
 
     /**
      * The column

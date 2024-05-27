@@ -7,8 +7,10 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;

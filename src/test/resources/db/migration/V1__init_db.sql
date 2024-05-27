@@ -50,8 +50,8 @@ create table annotation_batch_record
     batch_id             uuid                     not null
         constraint annotation_batch_pk
             primary key,
-    creator_user         text                     not null,
-    creator_mas          text,
+    creator_id           text                     not null,
+    generator_id         text,
     parent_annotation_id text                     not null,
     created_on           timestamp with time zone not null,
     last_updated         timestamp with time zone,
