@@ -5,6 +5,7 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
+
 import org.jooq.Index;
 import org.jooq.OrderField;
 import org.jooq.impl.DSL;

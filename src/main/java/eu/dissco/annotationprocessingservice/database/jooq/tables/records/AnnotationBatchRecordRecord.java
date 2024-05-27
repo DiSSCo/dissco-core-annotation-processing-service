@@ -39,30 +39,30 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
     }
 
     /**
-     * Setter for <code>public.annotation_batch_record.creator_user</code>.
+     * Setter for <code>public.annotation_batch_record.creator_id</code>.
      */
-    public void setCreatorUser(String value) {
+    public void setCreatorId(String value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.annotation_batch_record.creator_user</code>.
+     * Getter for <code>public.annotation_batch_record.creator_id</code>.
      */
-    public String getCreatorUser() {
+    public String getCreatorId() {
         return (String) get(1);
     }
 
     /**
-     * Setter for <code>public.annotation_batch_record.creator_mas</code>.
+     * Setter for <code>public.annotation_batch_record.generator_id</code>.
      */
-    public void setCreatorMas(String value) {
+    public void setGeneratorId(String value) {
         set(2, value);
     }
 
     /**
-     * Getter for <code>public.annotation_batch_record.creator_mas</code>.
+     * Getter for <code>public.annotation_batch_record.generator_id</code>.
      */
-    public String getCreatorMas() {
+    public String getGeneratorId() {
         return (String) get(2);
     }
 
@@ -168,12 +168,12 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
 
     @Override
     public Field<String> field2() {
-        return AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.CREATOR_USER;
+        return AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.CREATOR_ID;
     }
 
     @Override
     public Field<String> field3() {
-        return AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.CREATOR_MAS;
+        return AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.GENERATOR_ID;
     }
 
     @Override
@@ -208,12 +208,12 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
 
     @Override
     public String component2() {
-        return getCreatorUser();
+        return getCreatorId();
     }
 
     @Override
     public String component3() {
-        return getCreatorMas();
+        return getGeneratorId();
     }
 
     @Override
@@ -248,12 +248,12 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
 
     @Override
     public String value2() {
-        return getCreatorUser();
+        return getCreatorId();
     }
 
     @Override
     public String value3() {
-        return getCreatorMas();
+        return getGeneratorId();
     }
 
     @Override
@@ -289,13 +289,13 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
 
     @Override
     public AnnotationBatchRecordRecord value2(String value) {
-        setCreatorUser(value);
+        setCreatorId(value);
         return this;
     }
 
     @Override
     public AnnotationBatchRecordRecord value3(String value) {
-        setCreatorMas(value);
+        setGeneratorId(value);
         return this;
     }
 
@@ -356,12 +356,12 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
     /**
      * Create a detached, initialised AnnotationBatchRecordRecord
      */
-    public AnnotationBatchRecordRecord(UUID batchId, String creatorUser, String creatorMas, String parentAnnotationId, Instant createdOn, Instant lastUpdated, String jobId, Long batchQuantity) {
+    public AnnotationBatchRecordRecord(UUID batchId, String creatorId, String generatorId, String parentAnnotationId, Instant createdOn, Instant lastUpdated, String jobId, Long batchQuantity) {
         super(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD);
 
         setBatchId(batchId);
-        setCreatorUser(creatorUser);
-        setCreatorMas(creatorMas);
+        setCreatorId(creatorId);
+        setGeneratorId(generatorId);
         setParentAnnotationId(parentAnnotationId);
         setCreatedOn(createdOn);
         setLastUpdated(lastUpdated);

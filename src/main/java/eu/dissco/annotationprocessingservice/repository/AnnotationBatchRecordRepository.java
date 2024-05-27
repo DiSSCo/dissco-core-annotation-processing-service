@@ -30,8 +30,8 @@ public class AnnotationBatchRecordRepository {
   private Query createAnnotationBatchRecordQuery(AnnotationBatchRecord annotationBatchRecord) {
     return context.insertInto(ANNOTATION_BATCH_RECORD)
         .set(ANNOTATION_BATCH_RECORD.BATCH_ID, annotationBatchRecord.batchId())
-        .set(ANNOTATION_BATCH_RECORD.CREATOR_USER, annotationBatchRecord.userId())
-        .set(ANNOTATION_BATCH_RECORD.CREATOR_MAS, annotationBatchRecord.masId())
+        .set(ANNOTATION_BATCH_RECORD.CREATOR_ID, annotationBatchRecord.creatorId())
+        .set(ANNOTATION_BATCH_RECORD.GENERATOR_ID, annotationBatchRecord.generatorId())
         .set(ANNOTATION_BATCH_RECORD.PARENT_ANNOTATION_ID,
             annotationBatchRecord.parentAnnotationId())
         .set(ANNOTATION_BATCH_RECORD.CREATED_ON, annotationBatchRecord.createdOn())
