@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.controller;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +35,7 @@ class AnnotationControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.persistNewAnnotation(givenAnnotationRequest())).willReturn(givenAnnotationProcessed());
+    given(service.persistNewAnnotation(givenAnnotationRequest(), false)).willReturn(givenAnnotationProcessed());
 
     // When
     var result = controller.createAnnotation(givenAnnotationRequest());
@@ -42,6 +43,24 @@ class AnnotationControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+  }
+
+  @Test
+  void testCreateAnnotationBatch()
+      throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    var event = givenAnnotationEvent(annotationRequest);
+    given(service.persistNewAnnotation(annotationRequest, true))
+        .willReturn(givenAnnotationProcessed());
+
+    // When
+    var result = controller.createAnnotationBatch(event);
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+    then(service).should().batchWebAnnotations(event, givenAnnotationProcessed());
   }
 
   @Test

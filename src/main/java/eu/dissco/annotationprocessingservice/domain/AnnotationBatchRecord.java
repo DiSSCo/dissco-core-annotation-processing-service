@@ -5,8 +5,8 @@ import java.util.UUID;
 
 public record AnnotationBatchRecord(
     UUID batchId,
-    String userId,
-    String masId,
+    String creatorId,
+    String generatorId,
     String parentAnnotationId,
     Instant createdOn,
     String jobId

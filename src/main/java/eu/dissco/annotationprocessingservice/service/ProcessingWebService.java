@@ -6,17 +6,20 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
-import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.exception.DataAccessException;
@@ -39,11 +42,12 @@ public class ProcessingWebService extends AbstractProcessingService {
         annotationBatchRecordService);
   }
 
-  public Annotation persistNewAnnotation(Annotation annotation)
+  public Annotation persistNewAnnotation(Annotation annotation, boolean batchingRequested)
       throws FailedProcessingException, AnnotationValidationException {
     schemaValidator.validateAnnotationRequest(annotation, true);
     var id = postHandle(annotation);
-    enrichNewAnnotation(annotation, id);
+    annotationBatchRecordService.mintBatchId(annotation);
+    enrichNewAnnotation(annotation, id, batchingRequested);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
     try {
       repository.createAnnotationRecord(annotation);
@@ -55,6 +59,12 @@ public class ProcessingWebService extends AbstractProcessingService {
     log.info("Annotation: {} has been successfully committed to database", id);
     indexElasticNewAnnotation(annotation, id);
     return annotation;
+  }
+
+  public void batchWebAnnotations(AnnotationEvent event, Annotation result)
+      throws ConflictException, BatchingException {
+    log.info("Batching annotations for web annotation {}", result);
+    applyBatchAnnotations(event, List.of(result));
   }
 
   public Annotation updateAnnotation(Annotation annotation)
