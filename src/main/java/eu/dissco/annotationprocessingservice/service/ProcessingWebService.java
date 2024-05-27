@@ -46,8 +46,8 @@ public class ProcessingWebService extends AbstractProcessingService {
       throws FailedProcessingException, AnnotationValidationException {
     schemaValidator.validateAnnotationRequest(annotation, true);
     var id = postHandle(annotation);
-    annotationBatchRecordService.mintBatchId(annotation);
     enrichNewAnnotation(annotation, id, batchingRequested);
+    annotationBatchRecordService.mintBatchId(annotation);
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
     try {
       repository.createAnnotationRecord(annotation);
@@ -61,10 +61,15 @@ public class ProcessingWebService extends AbstractProcessingService {
     return annotation;
   }
 
-  public void batchWebAnnotations(AnnotationEvent event, Annotation result)
-      throws ConflictException, BatchingException {
+  public void batchWebAnnotations(AnnotationEvent event, Annotation result) {
     log.info("Batching annotations for web annotation {}", result);
-    applyBatchAnnotations(event, List.of(result));
+    try {
+      applyBatchAnnotations(event, List.of(result));
+    } catch (ConflictException | BatchingException e) {
+      log.error(
+          "An exception has occurred while creating batch annotations for parent annotation {}",
+          result.getOdsId(), e);
+    }
   }
 
   public Annotation updateAnnotation(Annotation annotation)
