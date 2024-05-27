@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 
 import eu.dissco.annotationprocessingservice.TestUtils;
@@ -128,7 +129,7 @@ class BatchAnnotationServiceTest {
     // Given
     int placeInBatch = 1;
     var annotationBodyB = givenOaBody("Alt value");
-    var baseAnnotationA =  givenBaseAnnotationForBatch(placeInBatch, ID, BATCH_ID);
+    var baseAnnotationA = givenBaseAnnotationForBatch(placeInBatch, ID, BATCH_ID);
     var baseAnnotationB = givenBaseAnnotationForBatch(placeInBatch, ID_ALT, BATCH_ID_ALT)
         .setOaBody(annotationBodyB);
     var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
@@ -274,6 +275,28 @@ class BatchAnnotationServiceTest {
     // When
     assertThrows(ConflictException.class,
         () -> batchAnnotationService.applyBatchAnnotations(event));
+  }
+
+  @Test
+  void testNewMessageErrorCount() throws Exception {
+    // Given
+    var maxRetries = 3;
+    int pageSize = 5;
+    var elasticResults = Collections.nCopies(pageSize + 1, givenElasticDocument());
+    var event = givenAnnotationEventBatchEnabled();
+    given(applicationProperties.getBatchPageSize()).willReturn(5);
+    given(applicationProperties.getMaxBatchRetries()).willReturn(maxRetries);
+    given(elasticRepository.searchByBatchMetadataExtended(
+        any(), any(), anyInt(), anyInt())).willReturn(elasticResults);
+    doThrow(BatchingException.class).when(jsonPathComponent)
+        .getAnnotationTargets(any(), any(), any());
+
+    // When
+    assertThrows(BatchingException.class,
+        () -> batchAnnotationService.applyBatchAnnotations(event));
+
+    then(elasticRepository).should(times(maxRetries))
+        .searchByBatchMetadataExtended(any(), any(), anyInt(), anyInt());
   }
 
   @Test
