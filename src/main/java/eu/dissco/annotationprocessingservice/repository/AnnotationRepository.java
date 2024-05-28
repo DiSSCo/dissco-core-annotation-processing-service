@@ -128,7 +128,8 @@ public class AnnotationRepository {
               JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
           .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
-          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobId());
+          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobId())
+          .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchId());
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
@@ -156,7 +157,8 @@ public class AnnotationRepository {
               JSONB.jsonb(mapper.writeValueAsString(annotation.getAsGenerator())))
           .set(ANNOTATION.GENERATED, annotation.getOaGenerated())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDcTermsCreated())
-          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobId());
+          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobId())
+          .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchId());
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());

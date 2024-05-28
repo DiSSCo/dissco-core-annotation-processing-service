@@ -24,6 +24,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class TestUtils {
@@ -36,6 +37,7 @@ public class TestUtils {
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
+  public static final String PROCESSOR_HANDLE = "https://hdl.handle.net/anno-process-service-pid";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
       "3a36d684-deb8-8779-2753-caef497e9ed8");
 
@@ -43,6 +45,8 @@ public class TestUtils {
       "f43e4ec6-ca1c-4a88-9aac-08f6da4b0b1c");
   public static final UUID ANNOTATION_HASH_3 = UUID.fromString(
       "53502490-24cc-4a93-a1ce-e80f5e77f506");
+  public static final UUID BATCH_ID = UUID.fromString("30468044-9198-4335-893a-665574e5f61e");
+  public static final UUID BATCH_ID_ALT = UUID.fromString("642a04b8-7a4c-4e53-89e3-0ab1dbab768e");
   public static final String ANNOTATION_JSONB = """
       [
         "20.5000.1025/KZL-VC0-ZK2"
@@ -63,6 +67,11 @@ public class TestUtils {
 
   public static HashedAnnotation givenHashedAnnotation() {
     return new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH);
+  }
+
+  public static HashedAnnotation givenHashedAnnotation(UUID batchId) {
+    return new HashedAnnotation(givenHashedAnnotation().annotation().setOdsBatchId(batchId),
+        ANNOTATION_HASH);
   }
 
   public static HashedAnnotation givenHashedAnnotationAlt() {
@@ -115,6 +124,13 @@ public class TestUtils {
 
   public static Annotation givenAnnotationRequest() {
     return givenAnnotationRequest(TARGET_ID);
+  }
+
+  public static Annotation givenBaseAnnotationForBatch(int placeInBatch, String id, UUID bachId) {
+    return givenAnnotationProcessed()
+        .setOdsBatchId(bachId)
+        .setOdsId(id)
+        .setPlaceInBatch(placeInBatch);
   }
 
   public static Body givenOaBody() {
@@ -321,7 +337,7 @@ public class TestUtils {
         """);
   }
 
-  public static  BatchMetadataSearchParam givenBatchMetadataSearchParamCountry(){
+  public static BatchMetadataSearchParam givenBatchMetadataSearchParamCountry() {
     return new BatchMetadataSearchParam(
         "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
         "Netherlands");
@@ -334,7 +350,7 @@ public class TestUtils {
             "11")));
   }
 
-  public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam(){
+  public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam() {
     return new BatchMetadataExtended(1, List.of(
         givenBatchMetadataSearchParamCountry(),
         new BatchMetadataSearchParam(
@@ -343,13 +359,13 @@ public class TestUtils {
         )));
   }
 
-  public static BatchMetadataExtended givenBatchMetadataExtendedOneParam(){
+  public static BatchMetadataExtended givenBatchMetadataExtendedOneParam() {
     return new BatchMetadataExtended(1, List.of(
-       givenBatchMetadataSearchParamCountry()));
+        givenBatchMetadataSearchParamCountry()));
   }
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled() {
-    return new AnnotationEvent(List.of(givenAnnotationRequest()
+    return new AnnotationEvent(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
         .setPlaceInBatch(1)), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
   }
@@ -430,4 +446,16 @@ public class TestUtils {
       throw new RuntimeException();
     }
   }
+
+  public static Map<String, UUID> givenBatchIdMap() {
+    return Map.of(ID, BATCH_ID);
+  }
+
+  public static Map<String, UUID> givenBatchIdMapTwo() {
+    return Map.of(
+        ID, BATCH_ID,
+        ID_ALT, BATCH_ID_ALT
+    );
+  }
+
 }

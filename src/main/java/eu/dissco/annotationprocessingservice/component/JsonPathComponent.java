@@ -18,6 +18,7 @@ import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
 import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
 import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
 import eu.dissco.annotationprocessingservice.domain.annotation.Target;
+import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,15 +52,15 @@ public class JsonPathComponent {
   private final Pattern digitPattern = Pattern.compile("\\d");
 
 
-  public List<Target> getAnnotationTargetsExtended(BatchMetadataExtended batchMetadata,
-      JsonNode annotatedObject, Target baseTarget) {
+  public List<Target> getAnnotationTargets(BatchMetadataExtended batchMetadata,
+      JsonNode annotatedObject, Target baseTarget) throws BatchingException {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
     DocumentContext context;
     try {
       context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
     } catch (JsonProcessingException e) {
       log.error("Unable to read jsonPath", e);
-      throw new BatchingRuntimeException();
+      throw new BatchingException();
     }
     if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
       log.warn("False positive detected");
@@ -73,7 +74,7 @@ public class JsonPathComponent {
 
   private List<String> getAnnotationTargetPaths(
       Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
-      DocumentContext context) throws BatchingRuntimeException {
+      DocumentContext context) {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
     var arrayFields = new ArrayList<String>();

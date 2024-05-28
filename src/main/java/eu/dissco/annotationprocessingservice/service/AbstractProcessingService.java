@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import co.elastic.clients.elasticsearch._types.Result;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -14,9 +15,13 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+
 
 @RequiredArgsConstructor
 @Slf4j
@@ -31,6 +36,7 @@ public abstract class AbstractProcessingService {
   protected final SchemaValidatorComponent schemaValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
+  protected final AnnotationBatchRecordService annotationBatchRecordService;
 
   protected void enrichNewAnnotation(Annotation annotation, String id) {
     annotation.setOdsId(id)
@@ -39,9 +45,16 @@ public abstract class AbstractProcessingService {
         .setOaGenerated(Instant.now());
   }
 
-  protected void enrichNewAnnotation(Annotation annotation, String id, String jobId) {
+  protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event,
+      Optional<Map<String, UUID>> batchIds) {
     enrichNewAnnotation(annotation, id);
-    annotation.setOdsJobId(applicationProperties.getHandleProxy() + jobId);
+    annotation.setOdsJobId(applicationProperties.getHandleProxy() + event.jobId());
+    batchIds.ifPresentOrElse(idMap -> annotation.setOdsBatchId(idMap.get(id)),
+        () -> {
+          if (event.batchId() != null) {
+            annotation.setOdsBatchId(event.batchId());
+          }
+        });
   }
 
   private Generator createGenerator() {

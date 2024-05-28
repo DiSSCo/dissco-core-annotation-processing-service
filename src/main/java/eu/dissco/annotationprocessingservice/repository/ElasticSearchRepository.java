@@ -69,18 +69,17 @@ public class ElasticSearchRepository {
 
   private List<Query> generateBatchQueryExtended(BatchMetadataExtended bme) {
     var qList = new ArrayList<Query>();
-    for (var searchParam : bme.searchParams()){
+    for (var searchParam : bme.searchParams()) {
       var key = searchParam.inputField().replaceAll("\\[[^]]*]", "") + ".keyword";
       var val = searchParam.inputValue();
-      qList.add(new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build());
+      qList.add(
+          new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build());
     }
     return qList;
   }
 
   public List<JsonNode> searchByBatchMetadataExtended(BatchMetadataExtended batchMetadata,
-      AnnotationTargetType targetType,
-      int pageNumber, int pageSize)
-      throws IOException {
+      AnnotationTargetType targetType, int pageNumber, int pageSize) throws IOException {
     var query = generateBatchQueryExtended(batchMetadata);
     var index =
         targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()

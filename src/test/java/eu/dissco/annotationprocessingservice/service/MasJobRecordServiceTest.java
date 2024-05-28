@@ -133,7 +133,7 @@ class MasJobRecordServiceTest {
   @Test
   void testGetMasJobRecord(){
     // Given
-    var expected = new MasJobRecord(true, null);
+    var expected = new MasJobRecord(JOB_ID,true, null);
     given(repository.getMasJobRecord(JOB_ID)).willReturn(expected);
 
     // When

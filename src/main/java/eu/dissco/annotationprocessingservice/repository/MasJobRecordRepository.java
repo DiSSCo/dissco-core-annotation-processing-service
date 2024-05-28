@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
-import org.jooq.Record2;
+import org.jooq.Record3;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -34,7 +34,7 @@ public class MasJobRecordRepository {
   }
 
   public MasJobRecord getMasJobRecord(String jobId) {
-    return context.select(MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
+    return context.select(MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.BATCHING_REQUESTED, MAS_JOB_RECORD.ERROR)
         .from(MAS_JOB_RECORD)
         .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
         .fetchSingle(this::mapToMjr);
@@ -53,10 +53,11 @@ public class MasJobRecordRepository {
     }
   }
 
-  private MasJobRecord mapToMjr(Record2<Boolean, ErrorCode> mjr) {
+  private MasJobRecord mapToMjr(Record3<String, Boolean, ErrorCode> mjr) {
     return new MasJobRecord(
-        Boolean.TRUE.equals(mjr.value1()),
-        mjr.value2()
+        mjr.value1(),
+        Boolean.TRUE.equals(mjr.value2()),
+        mjr.value3()
     );
   }
 
