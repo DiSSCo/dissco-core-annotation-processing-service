@@ -17,6 +17,9 @@ public class ApplicationProperties {
   @NotNull
   private int batchPageSize = 300;
 
+  @NotNull
+  private int maxBatchRetries = 10;
+
   @NotBlank
   private String handleProxy = "https://hdl.handle.net/";
 

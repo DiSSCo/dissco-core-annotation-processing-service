@@ -31,7 +31,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(MAS_JOB_RECORD).execute();
+    context.truncate(MAS_JOB_RECORD).cascade().execute();
   }
 
   @Test
@@ -84,7 +84,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
   void testGetBatchingRequested() {
     // Given
     postMjr(JOB_ID);
-    var expected = new MasJobRecord(false, null);
+    var expected = new MasJobRecord(JOB_ID, false, null);
 
     // When
     var result = repository.getMasJobRecord(JOB_ID);
@@ -93,12 +93,4 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     assertThat(result).isEqualTo(expected);
   }
 
-  private void postMjr(String jobId) {
-    context.insertInto(MAS_JOB_RECORD, MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
-            MAS_JOB_RECORD.MAS_ID, MAS_JOB_RECORD.TARGET_ID, MAS_JOB_RECORD.TARGET_TYPE,
-            MAS_JOB_RECORD.TIME_STARTED, MAS_JOB_RECORD.BATCHING_REQUESTED)
-        .values(jobId, JobState.SCHEDULED, ID, TARGET_ID, MjrTargetType.DIGITAL_SPECIMEN,
-            CREATED, false)
-        .execute();
-  }
 }
