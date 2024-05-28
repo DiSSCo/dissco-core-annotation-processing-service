@@ -292,7 +292,7 @@ class BatchAnnotationServiceTest {
         .getAnnotationTargets(any(), any(), any());
 
     // When
-    assertThrows(ConflictException.class,
+    assertThrows(BatchingException.class,
         () -> batchAnnotationService.applyBatchAnnotations(event));
 
     then(elasticRepository).should(times(maxRetries))

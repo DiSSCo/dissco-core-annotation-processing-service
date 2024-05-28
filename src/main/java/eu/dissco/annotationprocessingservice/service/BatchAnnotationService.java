@@ -39,7 +39,8 @@ public class BatchAnnotationService {
   }
 
   private void runBatchForMetadata(List<Annotation> baseAnnotations,
-      BatchMetadataExtended batchMetadata, String jobId, int pageSizePlusOne) throws IOException, ConflictException, BatchingException {
+      BatchMetadataExtended batchMetadata, String jobId, int pageSizePlusOne)
+      throws IOException, ConflictException, BatchingException {
     int pageNumber = 1;
     boolean moreBatching = true;
     int errorCount = 0;
@@ -62,7 +63,8 @@ public class BatchAnnotationService {
           var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
               annotatedObjects);
           if (!annotations.isEmpty()) {
-            var batchEvent = new AnnotationEvent(annotations, jobId, null, baseAnnotation.getOdsBatchId());
+            var batchEvent = new AnnotationEvent(annotations, jobId, null,
+                baseAnnotation.getOdsBatchId());
             kafkaService.publishBatchAnnotation(batchEvent);
             log.info("Successfully published {} batch annotations to queue",
                 annotatedObjects.size());
@@ -71,7 +73,7 @@ public class BatchAnnotationService {
         pageNumber = pageNumber + 1;
       } catch (BatchingException e) {
         errorCount = errorCount + 1;
-        if (errorCount > applicationProperties.getMaxBatchRetries()) {
+        if (errorCount >= applicationProperties.getMaxBatchRetries()) {
           throw e;
         }
       }

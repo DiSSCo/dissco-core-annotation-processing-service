@@ -88,6 +88,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
   }
 
+  @Override
   protected void applyBatchAnnotations(AnnotationEvent event, List<Annotation> newAnnotations)
       throws BatchingException, ConflictException {
     if (event.batchId() != null) { // This is a batchResult
@@ -109,7 +110,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       log.warn(
           "User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
           event.jobId());
-      applyBatchAnnotations(event, newAnnotations);
     }
   }
 
