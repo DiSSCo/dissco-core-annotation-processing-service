@@ -88,6 +88,31 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
   }
 
+  protected void applyBatchAnnotations(AnnotationEvent event, List<Annotation> newAnnotations)
+      throws BatchingException, ConflictException {
+    if (event.batchId() != null) { // This is a batchResult
+      annotationBatchRecordService.updateAnnotationBatchRecord(event.batchId(),
+          newAnnotations.size());
+      return;
+    }
+    if (event.batchMetadata() != null) {
+      // New annotation event with processed annotations because we need the ids of the parent annotations for batching
+      var processedEvent = new AnnotationEvent(newAnnotations, event.jobId(),
+          event.batchMetadata(), null);
+      try {
+        batchAnnotationService.applyBatchAnnotations(processedEvent);
+      } catch (IOException e) {
+        log.error("An error with elastic has occurred", e);
+        throw new BatchingException();
+      }
+    } else {
+      log.warn(
+          "User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
+          event.jobId());
+      applyBatchAnnotations(event, newAnnotations);
+    }
+  }
+
   private void checkForTimeoutErrors(ErrorCode errorCode, String jobId) {
     if (ErrorCode.TIMEOUT.equals(errorCode)) {
       log.warn("MJR {} previously marked as timed out. Removing error.", jobId);

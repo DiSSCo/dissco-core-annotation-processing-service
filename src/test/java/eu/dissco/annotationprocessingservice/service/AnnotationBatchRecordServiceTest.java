@@ -8,6 +8,8 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.PROCESSOR_HANDLE;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchIdMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.then;
@@ -32,8 +34,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AnnotationBatchRecordServiceTest {
 
   @Mock
-  AnnotationBatchRecordRepository repository;
-  AnnotationBatchRecordService service;
+  private AnnotationBatchRecordRepository repository;
+  private AnnotationBatchRecordService service;
 
   @BeforeEach
   void setup() {
