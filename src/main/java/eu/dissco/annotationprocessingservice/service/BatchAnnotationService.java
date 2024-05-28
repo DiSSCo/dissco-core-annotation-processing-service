@@ -71,7 +71,7 @@ public class BatchAnnotationService {
         pageNumber = pageNumber + 1;
       } catch (BatchingException e) {
         errorCount = errorCount + 1;
-        if (errorCount >= applicationProperties.getMaxBatchRetries()) {
+        if (errorCount > applicationProperties.getMaxBatchRetries()) {
           throw e;
         }
       }

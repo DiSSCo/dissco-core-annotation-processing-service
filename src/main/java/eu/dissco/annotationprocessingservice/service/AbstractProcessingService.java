@@ -47,14 +47,6 @@ public abstract class AbstractProcessingService {
         .setOaGenerated(Instant.now());
   }
 
-  protected void enrichNewAnnotation(Annotation annotation, String id, boolean batchingRequested){
-    enrichNewAnnotation(annotation, id);
-    if (batchingRequested) {
-      annotationBatchRecordService.mintBatchId(annotation);
-      annotation.setPlaceInBatch(1);
-    }
-  }
-
   protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event,
       Optional<Map<String, UUID>> batchIds) {
     enrichNewAnnotation(annotation, id);
