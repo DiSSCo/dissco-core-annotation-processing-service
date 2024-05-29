@@ -1,16 +1,20 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWebBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedTwoParam;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -20,6 +24,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
@@ -101,13 +106,56 @@ class ProcessingWebServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    var result = service.persistNewAnnotation(annotationRequest);
+    var result = service.persistNewAnnotation(annotationRequest, false);
 
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getOdsId()).isEqualTo(ID);
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedWeb());
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+  }
+
+  @Test
+  void testCreateAnnotationBatch() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    var indexResponse = mock(IndexResponse.class);
+    given(indexResponse.result()).willReturn(Result.Created);
+    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    doAnswer(invocation -> {
+      var args = invocation.getArguments();
+      ((Annotation) args[0]).setOdsBatchId(BATCH_ID);
+      return null;
+    }).when(annotationBatchRecordService).mintBatchId(any());
+
+    // When
+    var result = service.persistNewAnnotation(annotationRequest, true);
+
+    // Then
+    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
+    assertThat(result.getOdsId()).isEqualTo(ID);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessedWebBatch());
+    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+  }
+
+  @Test
+  void batchWebAnnotations() throws Exception {
+    // Given
+    var processedAnnotation = givenAnnotationProcessedWebBatch();
+    var requestEvent = new AnnotationEvent(List.of(givenAnnotationRequest()), null,
+        List.of(givenBatchMetadataExtendedTwoParam()), null);
+    var processedEvent = new AnnotationEvent(List.of(givenAnnotationProcessedWebBatch()), null,
+        List.of(givenBatchMetadataExtendedTwoParam()), null);
+
+    // When
+    service.batchWebAnnotations(requestEvent, processedAnnotation);
+
+    // Then
+    then(batchAnnotationService).should()
+        .applyBatchAnnotations(processedEvent);
   }
 
   @Test
@@ -121,7 +169,7 @@ class ProcessingWebServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest));
+        () -> service.persistNewAnnotation(annotationRequest, false));
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
@@ -139,13 +187,14 @@ class ProcessingWebServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.NotFound);
-    given(elasticRepository.indexAnnotation(givenAnnotationProcessedWeb())).willReturn(indexResponse);
+    given(elasticRepository.indexAnnotation(givenAnnotationProcessedWeb())).willReturn(
+        indexResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest));
+        () -> service.persistNewAnnotation(annotationRequest, false));
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
@@ -163,14 +212,15 @@ class ProcessingWebServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.NotFound);
-    given(elasticRepository.indexAnnotation(givenAnnotationProcessedWeb())).willReturn(indexResponse);
+    given(elasticRepository.indexAnnotation(givenAnnotationProcessedWeb())).willReturn(
+        indexResponse);
     doThrow(PidCreationException.class).when(handleComponent).rollbackHandleCreation(any());
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest));
+        () -> service.persistNewAnnotation(annotationRequest, false));
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
@@ -194,7 +244,7 @@ class ProcessingWebServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest));
+        () -> service.persistNewAnnotation(annotationRequest, false));
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
@@ -212,7 +262,7 @@ class ProcessingWebServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest));
+        () -> service.persistNewAnnotation(annotationRequest, false));
 
     // Then
     then(repository).shouldHaveNoInteractions();
@@ -369,10 +419,13 @@ class ProcessingWebServiceTest {
     given(handleComponent.postHandle(any())).willReturn(List.of(ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(any(Annotation.class));
+    doThrow(DataAccessException.class).when(repository)
+        .createAnnotationRecord(any(Annotation.class));
 
     // When / Then
-    assertThrows(FailedProcessingException.class, () -> service.persistNewAnnotation(annotationRequest));
+    assertThrows(FailedProcessingException.class,
+        () -> service.persistNewAnnotation(annotationRequest,
+            false));
     then(handleComponent).should().rollbackHandleCreation(any());
   }
 
@@ -382,10 +435,12 @@ class ProcessingWebServiceTest {
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(any(Annotation.class));
+    doThrow(DataAccessException.class).when(repository)
+        .createAnnotationRecord(any(Annotation.class));
 
     // When / Then
-    assertThrows(FailedProcessingException.class, () -> service.updateAnnotation(annotationRequest));
+    assertThrows(FailedProcessingException.class,
+        () -> service.updateAnnotation(annotationRequest));
     then(handleComponent).should().rollbackHandleUpdate(any());
   }
 

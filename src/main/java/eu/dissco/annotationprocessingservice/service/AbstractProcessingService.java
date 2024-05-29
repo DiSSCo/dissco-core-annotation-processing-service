@@ -5,6 +5,8 @@ import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
+import eu.dissco.annotationprocessingservice.exception.BatchingException;
+import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -38,11 +40,19 @@ public abstract class AbstractProcessingService {
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;
 
-  protected void enrichNewAnnotation(Annotation annotation, String id) {
+  private void enrichNewAnnotation(Annotation annotation, String id) {
     annotation.setOdsId(id)
         .setOdsVersion(1)
         .setAsGenerator(createGenerator())
         .setOaGenerated(Instant.now());
+  }
+
+  protected void enrichNewAnnotation(Annotation annotation, String id, boolean batchingRequested){
+    enrichNewAnnotation(annotation, id);
+    if (batchingRequested) {
+      annotationBatchRecordService.mintBatchId(annotation);
+      annotation.setPlaceInBatch(1);
+    }
   }
 
   protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event,
@@ -127,5 +137,29 @@ public abstract class AbstractProcessingService {
       log.info("Annotation with id: {} is already archived", id);
     }
   }
+  protected void applyBatchAnnotations(AnnotationEvent event, List<Annotation> newAnnotations)
+      throws BatchingException, ConflictException {
+    if (event.batchId() != null) { // This is a batchResult
+      annotationBatchRecordService.updateAnnotationBatchRecord(event.batchId(),
+          newAnnotations.size());
+      return;
+    }
+    if (event.batchMetadata() != null) {
+      // New annotation event with processed annotations because we need the ids of the parent annotations for batching
+      var processedEvent = new AnnotationEvent(newAnnotations, event.jobId(),
+          event.batchMetadata(), null);
+      try {
+        batchAnnotationService.applyBatchAnnotations(processedEvent);
+      } catch (IOException e) {
+        log.error("An error with elastic has occurred", e);
+        throw new BatchingException();
+      }
+    } else {
+      log.warn(
+          "User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
+          event.jobId());
+    }
+  }
+
 
 }

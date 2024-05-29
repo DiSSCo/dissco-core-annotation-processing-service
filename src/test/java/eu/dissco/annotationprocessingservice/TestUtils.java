@@ -86,6 +86,12 @@ public class TestUtils {
     return givenAnnotationProcessedWeb(ID, CREATOR, TARGET_ID);
   }
 
+  public static Annotation givenAnnotationProcessedWebBatch() {
+    return givenAnnotationProcessedWeb(ID, CREATOR, TARGET_ID)
+        .setOdsBatchId(BATCH_ID)
+        .setPlaceInBatch(1);
+  }
+
   public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId,
       String targetId) {
     return Annotation.builder()
@@ -202,7 +208,7 @@ public class TestUtils {
   public static Generator givenGenerator() {
     return Generator.builder()
         .foafName("Annotation Processing Service")
-        .odsId("https://hdl.handle.net/anno-process-service-pid")
+        .odsId(PROCESSOR_HANDLE)
         .odsType("oa:SoftwareAgent")
         .build();
   }

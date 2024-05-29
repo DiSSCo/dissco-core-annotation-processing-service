@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.controller;
 
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -36,7 +37,16 @@ public class AnnotationController {
   public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received annotation creation request");
-    var result = processingService.persistNewAnnotation(annotation);
+    var result = processingService.persistNewAnnotation(annotation, false);
+    return ResponseEntity.ok(result);
+  }
+
+  @PostMapping(value = "batch", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Annotation> createAnnotationBatch(@RequestBody AnnotationEvent event)
+      throws DataBaseException, FailedProcessingException, AnnotationValidationException {
+    log.info("Received batch annotation creation request");
+    var result = processingService.persistNewAnnotation(event.annotations().get(0), true);
+    processingService.batchWebAnnotations(event, result);
     return ResponseEntity.ok(result);
   }
 

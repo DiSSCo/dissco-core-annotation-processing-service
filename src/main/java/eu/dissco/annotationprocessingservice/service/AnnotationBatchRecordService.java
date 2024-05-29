@@ -38,6 +38,12 @@ public class AnnotationBatchRecordService {
     return batchIds;
   }
 
+  public void mintBatchId(Annotation annotation) {
+    var batchId = UUID.randomUUID();
+    annotation.setOdsBatchId(batchId);
+    createNewAnnotationBatchRecord(Map.of(annotation.getOdsId(), batchId), List.of(annotation));
+  }
+
   private void createNewAnnotationBatchRecord(Map<String, UUID> batchIds,
       List<Annotation> annotations) {
     var batchRecords = new ArrayList<AnnotationBatchRecord>();
