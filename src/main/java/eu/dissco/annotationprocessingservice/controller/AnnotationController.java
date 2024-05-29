@@ -44,7 +44,7 @@ public class AnnotationController {
   @PostMapping(value = "batch", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> createAnnotationBatch(@RequestBody AnnotationEvent event)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
-    log.info("Received annotation creation request");
+    log.info("Received batch annotation creation request");
     var result = processingService.persistNewAnnotation(event.annotations().get(0), true);
     processingService.batchWebAnnotations(event, result);
     return ResponseEntity.ok(result);
