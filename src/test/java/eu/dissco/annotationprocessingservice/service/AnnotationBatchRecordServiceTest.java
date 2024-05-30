@@ -10,9 +10,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationPro
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchIdMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
@@ -21,7 +19,6 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRep
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -52,9 +49,9 @@ class AnnotationBatchRecordServiceTest {
   @Test
   void testMintBatchIdsBatchingRequested() {
     var batchId = BATCH_ID; // Not redundant, we need to declare this outside our mock block
-    try (MockedStatic<UUID> mockedStatic = mockStatic(UUID.class)) {
+    try (MockedStatic<UUID> mockedUuid = mockStatic(UUID.class)) {
       // Given
-      mockedStatic.when(UUID::randomUUID).thenReturn(batchId);
+      mockedUuid.when(UUID::randomUUID).thenReturn(batchId);
       var annotations = List.of(givenAnnotationProcessed());
 
       // When
@@ -77,9 +74,9 @@ class AnnotationBatchRecordServiceTest {
         CREATED,
         null
     );
-    try (MockedStatic<UUID> mockedStatic = mockStatic(UUID.class)) {
+    try (MockedStatic<UUID> mockedUuid = mockStatic(UUID.class)) {
       initTime();
-      mockedStatic.when(UUID::randomUUID).thenReturn(batchId);
+      mockedUuid.when(UUID::randomUUID).thenReturn(batchId);
 
       // When
       service.mintBatchId(givenAnnotationProcessedWeb());
