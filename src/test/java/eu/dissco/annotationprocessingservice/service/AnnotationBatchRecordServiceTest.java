@@ -5,18 +5,20 @@ import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.PROCESSOR_HANDLE;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchIdMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,18 +36,22 @@ class AnnotationBatchRecordServiceTest {
   @Mock
   private AnnotationBatchRecordRepository repository;
   private AnnotationBatchRecordService service;
+  private MockedStatic<Clock> mockedClock;
+
 
   @BeforeEach
   void setup() {
     service = new AnnotationBatchRecordService(repository);
   }
 
+  private MockedStatic<Instant> mockedStatic;
+
   @Test
   void testMintBatchIdsBatchingRequested() {
     var batchId = BATCH_ID; // Not redundant, we need to declare this outside our mock block
-    try (MockedStatic<UUID> mockedStatic = mockStatic(UUID.class)) {
+    try (MockedStatic<UUID> mockedUuid = mockStatic(UUID.class)) {
       // Given
-      mockedStatic.when(UUID::randomUUID).thenReturn(batchId);
+      mockedUuid.when(UUID::randomUUID).thenReturn(batchId);
       var annotations = List.of(givenAnnotationProcessed());
 
       // When
@@ -64,15 +70,13 @@ class AnnotationBatchRecordServiceTest {
     var expectedAnnotationRecord = new AnnotationBatchRecord(
         batchId,
         CREATOR,
-        PROCESSOR_HANDLE,
         ID,
         CREATED,
         null
     );
-    try (MockedStatic<UUID> mockedStatic = mockStatic(UUID.class);
-        MockedStatic<Instant> mockedInstant = mockStatic(Instant.class)) {
-      mockedStatic.when(UUID::randomUUID).thenReturn(batchId);
-      mockedInstant.when(Instant::now).thenReturn(CREATED);
+    try (MockedStatic<UUID> mockedUuid = mockStatic(UUID.class)) {
+      initTime();
+      mockedUuid.when(UUID::randomUUID).thenReturn(batchId);
 
       // When
       service.mintBatchId(givenAnnotationProcessedWeb());
@@ -80,7 +84,8 @@ class AnnotationBatchRecordServiceTest {
       // Then
       then(repository).should().createAnnotationBatchRecord(List.of(expectedAnnotationRecord));
     }
-
+    mockedStatic.close();
+    mockedClock.close();
   }
 
   @Test
@@ -134,5 +139,14 @@ class AnnotationBatchRecordServiceTest {
     then(repository).shouldHaveNoInteractions();
   }
 
+  private void initTime() {
+    Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+    mockedClock = mockStatic(Clock.class);
+    mockedClock.when(Clock::systemUTC).thenReturn(clock);
+    Instant instant = Instant.now(clock);
+    mockedStatic = mockStatic(Instant.class);
+    mockedStatic.when(Instant::now).thenReturn(instant);
+    mockedStatic.when(() -> Instant.from(any())).thenReturn(instant);
+  }
 
 }

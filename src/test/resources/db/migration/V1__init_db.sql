@@ -51,13 +51,10 @@ create table annotation_batch_record
         constraint annotation_batch_pk
             primary key,
     creator_id           text                     not null,
-    generator_id         text,
     parent_annotation_id text                     not null,
     created_on           timestamp with time zone not null,
     last_updated         timestamp with time zone,
-    job_id               text
-        constraint annotation_batch_fk
-            references mas_job_record,
+    job_id               text,
     batch_quantity       bigint
 );
 

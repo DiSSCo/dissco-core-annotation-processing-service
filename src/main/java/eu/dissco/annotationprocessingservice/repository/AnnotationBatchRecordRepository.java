@@ -31,14 +31,12 @@ public class AnnotationBatchRecordRepository {
     return context.insertInto(ANNOTATION_BATCH_RECORD)
         .set(ANNOTATION_BATCH_RECORD.BATCH_ID, annotationBatchRecord.batchId())
         .set(ANNOTATION_BATCH_RECORD.CREATOR_ID, annotationBatchRecord.creatorId())
-        .set(ANNOTATION_BATCH_RECORD.GENERATOR_ID, annotationBatchRecord.generatorId())
         .set(ANNOTATION_BATCH_RECORD.PARENT_ANNOTATION_ID,
             annotationBatchRecord.parentAnnotationId())
         .set(ANNOTATION_BATCH_RECORD.CREATED_ON, annotationBatchRecord.createdOn())
         .set(ANNOTATION_BATCH_RECORD.LAST_UPDATED, annotationBatchRecord.createdOn())
         .set(ANNOTATION_BATCH_RECORD.JOB_ID, annotationBatchRecord.jobId())
         .set(ANNOTATION_BATCH_RECORD.BATCH_QUANTITY, 1L);
-
   }
 
   public void updateAnnotationBatchRecord(UUID batchId, Long qty) {

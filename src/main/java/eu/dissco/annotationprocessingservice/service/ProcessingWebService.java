@@ -48,7 +48,9 @@ public class ProcessingWebService extends AbstractProcessingService {
     schemaValidator.validateAnnotationRequest(annotation, true);
     var id = postHandle(annotation);
     enrichNewAnnotation(annotation, id, batchingRequested);
-    annotationBatchRecordService.mintBatchId(annotation);
+    if (batchingRequested) {
+      annotationBatchRecordService.mintBatchId(annotation);
+    }
     log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
     try {
       repository.createAnnotationRecord(annotation);
