@@ -38,5 +38,4 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final ForeignKey<AnnotationRecord, AnnotationBatchRecordRecord> ANNOTATION__ANNOTATION_BATCH_ID_FK = Internal.createForeignKey(Annotation.ANNOTATION, DSL.name("annotation_batch_id_fk"), new TableField[] { Annotation.ANNOTATION.BATCH_ID }, Keys.ANNOTATION_BATCH_PK, new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.BATCH_ID }, true);
-    public static final ForeignKey<AnnotationBatchRecordRecord, MasJobRecordRecord> ANNOTATION_BATCH_RECORD__ANNOTATION_BATCH_FK = Internal.createForeignKey(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD, DSL.name("annotation_batch_fk"), new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.JOB_ID }, Keys.MAS_JOB_RECORD_PK, new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 }

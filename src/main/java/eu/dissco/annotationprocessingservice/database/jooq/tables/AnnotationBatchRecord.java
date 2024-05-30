@@ -9,18 +9,16 @@ import eu.dissco.annotationprocessingservice.database.jooq.Public;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationBatchRecordRecord;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Function8;
+import org.jooq.Function7;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Records;
-import org.jooq.Row8;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.SelectField;
 import org.jooq.Table;
@@ -62,11 +60,6 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
      * The column <code>public.annotation_batch_record.creator_id</code>.
      */
     public final TableField<AnnotationBatchRecordRecord, String> CREATOR_ID = createField(DSL.name("creator_id"), SQLDataType.CLOB.nullable(false), this, "");
-
-    /**
-     * The column <code>public.annotation_batch_record.generator_id</code>.
-     */
-    public final TableField<AnnotationBatchRecordRecord, String> GENERATOR_ID = createField(DSL.name("generator_id"), SQLDataType.CLOB, this, "");
 
     /**
      * The column
@@ -140,24 +133,6 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
     }
 
     @Override
-    public List<ForeignKey<AnnotationBatchRecordRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.ANNOTATION_BATCH_RECORD__ANNOTATION_BATCH_FK);
-    }
-
-    private transient MasJobRecord _masJobRecord;
-
-    /**
-     * Get the implicit join path to the <code>public.mas_job_record</code>
-     * table.
-     */
-    public MasJobRecord masJobRecord() {
-        if (_masJobRecord == null)
-            _masJobRecord = new MasJobRecord(this, Keys.ANNOTATION_BATCH_RECORD__ANNOTATION_BATCH_FK);
-
-        return _masJobRecord;
-    }
-
-    @Override
     public AnnotationBatchRecord as(String alias) {
         return new AnnotationBatchRecord(DSL.name(alias), this);
     }
@@ -197,18 +172,18 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
     }
 
     // -------------------------------------------------------------------------
-    // Row8 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row8<UUID, String, String, String, Instant, Instant, String, Long> fieldsRow() {
-        return (Row8) super.fieldsRow();
+    public Row7<UUID, String, String, Instant, Instant, String, Long> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 
     /**
      * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
      */
-    public <U> SelectField<U> mapping(Function8<? super UUID, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Long, ? extends U> from) {
+    public <U> SelectField<U> mapping(Function7<? super UUID, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Long, ? extends U> from) {
         return convertFrom(Records.mapping(from));
     }
 
@@ -216,7 +191,7 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
      * Convenience mapping calling {@link SelectField#convertFrom(Class,
      * Function)}.
      */
-    public <U> SelectField<U> mapping(Class<U> toType, Function8<? super UUID, ? super String, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Long, ? extends U> from) {
+    public <U> SelectField<U> mapping(Class<U> toType, Function7<? super UUID, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Long, ? extends U> from) {
         return convertFrom(toType, Records.mapping(from));
     }
 }

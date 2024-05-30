@@ -42,6 +42,7 @@ public class AnnotationBatchRecordService {
     var batchId = UUID.randomUUID();
     annotation.setOdsBatchId(batchId);
     createNewAnnotationBatchRecord(Map.of(annotation.getOdsId(), batchId), List.of(annotation));
+    log.info("Batch record {} has been created for annotation", batchId);
   }
 
   private void createNewAnnotationBatchRecord(Map<String, UUID> batchIds,
@@ -51,7 +52,6 @@ public class AnnotationBatchRecordService {
       batchRecords.add(new AnnotationBatchRecord(
           batchIds.get(annotation.getOdsId()),
           annotation.getOaCreator().getOdsId(),
-          annotation.getAsGenerator().getOdsId(),
           annotation.getOdsId(),
           Instant.now(),
           annotation.getOdsJobId()
