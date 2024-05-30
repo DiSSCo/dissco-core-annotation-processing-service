@@ -87,7 +87,8 @@ class AnnotationBatchRecordServiceTest {
       // Then
       then(repository).should().createAnnotationBatchRecord(List.of(expectedAnnotationRecord));
     }
-
+    mockedStatic.close();
+    mockedClock.close();
   }
 
   @Test
