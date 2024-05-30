@@ -78,7 +78,6 @@ public class BatchAnnotationService {
         }
       }
     }
-
   }
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)

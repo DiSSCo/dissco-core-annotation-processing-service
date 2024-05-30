@@ -5,7 +5,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.PROCESSOR_HANDLE;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchIdMap;
@@ -64,8 +63,7 @@ class AnnotationBatchRecordServiceTest {
     var expectedAnnotationRecord = new AnnotationBatchRecord(
         batchId,
         CREATOR,
-        PROCESSOR_HANDLE,
-        ID,
+            ID,
         CREATED,
         null
     );

@@ -5,7 +5,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION_BATCH_RECORD;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
@@ -87,7 +86,7 @@ class AnnotationBatchRecordRepositoryIT extends BaseRepositoryIT {
   void testRollbackAnnotationBatchRecordWontDeleteUpdatedBatches() {
     // Given
     postMjr(JOB_ID);
-    var updatedAnnotationBatchRecord = new AnnotationBatchRecord(BATCH_ID_ALT, CREATOR, ID_ALT, ID, CREATED, JOB_ID);
+    var updatedAnnotationBatchRecord = new AnnotationBatchRecord(BATCH_ID_ALT, CREATOR, ID, CREATED, JOB_ID);
     repository.createAnnotationBatchRecord(List.of(givenAnnotationBatchRecord(), updatedAnnotationBatchRecord));
     repository.updateAnnotationBatchRecord(BATCH_ID_ALT, 5L);
 
@@ -105,8 +104,7 @@ class AnnotationBatchRecordRepositoryIT extends BaseRepositoryIT {
     return new AnnotationBatchRecord(
         BATCH_ID,
         CREATOR,
-        ID_ALT,
-        ID,
+            ID,
         CREATED,
         JOB_ID
     );
@@ -116,8 +114,7 @@ class AnnotationBatchRecordRepositoryIT extends BaseRepositoryIT {
     return new AnnotationBatchRecord(
         dbRecord.get(ANNOTATION_BATCH_RECORD.BATCH_ID),
         dbRecord.get(ANNOTATION_BATCH_RECORD.CREATOR_ID),
-        dbRecord.get(ANNOTATION_BATCH_RECORD.GENERATOR_ID),
-        dbRecord.get(ANNOTATION_BATCH_RECORD.PARENT_ANNOTATION_ID),
+            dbRecord.get(ANNOTATION_BATCH_RECORD.PARENT_ANNOTATION_ID),
         dbRecord.get(ANNOTATION_BATCH_RECORD.CREATED_ON),
         dbRecord.get(ANNOTATION_BATCH_RECORD.JOB_ID));
   }

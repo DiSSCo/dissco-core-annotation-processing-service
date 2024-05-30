@@ -75,12 +75,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
       var newAnnotations = processResult.newAnnotations().stream().map(HashedAnnotation::annotation)
           .toList();
-      var batchIds = annotationBatchRecordService.mintBatchIds(newAnnotations,
-          masJobRecord.batchingRequested(), event);
       var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
           isBatchResult);
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
-          isBatchResult, batchIds, event);
+          isBatchResult, masJobRecord.batchingRequested(), event);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
       checkForTimeoutErrors(masJobRecord.error(), event.jobId());
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
@@ -93,7 +91,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       log.warn("MJR {} previously marked as timed out. Removing error.", jobId);
     }
   }
-
 
   private ProcessResult processAnnotations(AnnotationEvent event) {
     var equalAnnotations = new HashSet<Annotation>();
@@ -126,16 +123,18 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return allAnnotations.stream().filter(ha -> !existingHashes.contains(ha.hash())).toList();
   }
 
-  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId, boolean isBatchResult,
-      Optional<Map<String, UUID>> batchIds, AnnotationEvent event)
+  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId,
+      boolean isBatchResult,
+      boolean batchingRequested, AnnotationEvent event)
       throws FailedProcessingException {
     if (annotations.isEmpty()) {
       return Collections.emptyList();
     }
-    var idMap = postHandles(annotations, jobId, isBatchResult, batchIds);
+    var idMap = postHandles(annotations, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
     annotations.forEach(
-        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), event, batchIds));
+        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), event));
+    var batchIds = applyBatchIds(annotations, batchingRequested, event);
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
       repository.createAnnotationRecord(annotations);
@@ -158,15 +157,31 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return idList;
   }
 
+  private Optional<Map<String, UUID>> applyBatchIds(List<HashedAnnotation> hashedAnnotations,
+      boolean batchingRequested, AnnotationEvent event) {
+    var annotations = hashedAnnotations.stream().map(HashedAnnotation::annotation).toList();
+    var batchIds = annotationBatchRecordService.mintBatchIds(annotations,
+        batchingRequested, event);
+    annotations.forEach(annotation -> {
+          batchIds.ifPresentOrElse(idMap -> annotation.setOdsBatchId(idMap.get(annotation.getOdsId())),
+              () -> {
+                if (event.batchId() != null) {
+                  annotation.setOdsBatchId(event.batchId());
+                }
+              });
+        }
+    );
+    return batchIds;
+  }
+
   private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId,
-      boolean isBatchResult, Optional<Map<String, UUID>> batchIds)
+      boolean isBatchResult)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {
       return handleComponent.postHandles(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
-      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }

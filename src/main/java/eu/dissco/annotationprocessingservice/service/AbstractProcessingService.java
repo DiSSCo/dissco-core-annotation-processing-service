@@ -17,12 +17,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import java.util.UUID;
 
 
 @RequiredArgsConstructor
@@ -55,16 +52,9 @@ public abstract class AbstractProcessingService {
     }
   }
 
-  protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event,
-      Optional<Map<String, UUID>> batchIds) {
+  protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event) {
     enrichNewAnnotation(annotation, id);
     annotation.setOdsJobId(applicationProperties.getHandleProxy() + event.jobId());
-    batchIds.ifPresentOrElse(idMap -> annotation.setOdsBatchId(idMap.get(id)),
-        () -> {
-          if (event.batchId() != null) {
-            annotation.setOdsBatchId(event.batchId());
-          }
-        });
   }
 
   private Generator createGenerator() {
@@ -139,12 +129,12 @@ public abstract class AbstractProcessingService {
   }
   protected void applyBatchAnnotations(AnnotationEvent event, List<Annotation> newAnnotations)
       throws BatchingException, ConflictException {
-    if (event.batchId() != null) { // This is a batchResult
+    if (event.batchId() != null) {
       annotationBatchRecordService.updateAnnotationBatchRecord(event.batchId(),
           newAnnotations.size());
       return;
     }
-    if (event.batchMetadata() != null) {
+    if (event.batchMetadata() != null && !newAnnotations.isEmpty()) {
       // New annotation event with processed annotations because we need the ids of the parent annotations for batching
       var processedEvent = new AnnotationEvent(newAnnotations, event.jobId(),
           event.batchMetadata(), null);

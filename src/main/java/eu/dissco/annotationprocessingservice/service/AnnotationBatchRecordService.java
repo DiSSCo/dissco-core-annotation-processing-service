@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import java.time.Instant;
@@ -51,7 +52,6 @@ public class AnnotationBatchRecordService {
       batchRecords.add(new AnnotationBatchRecord(
           batchIds.get(annotation.getOdsId()),
           annotation.getOaCreator().getOdsId(),
-          annotation.getAsGenerator().getOdsId(),
           annotation.getOdsId(),
           Instant.now(),
           annotation.getOdsJobId()
