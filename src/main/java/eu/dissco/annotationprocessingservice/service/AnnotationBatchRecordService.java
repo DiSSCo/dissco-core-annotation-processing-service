@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import java.time.Instant;
@@ -32,7 +33,13 @@ public class AnnotationBatchRecordService {
           value -> UUID.randomUUID()
       )));
       createNewAnnotationBatchRecord(batchIds.get(), newAnnotations);
-    } else {
+    } else if (event.batchId() != null) {
+      batchIds = Optional.of(newAnnotations.stream().collect(Collectors.toMap(
+          Annotation::getOdsId,
+          value -> event.batchId()
+      )));
+    }
+    else {
       batchIds = Optional.empty();
     }
     return batchIds;

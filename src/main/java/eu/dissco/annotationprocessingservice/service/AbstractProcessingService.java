@@ -55,11 +55,13 @@ public abstract class AbstractProcessingService {
     }
   }
 
-  protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event,
-      Optional<Map<String, UUID>> batchIds) {
+  protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event) {
     enrichNewAnnotation(annotation, id);
     annotation.setOdsJobId(applicationProperties.getHandleProxy() + event.jobId());
-    batchIds.ifPresentOrElse(idMap -> annotation.setOdsBatchId(idMap.get(id)),
+  }
+
+  protected void addBatchIds(Annotation annotation, Optional<Map<String, UUID>> batchIds, AnnotationEvent event){
+    batchIds.ifPresentOrElse(idMap -> annotation.setOdsBatchId(idMap.get(annotation.getOdsId())),
         () -> {
           if (event.batchId() != null) {
             annotation.setOdsBatchId(event.batchId());
@@ -139,6 +141,10 @@ public abstract class AbstractProcessingService {
   }
   protected void applyBatchAnnotations(AnnotationEvent event, List<Annotation> newAnnotations)
       throws BatchingException, ConflictException {
+    if (newAnnotations.isEmpty()) {
+      return;
+    }
+
     if (event.batchId() != null) { // This is a batchResult
       annotationBatchRecordService.updateAnnotationBatchRecord(event.batchId(),
           newAnnotations.size());

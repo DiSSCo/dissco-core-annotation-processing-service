@@ -72,8 +72,13 @@ public class ElasticSearchRepository {
     for (var searchParam : bme.searchParams()) {
       var key = searchParam.inputField().replaceAll("\\[[^]]*]", "") + ".keyword";
       var val = searchParam.inputValue();
-      qList.add(
-          new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build());
+      if (val.isEmpty()) {
+        qList.add(
+            new Query.Builder().bool(b -> b.mustNot(q -> q.exists(e -> e.field(key)))).build());
+      } else {
+        qList.add(
+            new Query.Builder().term(t -> t.field(key).value(val).caseInsensitive(true)).build());
+      }
     }
     return qList;
   }
