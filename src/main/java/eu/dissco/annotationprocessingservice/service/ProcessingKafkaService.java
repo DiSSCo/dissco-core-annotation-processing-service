@@ -75,12 +75,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
       var newAnnotations = processResult.newAnnotations().stream().map(HashedAnnotation::annotation)
           .toList();
-      var batchIds = annotationBatchRecordService.mintBatchIds(newAnnotations,
-          masJobRecord.batchingRequested(), event);
       var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
           isBatchResult);
       var newIds = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
-          isBatchResult, batchIds, event);
+          isBatchResult, masJobRecord.batchingRequested(), event);
       var idList = Stream.of(equalIds, updatedIds, newIds).flatMap(Collection::stream).toList();
       checkForTimeoutErrors(masJobRecord.error(), event.jobId());
       masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
@@ -126,19 +124,22 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     return allAnnotations.stream().filter(ha -> !existingHashes.contains(ha.hash())).toList();
   }
 
-  private List<String> persistNewAnnotation(List<HashedAnnotation> annotations, String jobId, boolean isBatchResult,
-      Optional<Map<String, UUID>> batchIds, AnnotationEvent event)
+  private List<String> persistNewAnnotation(List<HashedAnnotation> hashedAnnotations, String jobId, boolean isBatchResult,
+      boolean batchingRequested, AnnotationEvent event)
       throws FailedProcessingException {
-    if (annotations.isEmpty()) {
+    if (hashedAnnotations.isEmpty()) {
       return Collections.emptyList();
     }
-    var idMap = postHandles(annotations, jobId, isBatchResult, batchIds);
+    var idMap = postHandles(hashedAnnotations, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
-    annotations.forEach(
-        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), event, batchIds));
+    hashedAnnotations.forEach(
+        p -> enrichNewAnnotation(p.annotation(), idMap.get(p.hash()), event));
+    var batchIds = annotationBatchRecordService.mintBatchIds(hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),
+        batchingRequested, event);
+    hashedAnnotations.forEach(annotation -> addBatchIds(annotation.annotation(), batchIds, event));
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
-      repository.createAnnotationRecord(annotations);
+      repository.createAnnotationRecord(hashedAnnotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
@@ -147,7 +148,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
     log.info("Annotations {} has been successfully committed to database", idList);
     try {
-      indexElasticNewAnnotations(annotations.stream().map(HashedAnnotation::annotation).toList(),
+      indexElasticNewAnnotations(hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),
           idList);
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
@@ -159,14 +160,13 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private Map<UUID, String> postHandles(List<HashedAnnotation> hashedAnnotations, String jobId,
-      boolean isBatchResult, Optional<Map<String, UUID>> batchIds)
+      boolean isBatchResult)
       throws FailedProcessingException {
     var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
     try {
       return handleComponent.postHandles(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
-      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
       throw new FailedProcessingException();
     }

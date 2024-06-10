@@ -7,6 +7,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedTwoParam;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataSearchParamCountry;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,6 +17,8 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.io.IOException;
@@ -165,6 +168,27 @@ class ElasticSearchRepositoryIT {
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
     var batchMetadata = givenBatchMetadataExtendedTwoParam();
+
+    // When
+    var result = repository.searchByBatchMetadataExtended(batchMetadata,
+        AnnotationTargetType.DIGITAL_SPECIMEN, 1, 10);
+
+    // Then
+    assertThat(result).isEqualTo(List.of(targetDocument));
+  }
+
+  @Test
+  void searchByBatchMetadataMustNotExist() throws Exception {
+    // Given
+    var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
+    var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
+    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
+    var batchMetadata = new BatchMetadataExtended(1, List.of(
+        givenBatchMetadataSearchParamCountry(),
+        new BatchMetadataSearchParam(
+            "digitalSpecimenWrapper.thisFieldIsNotPresent",
+            ""
+        )));
 
     // When
     var result = repository.searchByBatchMetadataExtended(batchMetadata,

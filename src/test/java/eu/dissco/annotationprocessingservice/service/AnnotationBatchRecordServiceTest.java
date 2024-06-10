@@ -20,6 +20,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -103,13 +104,14 @@ class AnnotationBatchRecordServiceTest {
   @Test
   void testMintBatchIdsIsBatchResult() {
     var annotations = List.of(givenAnnotationProcessed());
+    var expected = Map.of(ID, BATCH_ID);
 
     // When
     var result = service.mintBatchIds(annotations, true,
         new AnnotationEvent(annotations, JOB_ID, null, BATCH_ID));
 
     // Then
-    assertThat(result).isEmpty();
+    assertThat(result).contains(expected);
   }
 
   @Test

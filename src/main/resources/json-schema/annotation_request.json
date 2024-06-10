@@ -181,6 +181,9 @@
     },
     "placeInBatch": {
       "type": "number"
+    },
+    "ods:batchId": {
+      "type": "string"
     }
   },
   "required": [
