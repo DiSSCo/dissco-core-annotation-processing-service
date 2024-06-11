@@ -63,9 +63,9 @@ public class BatchAnnotationService {
           var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
               annotatedObjects);
           if (!annotations.isEmpty()) {
-            var batchEvent = new AnnotationEvent(annotations, jobId, null,
-                baseAnnotation.getOdsBatchId());
-            kafkaService.publishBatchAnnotation(batchEvent);
+            var batchEvents = annotations.stream().map(p ->  new AnnotationEvent(List.of(p), jobId, null,
+                    baseAnnotation.getOdsBatchId())).toList();
+            kafkaService.publishBatchAnnotation(batchEvents);
             log.info("Successfully published {} batch annotations to queue",
                 annotatedObjects.size());
           }
