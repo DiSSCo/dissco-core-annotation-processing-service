@@ -87,7 +87,8 @@ class BatchAnnotationServiceTest {
             .odsBatchId(BATCH_ID)
             .build()
     ).toList();
-    var batchEvent = new AnnotationEvent(batchAnnotations, JOB_ID, null, BATCH_ID);
+    var batchEvent = batchAnnotations.stream()
+        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
@@ -161,8 +162,10 @@ class BatchAnnotationServiceTest {
             .build()
     ).toList();
 
-    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, BATCH_ID);
-    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
+    var batchEventA = batchAnnotationsA.stream()
+        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+    var batchEventB = batchAnnotationsB.stream()
+        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
 
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -245,8 +248,10 @@ class BatchAnnotationServiceTest {
             .odsBatchId(BATCH_ID_ALT)
             .build()
     ).toList();
-    var batchEventA = new AnnotationEvent(batchAnnotationsA, JOB_ID, null, BATCH_ID);
-    var batchEventB = new AnnotationEvent(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
+    var batchEventA = batchAnnotationsA.stream()
+        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+    var batchEventB = batchAnnotationsB.stream()
+        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -264,7 +269,6 @@ class BatchAnnotationServiceTest {
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEventA);
     then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEventB);
   }
-
 
   @Test
   void testApplyBatchAnnotationsMissingPlaceInBatch() {

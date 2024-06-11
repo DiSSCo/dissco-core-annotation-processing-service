@@ -9,6 +9,7 @@ import eu.dissco.annotationprocessingservice.domain.CreateUpdateDeleteEvent;
 import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.properties.KafkaConsumerProperties;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -50,9 +51,11 @@ public class KafkaPublisherService {
     kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
-  public void publishBatchAnnotation(AnnotationEvent annotationEvent)
+  public void publishBatchAnnotation(List<AnnotationEvent> annotationEvents)
       throws JsonProcessingException {
-    kafkaTemplate.send(consumerProperties.getTopic(), mapper.writeValueAsString(annotationEvent));
+    for (var annotationEvent : annotationEvents) {
+      kafkaTemplate.send(consumerProperties.getTopic(), mapper.writeValueAsString(annotationEvent));
+    }
   }
 
   private JsonNode createJsonPatch(Annotation currentAnnotation, Annotation annotation) {
