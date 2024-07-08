@@ -35,7 +35,8 @@ class AnnotationControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.persistNewAnnotation(givenAnnotationRequest(), false)).willReturn(givenAnnotationProcessed());
+    given(service.persistNewAnnotation(givenAnnotationRequest(), false)).willReturn(
+        givenAnnotationProcessed());
 
     // When
     var result = controller.createAnnotation(givenAnnotationRequest());
@@ -67,7 +68,7 @@ class AnnotationControllerTest {
   void testUpdateAnnotation()
       throws Exception {
     // Given
-    var request = givenAnnotationRequest().setOdsId(ID);
+    var request = givenAnnotationRequest().withId(ID);
     given(service.updateAnnotation(request)).willReturn(givenAnnotationProcessed());
     var prefix = ID.split("/")[0];
     var suffix = ID.split("/")[1];
@@ -83,12 +84,13 @@ class AnnotationControllerTest {
   @Test
   void testUpdateAnnotationIdMismatch() {
     // Given
-    var request = givenAnnotationRequest().setOdsId(ID);
+    var request = givenAnnotationRequest().withId(ID);
     var prefix = ID.split("/")[0];
     var suffix = "wrong";
 
     // Then
-    assertThrows(ConflictException.class, () -> controller.updateAnnotation(prefix, suffix, request));
+    assertThrows(ConflictException.class,
+        () -> controller.updateAnnotation(prefix, suffix, request));
 
   }
 

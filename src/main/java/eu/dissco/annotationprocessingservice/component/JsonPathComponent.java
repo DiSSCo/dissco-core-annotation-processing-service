@@ -13,13 +13,11 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.Filter;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
-import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
-import eu.dissco.annotationprocessingservice.domain.annotation.SelectorType;
-import eu.dissco.annotationprocessingservice.domain.annotation.Target;
+import eu.dissco.annotationprocessingservice.domain.SelectorType;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +38,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class JsonPathComponent {
 
+  private static final String TYPE = "@type";
+
   private final ObjectMapper mapper;
   private final Configuration jsonPathConfig;
 
@@ -51,9 +51,27 @@ public class JsonPathComponent {
   private final Pattern dotIndexPatternLast = Pattern.compile("\\d\\.");
   private final Pattern digitPattern = Pattern.compile("\\d");
 
+  private static String toDotNotation(String jsonPath) {
+    // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
+    // From: "[fields][1][otherField]" or "fields[1].otherfield"
+    // To: "fields.1.otherField"
+    jsonPath = jsonPath
+        .replace("$", "")
+        .replaceAll("\\[(?=[*|\\d])", ".") // Captures [ next to * or 1-9, replace with .
+        .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters, removes
+        .replace("]", ".")
+        .replace("..", ".")
+        .replace("'", "");
+    return removeTrailingPeriod(jsonPath);
+  }
 
-  public List<Target> getAnnotationTargets(BatchMetadataExtended batchMetadata,
-      JsonNode annotatedObject, Target baseTarget) throws BatchingException {
+  private static String removeTrailingPeriod(String jsonPath) {
+    var jsonPathArray = jsonPath.split("\\.");
+    return String.join(".", jsonPathArray);
+  }
+
+  public List<OaHasTarget> getAnnotationTargets(BatchMetadataExtended batchMetadata,
+      JsonNode annotatedObject, OaHasTarget baseTarget) throws BatchingException {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
     DocumentContext context;
     try {
@@ -71,9 +89,8 @@ public class JsonPathComponent {
     return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
   }
 
-
   private List<String> getAnnotationTargetPaths(
-      Map<List<String>, List<List<Integer>>> commonIndexes, Target baseTarget,
+      Map<List<String>, List<List<Integer>>> commonIndexes, OaHasTarget baseTarget,
       DocumentContext context) {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
@@ -82,7 +99,7 @@ public class JsonPathComponent {
       var match = matcher.group();
       arrayFields.add(match.replaceAll("\\P{L}+", ""));
     }
-    // If there are no arrays are in the target field, we can use what is in the base annotation
+    // If there are no arrays are in the target field, we can use what is in the base hashedAnnotation
     if (arrayFields.isEmpty()) {
       return List.of(toMixedNotation(baseTargetPath));
     }
@@ -110,7 +127,6 @@ public class JsonPathComponent {
       jsonPaths.removeAll(invalidPaths);
     }
   }
-
 
   /*
   We found "commonInputIndexes" when we were checking if this annotated object was a true match
@@ -173,39 +189,37 @@ public class JsonPathComponent {
     return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
-  private List<Target> buildOaTargets(List<String> targetPaths, Target baseTarget,
+  private List<OaHasTarget> buildOaTargets(List<String> targetPaths, OaHasTarget baseTarget,
       String newTargetId) {
-    boolean isClassSelector = baseTarget.getOaSelector().getOdsType()
+    boolean isClassSelector = baseTarget.getOaHasSelector().getAdditionalProperties().get(TYPE)
         .equals(SelectorType.CLASS_SELECTOR);
-    List<Target> newTargets = new ArrayList<>();
+    var newTargets = new ArrayList<OaHasTarget>();
     for (var targetPath : targetPaths) {
-      Selector newSelector = null;
+      var selector = new OaHasSelector();
       if (isClassSelector) {
-        newSelector = new ClassSelector()
-            .withOaClass(targetPath);
+        selector.setAdditionalProperty(TYPE, "ods:ClassSelector");
+        selector.setAdditionalProperty("ods:class", targetPath);
       } else {
-        newSelector = new FieldSelector()
-            .withOdsField(targetPath);
+        selector.setAdditionalProperty(TYPE, "ods:FieldSelector");
+        selector.setAdditionalProperty("ods:field", targetPath);
       }
-      newTargets.add(Target.builder()
-          .odsType(baseTarget.getOdsType())
-          .odsId("https://doi.org/" + newTargetId)
-          .oaSelector(newSelector)
-          .build());
+      newTargets.add(new OaHasTarget()
+          .withOdsType(baseTarget.getOdsType())
+          .withId("https://doi.org/" + newTargetId)
+          .withOaHasSelector(selector));
     }
     return newTargets;
   }
 
-  private String getTargetPath(Target baseTarget) throws BatchingRuntimeException {
-    var selectorType = baseTarget.getOaSelector().getOdsType();
+  private String getTargetPath(OaHasTarget baseTarget) throws BatchingRuntimeException {
+    var selector = baseTarget.getOaHasSelector().getAdditionalProperties();
+    var selectorType = SelectorType.fromString((String) selector.get(TYPE));
     switch (selectorType) {
       case CLASS_SELECTOR -> {
-        var selector = (ClassSelector) (baseTarget.getOaSelector());
-        return toDotNotation(selector.getOaClass());
+        return toDotNotation((String) selector.get("ods:class"));
       }
       case FIELD_SELECTOR -> {
-        var selector = (FieldSelector) baseTarget.getOaSelector();
-        return toDotNotation(selector.getOdsField());
+        return toDotNotation((String) selector.get("ods:field"));
       }
       default -> {
         log.error("Unable to batch annotations with selector type {}", selectorType);
@@ -335,6 +349,8 @@ public class JsonPathComponent {
     return true;
   }
 
+  // Formatting functions
+
   private Map<List<String>, List<List<Integer>>> mergeFieldIndexesForSingleParameter(
       List<FieldIndex> fieldIndexList) {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
@@ -377,22 +393,6 @@ public class JsonPathComponent {
     return previousCompound;
   }
 
-  // Formatting functions
-
-  private static String toDotNotation(String jsonPath) {
-    // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
-    // From: "[fields][1][otherField]" or "fields[1].otherfield"
-    // To: "fields.1.otherField"
-    jsonPath = jsonPath
-        .replace("$", "")
-        .replaceAll("\\[(?=[*|\\d])", ".") // Captures [ next to * or 1-9, replace with .
-        .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters, removes
-        .replace("]", ".")
-        .replace("..", ".")
-        .replace("'", "");
-    return removeTrailingPeriod(jsonPath);
-  }
-
   // From: "fields.1.otherField"
   // To: "fields[1].otherField"
   private String toMixedNotation(String jsonPath) {
@@ -416,11 +416,6 @@ public class JsonPathComponent {
       jsonPath = jsonPath + "]";
     }
     return jsonPath;
-  }
-
-  private static String removeTrailingPeriod(String jsonPath) {
-    var jsonPathArray = jsonPath.split("\\.");
-    return String.join(".", jsonPathArray);
   }
 
   /*

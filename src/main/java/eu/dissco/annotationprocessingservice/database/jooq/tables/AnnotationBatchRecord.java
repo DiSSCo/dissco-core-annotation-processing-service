@@ -7,20 +7,18 @@ package eu.dissco.annotationprocessingservice.database.jooq.tables;
 import eu.dissco.annotationprocessingservice.database.jooq.Keys;
 import eu.dissco.annotationprocessingservice.database.jooq.Public;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationBatchRecordRecord;
-
 import java.time.Instant;
+import java.util.Collection;
 import java.util.UUID;
-import java.util.function.Function;
-
+import org.jooq.Condition;
 import org.jooq.Field;
-import org.jooq.ForeignKey;
-import org.jooq.Function7;
 import org.jooq.Name;
-import org.jooq.Record;
-import org.jooq.Records;
-import org.jooq.Row7;
+import org.jooq.PlainSQL;
+import org.jooq.QueryPart;
+import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.SelectField;
+import org.jooq.Select;
+import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
@@ -62,12 +60,6 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
     public final TableField<AnnotationBatchRecordRecord, String> CREATOR_ID = createField(DSL.name("creator_id"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column
-     * <code>public.annotation_batch_record.parent_annotation_id</code>.
-     */
-    public final TableField<AnnotationBatchRecordRecord, String> PARENT_ANNOTATION_ID = createField(DSL.name("parent_annotation_id"), SQLDataType.CLOB.nullable(false), this, "");
-
-    /**
      * The column <code>public.annotation_batch_record.created_on</code>.
      */
     public final TableField<AnnotationBatchRecordRecord, Instant> CREATED_ON = createField(DSL.name("created_on"), SQLDataType.INSTANT.nullable(false), this, "");
@@ -87,12 +79,18 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
      */
     public final TableField<AnnotationBatchRecordRecord, Long> BATCH_QUANTITY = createField(DSL.name("batch_quantity"), SQLDataType.BIGINT, this, "");
 
+    /**
+     * The column
+     * <code>public.annotation_batch_record.parent_annotation_id</code>.
+     */
+    public final TableField<AnnotationBatchRecordRecord, String> PARENT_ANNOTATION_ID = createField(DSL.name("parent_annotation_id"), SQLDataType.CLOB, this, "");
+
     private AnnotationBatchRecord(Name alias, Table<AnnotationBatchRecordRecord> aliased) {
-        this(alias, aliased, null);
+        this(alias, aliased, (Field<?>[]) null, null);
     }
 
-    private AnnotationBatchRecord(Name alias, Table<AnnotationBatchRecordRecord> aliased, Field<?>[] parameters) {
-        super(alias, null, aliased, parameters, DSL.comment(""), TableOptions.table());
+    private AnnotationBatchRecord(Name alias, Table<AnnotationBatchRecordRecord> aliased, Field<?>[] parameters, Condition where) {
+        super(alias, null, aliased, parameters, DSL.comment(""), TableOptions.table(), where);
     }
 
     /**
@@ -116,10 +114,6 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
      */
     public AnnotationBatchRecord() {
         this(DSL.name("annotation_batch_record"), null);
-    }
-
-    public <O extends Record> AnnotationBatchRecord(Table<O> child, ForeignKey<O, AnnotationBatchRecordRecord> key) {
-        super(child, key, ANNOTATION_BATCH_RECORD);
     }
 
     @Override
@@ -171,27 +165,87 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
         return new AnnotationBatchRecord(name.getQualifiedName(), null);
     }
 
-    // -------------------------------------------------------------------------
-    // Row7 type methods
-    // -------------------------------------------------------------------------
-
+    /**
+     * Create an inline derived table from this table
+     */
     @Override
-    public Row7<UUID, String, String, Instant, Instant, String, Long> fieldsRow() {
-        return (Row7) super.fieldsRow();
+    public AnnotationBatchRecord where(Condition condition) {
+        return new AnnotationBatchRecord(getQualifiedName(), aliased() ? this : null, null, condition);
     }
 
     /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     * Create an inline derived table from this table
      */
-    public <U> SelectField<U> mapping(Function7<? super UUID, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Long, ? extends U> from) {
-        return convertFrom(Records.mapping(from));
+    @Override
+    public AnnotationBatchRecord where(Collection<? extends Condition> conditions) {
+        return where(DSL.and(conditions));
     }
 
     /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Class,
-     * Function)}.
+     * Create an inline derived table from this table
      */
-    public <U> SelectField<U> mapping(Class<U> toType, Function7<? super UUID, ? super String, ? super String, ? super Instant, ? super Instant, ? super String, ? super Long, ? extends U> from) {
-        return convertFrom(toType, Records.mapping(from));
+    @Override
+    public AnnotationBatchRecord where(Condition... conditions) {
+        return where(DSL.and(conditions));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    public AnnotationBatchRecord where(Field<Boolean> condition) {
+        return where(DSL.condition(condition));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public AnnotationBatchRecord where(SQL condition) {
+        return where(DSL.condition(condition));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public AnnotationBatchRecord where(@Stringly.SQL String condition) {
+        return where(DSL.condition(condition));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public AnnotationBatchRecord where(@Stringly.SQL String condition, Object... binds) {
+        return where(DSL.condition(condition, binds));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    @PlainSQL
+    public AnnotationBatchRecord where(@Stringly.SQL String condition, QueryPart... parts) {
+        return where(DSL.condition(condition, parts));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    public AnnotationBatchRecord whereExists(Select<?> select) {
+        return where(DSL.exists(select));
+    }
+
+    /**
+     * Create an inline derived table from this table
+     */
+    @Override
+    public AnnotationBatchRecord whereNotExists(Select<?> select) {
+        return where(DSL.notExists(select));
     }
 }

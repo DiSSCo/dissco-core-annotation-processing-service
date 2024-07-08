@@ -7,12 +7,11 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationPro
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.HasRoi;
-import eu.dissco.annotationprocessingservice.domain.annotation.Target;
+import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.security.MessageDigest;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,25 +43,24 @@ class AnnotationHasherTest {
   @Test
   void hashTestFragmentSelector() {
     // Given
-    var selector = new FragmentSelector()
-        .withAcHasRoi(HasRoi.builder()
-            .heightFrac(0.1)
-            .widthFrac(0.1)
-            .valY(0.99)
-            .valX(0.99)
-            .build()
-        );
+    var selector = new OaHasSelector()
+        .withAdditionalProperty("@type", "oa:FragmentSelector")
+        .withAdditionalProperty("oa:hasRoi", Map.of(
+            "ac:xFrac", 0.99,
+            "ac:yFrac", 0.99,
+            "ac:widthFrac", 0.1,
+            "ac:heightFrac", 0.1
+        ));
 
     var expected = UUID.fromString("a831698e-8bfd-4dbe-51c4-3236d0f2b047");
 
     // When
     var result = annotationHasher.getAnnotationHash(
-        givenAnnotationProcessed().setOaTarget(
-            Target.builder()
-                .oaSelector(selector)
-                .odsId(HANDLE_PROXY + TARGET_ID)
-                .odsType(AnnotationTargetType.DIGITAL_SPECIMEN)
-                .build()));
+        givenAnnotationProcessed().withOaHasTarget(
+            new OaHasTarget()
+                .withOaHasSelector(selector)
+                .withId(HANDLE_PROXY + TARGET_ID)
+                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.toString())));
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -71,13 +69,13 @@ class AnnotationHasherTest {
   @Test
   void hashTestClassValueSelector() {
     // Given
-    var selector = new ClassSelector()
-        .withOaClass("ClassName");
+    var selector = new OaHasSelector().withAdditionalProperty("ods:class", "ClassName");
     var expected = UUID.fromString("9906d693-479d-e4db-0790-323ae64a7565");
 
     // When
     var result = annotationHasher.getAnnotationHash(
-        givenAnnotationProcessed().setOaTarget(givenOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
+        givenAnnotationProcessed().withOaHasTarget(
+            givenOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
 
     // Then
     assertThat(result).isEqualTo(expected);

@@ -1,4 +1,4 @@
-package eu.dissco.annotationprocessingservice.domain.annotation;
+package eu.dissco.annotationprocessingservice.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -16,6 +16,15 @@ public enum SelectorType {
   @Override
   public String toString() {
     return state;
+  }
+
+  public static SelectorType fromString(String name) {
+    for (SelectorType type : SelectorType.values()) {
+      if (type.state.equals(name)) {
+        return type;
+      }
+    }
+    return null;
   }
 
 }

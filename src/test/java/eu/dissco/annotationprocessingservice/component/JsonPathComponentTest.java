@@ -16,9 +16,8 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
-import eu.dissco.annotationprocessingservice.domain.annotation.ClassSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.FragmentSelector;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,16 +27,49 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 class JsonPathComponentTest {
 
-  private JsonPathComponent jsonPathComponent;
   Configuration jsonPathConfiguration = Configuration.builder()
       .options(Option.AS_PATH_LIST, Option.SUPPRESS_EXCEPTIONS, Option.ALWAYS_RETURN_LIST)
       .build();
+  private JsonPathComponent jsonPathComponent;
+
+  private static JsonNode givenNestedNode() throws Exception {
+    return MAPPER.readTree("""
+        {
+          "id": "20.5000.1025/KZL-VC0-ZK2",
+          "digitalSpecimenWrapper": {
+            "occurrences": [
+              {
+                "assertions": [
+                  {
+                    "assertionType": "length",
+                    "assertionValue": "10cm"
+                  }
+                ],
+                "eventDate" :"2001-01-01"
+              },
+              {
+                "assertions": [
+                 {
+                    "assertionType": "weight",
+                    "assertionValue": "10kilos"
+                  },
+                  {
+                    "assertionType": "weight",
+                    "assertionValue": "10.1kilos"
+                  }
+                ],
+                "eventDate" :"2001-01-01"
+              }
+            ]
+          }
+        }
+        """);
+  }
 
   @BeforeEach
   void init() {
     jsonPathComponent = new JsonPathComponent(MAPPER, jsonPathConfiguration);
   }
-
 
   @Test
   void testGetAnnotationTargetsExtended() throws Exception {
@@ -77,10 +109,13 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsClassSelector() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[0]"));
+    var classSelector = new OaHasSelector().withAdditionalProperty("ods:class",
+        "digitalSpecimenWrapper.occurrences[0]");
+    var baseTarget = givenOaTarget(classSelector);
     var expected = List.of(
-        givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[0]")),
-        givenOaTarget(new ClassSelector("digitalSpecimenWrapper.occurrences[2]")));
+        givenOaTarget(classSelector),
+        givenOaTarget(new OaHasSelector().withAdditionalProperty("ods:class",
+            "digitalSpecimenWrapper.occurrences[2]")));
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(
@@ -94,7 +129,8 @@ class JsonPathComponentTest {
 
   @Test
   void testWrongSelectorType() {
-    var baseTarget = givenOaTarget(new FragmentSelector());
+    var baseTarget = givenOaTarget(
+        new OaHasSelector().withAdditionalProperty("@type", "oa:FragmentSelector"));
     var doc = givenElasticDocument();
     var batchMetadata = givenBatchMetadataExtendedOneParam();
 
@@ -243,7 +279,6 @@ class JsonPathComponentTest {
     assertThat(result).isEqualTo(expected);
   }
 
-
   // Case 0 -> False Positive
   @Test
   void testCase0() throws Exception {
@@ -349,7 +384,6 @@ class JsonPathComponentTest {
     // Then
     assertThat(result).isEqualTo(expected);
   }
-
 
   // Case 2a -> Array In target, different array in inputs
   @Test
@@ -468,6 +502,8 @@ class JsonPathComponentTest {
     assertThat(result).isEqualTo(expected);
   }
 
+  // Case 6b -> Nested Array in target, 1 input with arrays
+
   // Case 6a -> Nested Array in target, 1 input with no arrays
   @Test
   void testCase6a() throws Exception {
@@ -500,7 +536,7 @@ class JsonPathComponentTest {
     assertThat(result).isEqualTo(expected);
   }
 
-  // Case 6b -> Nested Array in target, 1 input with arrays
+  // Case 6c -> Nested Array in target, 2 inputs with arrays
 
   @Test
   void testCase6b() throws Exception {
@@ -528,8 +564,6 @@ class JsonPathComponentTest {
     // Then
     assertThat(result).isEqualTo(expected);
   }
-
-  // Case 6c -> Nested Array in target, 2 inputs with arrays
 
   @Test
   void testCase6c() throws Exception {
@@ -584,7 +618,6 @@ class JsonPathComponentTest {
     assertThat(result).isEqualTo(expected);
   }
 
-
   // Given Node
   private JsonNode givenCaseNode() throws Exception {
     return MAPPER.readTree("""
@@ -638,40 +671,6 @@ class JsonPathComponentTest {
              }
            ]
          }
-        }
-        """);
-  }
-
-  private static JsonNode givenNestedNode() throws Exception {
-    return MAPPER.readTree("""
-        {
-          "id": "20.5000.1025/KZL-VC0-ZK2",
-          "digitalSpecimenWrapper": {
-            "occurrences": [
-              {
-                "assertions": [
-                  {
-                    "assertionType": "length",
-                    "assertionValue": "10cm"
-                  }
-                ],
-                "eventDate" :"2001-01-01"
-              },
-              {
-                "assertions": [
-                 {
-                    "assertionType": "weight",
-                    "assertionValue": "10kilos"
-                  },
-                  {
-                    "assertionType": "weight",
-                    "assertionValue": "10.1kilos"
-                  }
-                ],
-                "eventDate" :"2001-01-01"
-              }
-            ]
-          }
         }
         """);
   }

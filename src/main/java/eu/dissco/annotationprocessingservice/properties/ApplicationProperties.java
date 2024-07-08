@@ -23,4 +23,7 @@ public class ApplicationProperties {
   @NotBlank
   private String handleProxy = "https://hdl.handle.net/";
 
+  @NotBlank
+  private String createUpdateTombstoneEventType = "https://hdl.handle.net/TEST/123-123-123";
+
 }
