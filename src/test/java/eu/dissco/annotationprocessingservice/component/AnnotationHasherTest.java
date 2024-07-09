@@ -10,6 +10,7 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,14 +21,9 @@ class AnnotationHasherTest {
   private AnnotationHasher annotationHasher;
 
   @BeforeEach
-  void setup() {
-    try {
-      this.annotationHasher = new AnnotationHasher(
-          MessageDigest.getInstance("MD5")
-      );
-    } catch (Exception ignored) {
-
-    }
+  void setup() throws NoSuchAlgorithmException {
+    this.annotationHasher = new AnnotationHasher(
+        MessageDigest.getInstance("MD5");
   }
 
   @Test

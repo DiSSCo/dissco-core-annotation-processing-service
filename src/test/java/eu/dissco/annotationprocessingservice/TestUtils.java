@@ -80,8 +80,9 @@ public class TestUtils {
         ANNOTATION_HASH);
   }
 
-  public static HashedAnnotation givenHashedAnnotation(String ID) {
-    return new HashedAnnotation(givenHashedAnnotation().annotation().withOdsBatchID(BATCH_ID).withId(ID),
+  public static HashedAnnotation givenHashedAnnotation(String id) {
+    return new HashedAnnotation(
+        givenHashedAnnotation().annotation().withOdsBatchID(BATCH_ID).withId(id),
         ANNOTATION_HASH);
   }
 
@@ -89,8 +90,8 @@ public class TestUtils {
     return new HashedAnnotation(givenAnnotationProcessedAlt(), ANNOTATION_HASH);
   }
 
-  public static Annotation givenAnnotationProcessed(String ID) {
-    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
+  public static Annotation givenAnnotationProcessed(String id) {
+    return givenAnnotationProcessed(id, CREATOR, TARGET_ID);
   }
 
   public static Annotation givenAnnotationProcessed() {
@@ -411,63 +412,63 @@ public class TestUtils {
     try {
       return MAPPER.readTree(
           """
-                     {
-                      "@id":  \"""" + id + """
-                     ",
-                      "@type": "ods:DigitalSpecimen",
-                      "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
-                      "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
-                      "ods:midsLevel": 0,
-                      "ods:version": 4,
-                      "dcterms:created": "2022-11-01T09:59:24.000Z",
-                      "ods:physicalSpecimenID": "123",
-                      "ods:physicalSpecimenIDType": "Resolvable",
-                      "ods:isMarkedAsType": true,
-                      "ods:isKnownToContainMedia": true,
-                      "ods:specimenName": "Abyssothyris Thomson, 1927",
-                      "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
-                      "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
-                      "dcterms:modified": "03/12/2012",
-                      "dwc:preparations": "",
-                      "ods:organisationID": "https://ror.org/0349vqz63",
-                      "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
-                      "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
-                      "ods:hasEvent": [
-                        {
-                          "dwc:occurrenceRemarks": "Correct",
-                          "annotateTarget": "this",
-                          "ods:Location": {
-                            "dwc:country": \"""" + country + """
-                        ",
-                            "dwc:continent": "Europe",
-                            "ods:GeoReference": {
-                              "dwc:decimalLatitude": "52.123",
-                              "dwc:decimalLongitude": 10.1233,
-                              "dwc": [
-                                "1"
-                              ]
-                            },
-                            "dwc:locality": "known"
-                          }
-                        },
-                        {
-                          "dwc:occurrenceRemarks": "Incorrect",
-                          "annotateTarget": "this",
-                          "ods:Location": {
-                            "dwc:country": "Unknown",
-                            "dwc:continent": "Error",
-                            "ods:GeoReference": {
-                              "dwc:decimalLatitude": "51.123",
-                              "dwc:decimalLongitude": 10.5233
-                            },
-                            "dwc:locality": "unknown"
-                          }
-                        },
-                        {
-                          "dwc:occurrenceRemarks": "Half Correct",
-                          "annotateTarget": "this",
-                          "ods:Location": {
-                            "dwc:country": \"""" + country + """
+              {
+               "@id":  \"""" + id + """
+              ",
+               "@type": "ods:DigitalSpecimen",
+               "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+               "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+               "ods:midsLevel": 0,
+               "ods:version": 4,
+               "dcterms:created": "2022-11-01T09:59:24.000Z",
+               "ods:physicalSpecimenID": "123",
+               "ods:physicalSpecimenIDType": "Resolvable",
+               "ods:isMarkedAsType": true,
+               "ods:isKnownToContainMedia": true,
+               "ods:specimenName": "Abyssothyris Thomson, 1927",
+               "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
+               "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
+               "dcterms:modified": "03/12/2012",
+               "dwc:preparations": "",
+               "ods:organisationID": "https://ror.org/0349vqz63",
+               "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
+               "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
+               "ods:hasEvent": [
+                 {
+                   "dwc:occurrenceRemarks": "Correct",
+                   "annotateTarget": "this",
+                   "ods:Location": {
+                     "dwc:country": \"""" + country + """
+              ",
+                  "dwc:continent": "Europe",
+                  "ods:GeoReference": {
+                    "dwc:decimalLatitude": "52.123",
+                    "dwc:decimalLongitude": 10.1233,
+                    "dwc": [
+                      "1"
+                    ]
+                  },
+                  "dwc:locality": "known"
+                }
+              },
+              {
+                "dwc:occurrenceRemarks": "Incorrect",
+                "annotateTarget": "this",
+                "ods:Location": {
+                  "dwc:country": "Unknown",
+                  "dwc:continent": "Error",
+                  "ods:GeoReference": {
+                    "dwc:decimalLatitude": "51.123",
+                    "dwc:decimalLongitude": 10.5233
+                  },
+                  "dwc:locality": "unknown"
+                }
+              },
+              {
+                "dwc:occurrenceRemarks": "Half Correct",
+                "annotateTarget": "this",
+                "ods:Location": {
+                  "dwc:country": \"""" + country + """
               ",
                             "dwc:continent": "Unknown",
                             "ods:GeoReference": {
