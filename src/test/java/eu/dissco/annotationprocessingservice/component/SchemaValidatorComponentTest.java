@@ -1,6 +1,8 @@
 package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
@@ -35,29 +37,28 @@ class SchemaValidatorComponentTest {
   private static Stream<Arguments> validAnnotations() {
     return Stream.of(
         Arguments.of(givenAnnotationRequest(), true),
-        Arguments.of(givenAnnotationRequest().withId(ID), false)
+        Arguments.of(givenAnnotationRequest().withId(HANDLE_PROXY + ID), false)
     );
   }
 
   private static Stream<Arguments> invalidAnnotations() {
     return Stream.of(
-        Arguments.of(givenAnnotationRequest().withDctermsIssued(Date.from(CREATED)),
-            Arguments.of(givenAnnotationRequest().withAsGenerator(givenGenerator())),
-            Arguments.of(givenAnnotationRequest().withId(ID)),
-            Arguments.of(givenAnnotationRequest().withDctermsCreator(null)),
-            Arguments.of(givenAnnotationRequest().withDctermsCreated(null)),
-            Arguments.of(givenAnnotationRequest().withRdfType(null)),
-            Arguments.of(givenAnnotationRequest().withOaHasBody(null)),
-            Arguments.of(givenAnnotationRequest().withOaHasTarget(null)),
-            Arguments.of(givenAnnotationRequest().withOaMotivation(null))
-        ));
+        Arguments.of(givenAnnotationRequest().withDctermsIssued(Date.from(CREATED))),
+        Arguments.of(givenAnnotationRequest().withAsGenerator(givenGenerator())),
+        Arguments.of(givenAnnotationRequest().withId(ID)),
+        Arguments.of(givenAnnotationRequest().withDctermsCreator(null)),
+        Arguments.of(givenAnnotationRequest().withDctermsCreated(null)),
+        Arguments.of(givenAnnotationRequest().withRdfType(null)),
+        Arguments.of(givenAnnotationRequest().withOaHasTarget(null)),
+        Arguments.of(givenAnnotationRequest().withOaMotivation(null))
+    );
   }
 
   @BeforeEach
   void setup() throws IOException {
     var factory = JsonSchemaFactory.getInstance(VersionFlag.V202012);
     try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream("json-schema/annotation_request.json")) {
+        .getResourceAsStream("json-schema/annotation-request.json")) {
       var schema = factory.getSchema(inputStream);
       schemaValidator = new SchemaValidatorComponent(schema, MAPPER);
     }
@@ -79,7 +80,6 @@ class SchemaValidatorComponentTest {
     assertThrows(AnnotationValidationException.class,
         () -> schemaValidator.validateAnnotationRequest(annotationRequest,
             true));
-
   }
 
   @Test

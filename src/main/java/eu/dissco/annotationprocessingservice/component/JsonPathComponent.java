@@ -86,7 +86,7 @@ public class JsonPathComponent {
       return Collections.emptyList();
     }
     var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
-    return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("id").asText());
+    return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("@id").asText());
   }
 
   private List<String> getAnnotationTargetPaths(
@@ -192,7 +192,7 @@ public class JsonPathComponent {
   private List<OaHasTarget> buildOaTargets(List<String> targetPaths, OaHasTarget baseTarget,
       String newTargetId) {
     boolean isClassSelector = baseTarget.getOaHasSelector().getAdditionalProperties().get(TYPE)
-        .equals(SelectorType.CLASS_SELECTOR);
+        .equals(SelectorType.CLASS_SELECTOR.toString());
     var newTargets = new ArrayList<OaHasTarget>();
     for (var targetPath : targetPaths) {
       var selector = new OaHasSelector();
@@ -205,7 +205,9 @@ public class JsonPathComponent {
       }
       newTargets.add(new OaHasTarget()
           .withOdsType(baseTarget.getOdsType())
-          .withId("https://doi.org/" + newTargetId)
+          .withType(baseTarget.getType())
+          .withOdsID(newTargetId)
+          .withId(newTargetId)
           .withOaHasSelector(selector));
     }
     return newTargets;
@@ -235,14 +237,18 @@ public class JsonPathComponent {
   }
 
   private String getLastKey(String jsonPath) {
-    var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
-    lastKeyMatcher.find();
-    var lastKey = lastKeyMatcher.group().replace("\\.", "");
-    if (lastKey.length() < jsonPath.length()) {
-      return lastKey;
+    if (jsonPath.contains(".") || jsonPath.contains("[")) {
+      var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
+      lastKeyMatcher.find();
+      var lastKey = lastKeyMatcher.group().replace("\\.", "");
+      if (lastKey.length() < jsonPath.length()) {
+        return lastKey;
+      } else {
+        log.error("Unable to parse last key of jsonPath {}", jsonPath);
+        throw new BatchingRuntimeException();
+      }
     } else {
-      log.error("Unable to parse last key of jsonPath {}", jsonPath);
-      throw new BatchingRuntimeException();
+      return jsonPath;
     }
   }
 

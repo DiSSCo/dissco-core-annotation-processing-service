@@ -8,8 +8,10 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatc
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.SourceSystem;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;

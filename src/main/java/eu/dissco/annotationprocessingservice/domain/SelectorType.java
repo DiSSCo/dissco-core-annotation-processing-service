@@ -3,9 +3,9 @@ package eu.dissco.annotationprocessingservice.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public enum SelectorType {
-  @JsonProperty("FieldSelector") FIELD_SELECTOR("FieldSelector"),
-  @JsonProperty("ClassSelector") CLASS_SELECTOR("ClassSelector"),
-  @JsonProperty("FragmentSelector") FRAGMENT_SELECTOR("FragmentSelector");
+  @JsonProperty("FieldSelector") FIELD_SELECTOR("ods:FieldSelector"),
+  @JsonProperty("ClassSelector") CLASS_SELECTOR("ods:ClassSelector"),
+  @JsonProperty("FragmentSelector") FRAGMENT_SELECTOR("oa:FragmentSelector");
 
   private final String state;
 

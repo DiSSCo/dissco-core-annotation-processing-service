@@ -13,6 +13,7 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
@@ -61,6 +62,7 @@ public abstract class AbstractProcessingService {
     var now = Date.from(Instant.now());
     annotation.withId(id)
         .withOdsVersion(1)
+        .withOdsStatus(OdsStatus.ODS_ACTIVE)
         .withAsGenerator(createGenerator())
         .withDctermsIssued(now)
         .withDctermsModified(now);
@@ -98,6 +100,7 @@ public abstract class AbstractProcessingService {
 
   protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation) {
     annotation.withId(currentAnnotation.getId())
+        .withOdsStatus(currentAnnotation.getOdsStatus())
         .withOdsVersion(currentAnnotation.getOdsVersion() + 1)
         .withDctermsIssued(currentAnnotation.getDctermsIssued())
         .withAsGenerator(currentAnnotation.getAsGenerator())

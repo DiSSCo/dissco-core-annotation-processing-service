@@ -46,7 +46,7 @@ class ElasticSearchRepositoryIT {
       "docker.elastic.co/elasticsearch/elasticsearch").withTag("8.6.1");
   private static final String ANNOTATION_INDEX = "annotations";
   private static final String DIGITAL_SPECIMEN_INDEX = "digital-specimen";
-  private static final String MEDIA_INDEX = "digital-media-object";
+  private static final String MEDIA_INDEX = "digital-media";
   private static final String ELASTICSEARCH_USERNAME = "elastic";
   private static final String ELASTICSEARCH_PASSWORD = "s3cret";
   private static final ElasticsearchContainer container = new ElasticsearchContainer(
@@ -122,7 +122,7 @@ class ElasticSearchRepositoryIT {
   void testIndexAnnotations() throws IOException {
     // Given
     var annotations = List.of(givenAnnotationProcessed(),
-        givenAnnotationProcessed().setOdsId("alt"));
+        givenAnnotationProcessed().withId("alt"));
 
     // When
     var result = repository.indexAnnotations(annotations);
@@ -202,7 +202,7 @@ class ElasticSearchRepositoryIT {
     var bulkRequest = new BulkRequest.Builder();
     for (var doc : docs) {
       bulkRequest.operations(op -> op.index(
-          idx -> idx.index(index).id(doc.get("id").asText())
+          idx -> idx.index(index).id(doc.get("@id").asText())
               .document(doc)));
     }
     client.bulk(bulkRequest.build());

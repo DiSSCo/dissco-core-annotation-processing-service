@@ -7,8 +7,10 @@ package eu.dissco.annotationprocessingservice.database.jooq.tables;
 import eu.dissco.annotationprocessingservice.database.jooq.Keys;
 import eu.dissco.annotationprocessingservice.database.jooq.Public;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.SourceSystemRecord;
+
 import java.time.Instant;
 import java.util.Collection;
+
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.Name;

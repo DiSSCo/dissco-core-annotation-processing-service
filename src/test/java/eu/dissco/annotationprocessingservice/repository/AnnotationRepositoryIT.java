@@ -6,20 +6,15 @@ import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
-import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
+import static eu.dissco.annotationprocessingservice.database.jooq.Tables.NEW_ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Body;
-import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
-import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
-import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import java.util.List;
 import java.util.Set;
 import org.jooq.Record;
@@ -40,7 +35,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(ANNOTATION).execute();
+    context.truncate(NEW_ANNOTATION).execute();
   }
 
   @Test
@@ -50,7 +45,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.createAnnotationRecord(expected);
-    var actual = getAnnotation(expected.getOdsId());
+    var actual = getAnnotation(expected.getId());
 
     // Then
     assertThat(actual).isEqualTo(expected);
@@ -63,7 +58,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.createAnnotationRecord(List.of(expected));
-    var result = getAnnotation(expected.annotation().getOdsId());
+    var result = getAnnotation(expected.annotation().getId());
 
     // Then
     assertThat(result).isEqualTo(expected.annotation());
@@ -89,11 +84,11 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
-    var updatedAnnotation = givenAnnotationProcessed().setOaMotivation(Motivation.EDITING);
+    var updatedAnnotation = givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING);
 
     // When
     repository.createAnnotationRecord(updatedAnnotation);
-    var actual = getAnnotation(annotation.getOdsId());
+    var actual = getAnnotation(annotation.getId());
 
     // Then
     assertThat(actual).isEqualTo(updatedAnnotation);
@@ -104,15 +99,15 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
-    var initInstant = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
+    var initInstant = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
+        .where(NEW_ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
 
     // When
-    repository.updateLastChecked(List.of(annotation.getOdsId()));
+    repository.updateLastChecked(List.of(annotation.getId()));
 
     // Then
-    var updatedTimestamp = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
+    var updatedTimestamp = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
+        .where(NEW_ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
     assertThat(updatedTimestamp).isAfter(initInstant);
   }
 
@@ -123,16 +118,16 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    var result = repository.getAnnotationById(annotation.getOdsId());
+    var result = repository.getAnnotationById(annotation.getId());
 
     // Then
-    assertThat(result).hasValue(annotation.getOdsId());
+    assertThat(result).hasValue(annotation.getId());
   }
 
   @Test
   void testGetAnnotationFromHash() {
     // Given
-    var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().setOdsId("alt id"),
+    var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withId("alt id"),
         ANNOTATION_HASH_2);
     repository.createAnnotationRecord(List.of(givenHashedAnnotation(), altHashedAnnotation));
 
@@ -163,11 +158,11 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(annotation.getOdsId());
+    repository.archiveAnnotation(annotation.getId());
 
     // Then
-    var deletedTimestamp = context.select(ANNOTATION.DELETED_ON).from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotation.getOdsId())).fetchOne(Record1::value1);
+    var deletedTimestamp = context.select(NEW_ANNOTATION.TOMBSTONED_ON).from(NEW_ANNOTATION)
+        .where(NEW_ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
     assertThat(deletedTimestamp).isNotNull();
   }
 
@@ -178,10 +173,10 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.rollbackAnnotation(annotation.getOdsId());
+    repository.rollbackAnnotation(annotation.getId());
 
     // Then
-    var result = repository.getAnnotationById(annotation.getOdsId());
+    var result = repository.getAnnotationById(annotation.getId());
     assertThat(result).isEmpty();
   }
 
@@ -192,17 +187,17 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.rollbackAnnotations(List.of(annotation.getOdsId()));
+    repository.rollbackAnnotations(List.of(annotation.getId()));
 
     // Then
-    var result = repository.getAnnotationById(annotation.getOdsId());
+    var result = repository.getAnnotationById(annotation.getId());
     assertThat(result).isEmpty();
   }
 
   private Annotation getAnnotation(String annotationId) {
-    var dbRecord = context.select(ANNOTATION.asterisk())
-        .from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotationId))
+    var dbRecord = context.select(NEW_ANNOTATION.asterisk())
+        .from(NEW_ANNOTATION)
+        .where(NEW_ANNOTATION.ID.eq(annotationId))
         .fetchOne();
     if (dbRecord == null) {
       return null;
@@ -212,24 +207,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   private Annotation mapAnnotation(Record dbRecord) {
     try {
-      return Annotation.builder()
-          .odsId(dbRecord.get(ANNOTATION.ID))
-          .rdfType(dbRecord.get(ANNOTATION.TYPE))
-          .odsVersion(dbRecord.get(ANNOTATION.VERSION))
-          .oaMotivation(Motivation.fromString(dbRecord.get(ANNOTATION.MOTIVATION)))
-          .oaMotivatedBy(dbRecord.get(ANNOTATION.MOTIVATED_BY))
-          .oaTarget(mapper.readValue(dbRecord.get(ANNOTATION.TARGET).data(), Target.class))
-          .oaBody(mapper.readValue(dbRecord.get(ANNOTATION.BODY).data(), Body.class))
-          .oaCreator(mapper.readValue(dbRecord.get(ANNOTATION.CREATOR).data(), Creator.class))
-          .dcTermsCreated(dbRecord.get(ANNOTATION.CREATED))
-          .odsDeletedOn(dbRecord.get(ANNOTATION.DELETED_ON))
-          .asGenerator(
-              mapper.readValue(dbRecord.get(ANNOTATION.GENERATOR).data(), Generator.class))
-          .oaGenerated(dbRecord.get(ANNOTATION.GENERATED))
-          .odsAggregateRating(mapper.readValue(dbRecord.get(ANNOTATION.AGGREGATE_RATING).data(),
-              AggregateRating.class))
-          .odsJobId(dbRecord.get(ANNOTATION.MJR_JOB_ID))
-          .build();
+      return mapper.readValue(dbRecord.get(NEW_ANNOTATION.DATA).data(), Annotation.class);
     } catch (JsonProcessingException ignored) {
       return null;
     }

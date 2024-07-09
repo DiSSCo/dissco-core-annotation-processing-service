@@ -54,15 +54,15 @@ import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Body;
-import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.OaHasBody;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -93,6 +93,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessingKafkaServiceTest {
 
+  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
+  @Mock
+  AnnotationHasher annotationHasher;
+  @Mock
+  SchemaValidatorComponent schemaValidator;
+  @Mock
+  BatchAnnotationService batchAnnotationService;
+  @Mock
+  AnnotationBatchRecordService annotationBatchRecordService;
+  @Captor
+  ArgumentCaptor<List<Annotation>> captor;
+  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
+  MockedStatic<UUID> mockedUuid;
   @Mock
   private AnnotationRepository repository;
   @Mock
@@ -109,22 +123,22 @@ class ProcessingKafkaServiceTest {
   private ApplicationProperties applicationProperties;
   @Mock
   private BulkResponse bulkResponse;
-  @Mock
-  AnnotationHasher annotationHasher;
-  @Mock
-  SchemaValidatorComponent schemaValidator;
-  @Mock
-  BatchAnnotationService batchAnnotationService;
-  @Mock
-  AnnotationBatchRecordService annotationBatchRecordService;
-  @Captor
-  ArgumentCaptor<List<Annotation>> captor;
   private MockedStatic<Instant> mockedStatic;
-  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingKafkaService service;
-  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
-  MockedStatic<UUID> mockedUuid;
+
+  private static Stream<Arguments> unequalAnnotations() {
+    return Stream.of(
+        Arguments.of(
+            givenAnnotationProcessed().withOaHasBody(givenOaBodySetType("differentType"))),
+        Arguments.of(
+            givenAnnotationProcessed().withDctermsCreator(givenCreator("different creator"))),
+        Arguments.of(givenAnnotationProcessed().withOaHasTarget(givenOaTarget("different target"))),
+        Arguments.of(givenAnnotationProcessed().withOaMotivatedBy("different motivated by")),
+        Arguments.of(givenAnnotationProcessed().withSchemaAggregateRating(
+            givenAggregationRating(0.99))),
+        Arguments.of(givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING))
+    );
+  }
 
   @BeforeEach
   void setup() {
@@ -205,7 +219,7 @@ class ProcessingKafkaServiceTest {
     then(repository).should()
         .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
+        .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), true);
     then(annotationBatchRecordService).should().updateAnnotationBatchRecord(BATCH_ID, 1);
     then(batchAnnotationService).shouldHaveNoInteractions();
@@ -235,7 +249,7 @@ class ProcessingKafkaServiceTest {
     var annotation = givenAnnotationRequest();
     boolean batchingRequested = false;
     var secondAnnotation = givenAnnotationRequest()
-        .setOaTarget(givenOaTarget("alt target"));
+        .withOaHasTarget(givenOaTarget("alt target"));
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, null, null);
     Map<UUID, String> idMap = Map.of(ANNOTATION_HASH, ID, ANNOTATION_HASH_2, ID_ALT);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
@@ -333,7 +347,7 @@ class ProcessingKafkaServiceTest {
         PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
-       eq(event))).willReturn(
+        eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
@@ -462,16 +476,16 @@ class ProcessingKafkaServiceTest {
     var equalId = "equalId";
     boolean batchingRequested = false;
     var newAnnotation = givenAnnotationRequest();
-    var changedAnnotationNew = (givenAnnotationRequest().setOaTarget(
+    var changedAnnotationNew = (givenAnnotationRequest().withOaHasTarget(
         givenOaTarget("changedTarget")))
-        .setOaBody(Body.builder().oaValue(List.of("new value")).build());
-    var changedAnnotationOriginal = (givenAnnotationProcessed().setOaTarget(
-        givenOaTarget("changedTarget")).setOdsId(changedId));
+        .withOaHasBody(new OaHasBody().withOaValue(List.of("new value")));
+    var changedAnnotationOriginal = (givenAnnotationProcessed().withOaHasTarget(
+        givenOaTarget("changedTarget")).withId(changedId));
     var changedAnnotationOriginalHashed = new HashedAnnotation(
         changedAnnotationOriginal, ANNOTATION_HASH_2);
-    var equalAnnotation = givenAnnotationRequest().setOaTarget(givenOaTarget("equalTarget"));
+    var equalAnnotation = givenAnnotationRequest().withOaHasTarget(givenOaTarget("equalTarget"));
     var equalAnnotationHashed = new HashedAnnotation(
-        equalAnnotation.setOdsId(equalId).setOdsVersion(1), ANNOTATION_HASH_3);
+        equalAnnotation.withId(equalId).withOdsVersion(1), ANNOTATION_HASH_3);
 
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
@@ -517,17 +531,17 @@ class ProcessingKafkaServiceTest {
     String changedId = "changedId";
     var equalId = "equalId";
     boolean batchingRequested = true;
-    var newAnnotation = givenAnnotationRequest().setPlaceInBatch(1);
-    var changedAnnotationNew = (givenAnnotationRequest().setOaTarget(
+    var newAnnotation = givenAnnotationRequest().withOdsPlaceInBatch(1);
+    var changedAnnotationNew = (givenAnnotationRequest().withOaHasTarget(
         givenOaTarget("changedTarget")))
-        .setOaBody(Body.builder().oaValue(List.of("new value")).build());
-    var changedAnnotationOriginal = (givenAnnotationProcessed().setOaTarget(
-        givenOaTarget("changedTarget")).setOdsId(changedId));
+        .withOaHasBody(new OaHasBody().withOaValue(List.of("new value")));
+    var changedAnnotationOriginal = (givenAnnotationProcessed().withOaHasTarget(
+        givenOaTarget("changedTarget")).withId(changedId));
     var changedAnnotationOriginalHashed = new HashedAnnotation(
         changedAnnotationOriginal, ANNOTATION_HASH_2);
-    var equalAnnotation = givenAnnotationRequest().setOaTarget(givenOaTarget("equalTarget"));
+    var equalAnnotation = givenAnnotationRequest().withOaHasTarget(givenOaTarget("equalTarget"));
     var equalAnnotationHashed = new HashedAnnotation(
-        equalAnnotation.setOdsId(equalId).setOdsVersion(1), ANNOTATION_HASH_3);
+        equalAnnotation.withId(equalId).withOdsVersion(1), ANNOTATION_HASH_3);
     var batchMetadata = givenBatchMetadataExtendedTwoParam();
     var event = new AnnotationEvent(List.of(newAnnotation, changedAnnotationNew, equalAnnotation),
         JOB_ID, List.of(batchMetadata), null);
@@ -542,7 +556,7 @@ class ProcessingKafkaServiceTest {
     given(fdoRecordService.buildPatchRollbackHandleRequest(
         List.of(new HashedAnnotation(changedAnnotationNew, any()))))
         .willReturn(givenPatchRequest());
-    given(applicationProperties.getHandleProxy()).willReturn("https://hdl.handle.net/");
+    given(applicationProperties.getHandleProxy()).willReturn(HANDLE_PROXY);
     given(applicationProperties.getProcessorHandle()).willReturn(PROCESSOR_HANDLE);
     given(fdoRecordService.buildPostHandleRequest(
         List.of(new HashedAnnotation(newAnnotation, any())))).willReturn(
@@ -593,19 +607,6 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
-  }
-
-  private static Stream<Arguments> unequalAnnotations() {
-    return Stream.of(
-        Arguments.of(
-            givenAnnotationProcessed().setOaBody(givenOaBodySetType("differentType"))),
-        Arguments.of(givenAnnotationProcessed().setOaCreator(givenCreator("different creator"))),
-        Arguments.of(givenAnnotationProcessed().setOaTarget(givenOaTarget("different target"))),
-        Arguments.of(givenAnnotationProcessed().setOaMotivatedBy("different motivated by")),
-        Arguments.of(givenAnnotationProcessed().setOdsAggregateRating(
-            givenAggregationRating(0.99))),
-        Arguments.of(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING))
-    );
   }
 
   @Test
@@ -667,13 +668,13 @@ class ProcessingKafkaServiceTest {
     // Given
     var annotation = givenAnnotationRequest();
     var secondAnnotation = givenAnnotationProcessed()
-        .setOdsId(ID_ALT)
-        .setOaMotivatedBy("nature")
-        .setOaTarget(givenOaTarget("alt target"));
+        .withId(ID_ALT)
+        .withOaMotivatedBy("nature")
+        .withOaHasTarget(givenOaTarget("alt target"));
     var secondAnnotationCurrent = givenAnnotationProcessed()
-        .setOdsId(ID_ALT)
-        .setOaMotivatedBy("science")
-        .setOaTarget(givenOaTarget("alt target"));
+        .withId(ID_ALT)
+        .withOaMotivatedBy("science")
+        .withOaHasTarget(givenOaTarget("alt target"));
     var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent,
         ANNOTATION_HASH_2);
     var event = new AnnotationEvent(List.of(annotation, secondAnnotation), JOB_ID, null, null);
@@ -711,7 +712,7 @@ class ProcessingKafkaServiceTest {
   void testHandleUpdateMessageKafkaException() throws Exception {
     // Given
     boolean batchingRequested = false;
-    var annotation = givenAnnotationRequest().setOdsId(ID);
+    var annotation = givenAnnotationRequest().withId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
@@ -777,7 +778,7 @@ class ProcessingKafkaServiceTest {
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
     // Given
     boolean batchingRequested = false;
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
@@ -800,7 +801,7 @@ class ProcessingKafkaServiceTest {
     then(masJobRecordService).should().markMasJobRecordAsFailed(any(), eq(false));
     then(fdoRecordService).should(times(2))
         .buildPatchRollbackHandleRequest(
-            List.of(new HashedAnnotation(annotationRequest.setOdsVersion(2), ANNOTATION_HASH)));
+            List.of(new HashedAnnotation(annotationRequest.withOdsVersion(2), ANNOTATION_HASH)));
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotations(anyList());
@@ -895,7 +896,8 @@ class ProcessingKafkaServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested), eq(event))).willReturn(
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
+        eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
@@ -905,7 +907,7 @@ class ProcessingKafkaServiceTest {
     then(repository).should()
         .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
+        .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).should().applyBatchAnnotations(event);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
@@ -929,7 +931,8 @@ class ProcessingKafkaServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested), eq(event))).willReturn(
+    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
+        eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
 
     // When
@@ -939,7 +942,7 @@ class ProcessingKafkaServiceTest {
     then(repository).should()
         .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
+        .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).shouldHaveNoInteractions();
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
@@ -1026,7 +1029,7 @@ class ProcessingKafkaServiceTest {
     then(repository).should()
         .createAnnotationRecord(List.of(givenHashedAnnotation(BATCH_ID)));
     then(kafkaPublisherService).should()
-        .publishCreateEvent(givenAnnotationProcessed().setOdsBatchId(BATCH_ID));
+        .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
   }

@@ -12,6 +12,7 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.records.Annota
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.NewAnnotationRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.SourceSystemRecord;
+
 import org.jooq.TableField;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;

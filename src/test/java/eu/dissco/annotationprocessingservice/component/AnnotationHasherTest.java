@@ -11,6 +11,7 @@ import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.security.MessageDigest;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,22 +38,22 @@ class AnnotationHasherTest {
     var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed());
 
     // Then
-    assertThat(result).isEqualTo(ANNOTATION_HASH);
+    assertThat(result).isEqualTo(UUID.fromString("2fc042f6-34ff-4bcd-9d7f-71bf449a720f"));
   }
 
   @Test
   void hashTestFragmentSelector() {
     // Given
+    var map = new LinkedHashMap<>();
+    map.put("ac:xFrac", 0.99);
+    map.put("ac:yFrac", 0.99);
+    map.put("ac:widthFrac", 0.1);
+    map.put("ac:heightFrac", 0.1);
     var selector = new OaHasSelector()
         .withAdditionalProperty("@type", "oa:FragmentSelector")
-        .withAdditionalProperty("oa:hasRoi", Map.of(
-            "ac:xFrac", 0.99,
-            "ac:yFrac", 0.99,
-            "ac:widthFrac", 0.1,
-            "ac:heightFrac", 0.1
-        ));
+        .withAdditionalProperty("oa:hasRoi", map);
 
-    var expected = UUID.fromString("a831698e-8bfd-4dbe-51c4-3236d0f2b047");
+    var expected = UUID.fromString("bff30f04-e1ca-ed30-4841-d0138dfab477");
 
     // When
     var result = annotationHasher.getAnnotationHash(
@@ -69,7 +70,8 @@ class AnnotationHasherTest {
   @Test
   void hashTestClassValueSelector() {
     // Given
-    var selector = new OaHasSelector().withAdditionalProperty("ods:class", "ClassName");
+    var selector = new OaHasSelector().withAdditionalProperty("ods:class", "ClassName")
+        .withAdditionalProperty("@type", "ods:ClassSelector");
     var expected = UUID.fromString("9906d693-479d-e4db-0790-323ae64a7565");
 
     // When

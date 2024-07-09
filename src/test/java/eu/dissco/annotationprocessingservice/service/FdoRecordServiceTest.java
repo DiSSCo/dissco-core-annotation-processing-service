@@ -14,9 +14,9 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequestBa
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +28,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 class FdoRecordServiceTest {
 
   private FdoRecordService fdoRecordService;
+
+  private static Stream<Arguments> handleNeedsUpdate() {
+    return Stream.of(
+        Arguments.of(givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING)),
+        Arguments.of(
+            givenAnnotationProcessed().withOaHasTarget(givenOaTarget("different target"))));
+  }
 
   @BeforeEach
   void setUp() {
@@ -119,12 +126,6 @@ class FdoRecordServiceTest {
   void testHandleNeedsUpdateFalse() {
     assertThat(fdoRecordService.handleNeedsUpdate(givenAnnotationProcessed(),
         givenAnnotationProcessed())).isFalse();
-  }
-
-  private static Stream<Arguments> handleNeedsUpdate() {
-    return Stream.of(
-        Arguments.of(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING)),
-        Arguments.of(givenAnnotationProcessed().setOaTarget(givenOaTarget("different target"))));
   }
 
   @ParameterizedTest

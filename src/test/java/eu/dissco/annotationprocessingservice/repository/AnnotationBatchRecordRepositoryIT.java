@@ -41,7 +41,8 @@ class AnnotationBatchRecordRepositoryIT extends BaseRepositoryIT {
 
     // When
     repository.createAnnotationBatchRecord(List.of(givenAnnotationBatchRecord()));
-    var result = context.select(ANNOTATION_BATCH_RECORD.asterisk())
+    var result = context
+        .select(ANNOTATION_BATCH_RECORD.asterisk())
         .from(ANNOTATION_BATCH_RECORD)
         .fetchOne(this::toAnnotationBatchRecord);
 

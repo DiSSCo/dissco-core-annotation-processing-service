@@ -35,33 +35,31 @@ class JsonPathComponentTest {
   private static JsonNode givenNestedNode() throws Exception {
     return MAPPER.readTree("""
         {
-          "id": "20.5000.1025/KZL-VC0-ZK2",
-          "digitalSpecimenWrapper": {
-            "occurrences": [
+          "@id": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+            "ods:hasEvent": [
               {
-                "assertions": [
+                "ods:hasAssertion": [
                   {
-                    "assertionType": "length",
-                    "assertionValue": "10cm"
+                    "dwc:measurementType": "length",
+                    "dwc:measurementValue": "10cm"
                   }
                 ],
-                "eventDate" :"2001-01-01"
+                "dwc:eventDate" :"2001-01-01"
               },
               {
-                "assertions": [
+                "ods:hasAssertion": [
                  {
-                    "assertionType": "weight",
-                    "assertionValue": "10kilos"
+                    "dwc:measurementType": "weight",
+                    "dwc:measurementValue": "10kilos"
                   },
                   {
-                    "assertionType": "weight",
-                    "assertionValue": "10.1kilos"
+                    "dwc:measurementType": "weight",
+                    "dwc:measurementValue": "10.1kilos"
                   }
                 ],
-                "eventDate" :"2001-01-01"
+                "dwc:eventDate" :"2001-01-01"
               }
             ]
-          }
         }
         """);
   }
@@ -74,9 +72,9 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtended() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var baseTarget = givenOaTarget(givenSelector("ods:hasEvent[0].ods:Location"));
     var expected = List.of(
-        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
+        givenOaTarget(givenSelector("ods:hasEvent[0].ods:Location")));
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(
@@ -91,10 +89,10 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtendedOneBatchMetadata() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var baseTarget = givenOaTarget(givenSelector("ods:hasEvent[1].ods:Location"));
     var expected = List.of(
-        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
-        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
+        givenOaTarget(givenSelector("ods:hasEvent[0].ods:Location")),
+        givenOaTarget(givenSelector("ods:hasEvent[2].ods:Location")));
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(
@@ -109,13 +107,13 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsClassSelector() throws Exception {
     // Given
-    var classSelector = new OaHasSelector().withAdditionalProperty("ods:class",
-        "digitalSpecimenWrapper.occurrences[0]");
+    var classSelector = new OaHasSelector().withAdditionalProperty("ods:class", "ods:hasEvent[0]")
+        .withAdditionalProperty("@type", "ods:ClassSelector");
     var baseTarget = givenOaTarget(classSelector);
     var expected = List.of(
         givenOaTarget(classSelector),
-        givenOaTarget(new OaHasSelector().withAdditionalProperty("ods:class",
-            "digitalSpecimenWrapper.occurrences[2]")));
+        givenOaTarget(new OaHasSelector().withAdditionalProperty("ods:class", "ods:hasEvent[2]")
+            .withAdditionalProperty("@type", "ods:ClassSelector")));
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(
@@ -143,10 +141,10 @@ class JsonPathComponentTest {
   @Test
   void testBadTargetPath() {
     var baseTarget = givenOaTarget(
-        givenSelector("[digitalSpecimenWrapper][occurrences][1][location]"));
+        givenSelector("[ods:hasEvent][1][ods:Location]"));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
-            "[digitalSpecimenWrapper][occurrences][*][location][dwc:country]",
+            "[[ods:hasEvent][*][ods:Location][dwc:country]",
             "Netherlands")));
     var doc = givenElasticDocument();
 
@@ -159,13 +157,13 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtendedFalsePositive() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var baseTarget = givenOaTarget(givenSelector("ods:hasEvent[1].ods:Location"));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+            "ods:hasEvent[*].ods:Location.dwc:country",
             "Netherlands"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
+            "ods:hasEvent[*].dwc:occurrenceRemarks",
             "Incorrect"
         )
     ));
@@ -182,10 +180,10 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtendedOneSharedIndexWithTarget() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[1].location"));
+    var baseTarget = givenOaTarget(givenSelector("ods:hasEvent[1].ods:Location"));
     var expected = List.of(
-        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
-        givenOaTarget(givenSelector("digitalSpecimenWrapper.occurrences[2].location")));
+        givenOaTarget(givenSelector("ods:hasEvent[0].ods:Location")),
+        givenOaTarget(givenSelector("ods:hasEvent[2].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         givenBatchMetadataSearchParamCountry(),
         new BatchMetadataSearchParam(
@@ -206,18 +204,18 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsExtendedNestedFields() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].assertions[5].assertionValue"));
+        givenSelector("ods:hasEvent[5].ods:hasAssertion[5].dwc:measurementValue"));
     var expected = List.of(
         givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[1].assertions[0].assertionValue")),
+            givenSelector("ods:hasEvent[1].ods:hasAssertion[0].dwc:measurementValue")),
         givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[1].assertions[1].assertionValue")));
+            givenSelector("ods:hasEvent[1].ods:hasAssertion[1].dwc:measurementValue")));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionType",
+            "ods:hasEvent[*].ods:hasAssertion[*].dwc:measurementType",
             "weight"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].eventDate",
+            "ods:hasEvent[*].dwc:eventDate",
             "2001-01-01"
         )));
 
@@ -234,13 +232,13 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsExtendedNestedFieldsFalsePositive() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].assertions[5].assertionValue"));
+        givenSelector("ods:hasEvent[5].ods:hasAssertion[5].dwc:measurementValue"));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionType",
+            "ods:hasEvent[*].ods:hasAssertion[*].dwc:measurementType",
             "weight"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionValue",
+            "ods:hasEvent[*].ods:hasAssertion[*].dwc:measurementValue",
             "10cm"
         )));
 
@@ -257,16 +255,16 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsExtendedNestedFieldsBothValid() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].assertions[5].assertionValue"));
+        givenSelector("ods:hasEvent[5].ods:hasAssertion[5].dwc:measurementValue"));
     var expected = List.of(
         givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[1].assertions[1].assertionValue")));
+            givenSelector("ods:hasEvent[1].ods:hasAssertion[1].dwc:measurementValue")));
     var batchMetadata = new BatchMetadataExtended(1, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionType",
+            "ods:hasEvent[*].ods:hasAssertion[*].dwc:measurementType",
             "weight"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].assertions[*].assertionValue",
+            "ods:hasEvent[*].ods:hasAssertion[*].dwc:measurementValue",
             "10.1kilos"
         )));
 
@@ -284,9 +282,9 @@ class JsonPathComponentTest {
   void testCase0() throws Exception {
     // Given
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.city",
+        new BatchMetadataSearchParam("ods:hasEvent[*].ods:Location.dwc:city",
             "Paris"),
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].remarks.weather",
+        new BatchMetadataSearchParam("ods:hasEvent[*].remarks.weather",
             "bad"))
     );
 
@@ -303,16 +301,15 @@ class JsonPathComponentTest {
   void testCase1a() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.livingOrPreserved"));
+        givenSelector("ods:livingOrPreserved"));
     var expected = List.of(baseTarget);
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.city",
+        new BatchMetadataSearchParam("ods:hasEvent[*].ods:Location.dwc:city",
             "Paris"))
     );
 
     // When
-    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(),
-        baseTarget);
+    var result = jsonPathComponent.getAnnotationTargets(batchMetadata, givenCaseNode(), baseTarget);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -323,13 +320,12 @@ class JsonPathComponentTest {
   void testCase1b() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.livingOrPreserved"));
+        givenSelector("ods:livingOrPreserved"));
     var expected = List.of(baseTarget);
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.city",
+        new BatchMetadataSearchParam("ods:hasEvent[*].ods:Location.dwc:city",
             "Paris"),
-        new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.remarks.weather", "good"))
+        new BatchMetadataSearchParam("ods:hasEvent[*].remarks.weather", "good"))
     );
 
     // When
@@ -345,13 +341,13 @@ class JsonPathComponentTest {
   void testCase2a() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].location"));
+        givenSelector("ods:hasEvent[5].ods:Location"));
     var expected = List.of(givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
+            givenSelector("ods:hasEvent[0].ods:Location")),
         givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[1].location")));
+            givenSelector("ods:hasEvent[1].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.livingOrPreserved", "preserved"))
+        new BatchMetadataSearchParam("ods:livingOrPreserved", "Preserved"))
     );
 
     // When
@@ -367,13 +363,14 @@ class JsonPathComponentTest {
   void testCase2b() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].location"));
+        givenSelector("ods:hasEvent[5].ods:Location"));
     var expected = List.of(givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
+            givenSelector("ods:hasEvent[0].ods:Location")),
         givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[1].location")));
+            givenSelector("ods:hasEvent[1].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.identifications[*].citation",
+        new BatchMetadataSearchParam(
+            "ods:hasIdentification[*].ods:hasCitation[*].dcterms:identifier",
             "Miller 1888"))
     );
 
@@ -390,16 +387,17 @@ class JsonPathComponentTest {
   void testCase2c() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].location"));
+        givenSelector("ods:hasEvent[5].ods:Location"));
     var expected = List.of(givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[0].location")),
+            givenSelector("ods:hasEvent[0].ods:Location")),
         givenOaTarget(
-            givenSelector("digitalSpecimenWrapper.occurrences[1].location")));
+            givenSelector("ods:hasEvent[1].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.identifications[*].citation",
+        new BatchMetadataSearchParam(
+            "ods:hasIdentification[*].ods:hasCitation[*].dcterms:identifier",
             "Miller 1888"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.identifications[*].taxonIdentification[*].scientificName",
+            "ods:hasIdentification[*].ods:hasTaxonIdentification[*].dwc:scientificName",
             "bombus bombus"))
     );
 
@@ -416,11 +414,11 @@ class JsonPathComponentTest {
   void testCase3a() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].location"));
+        givenSelector("ods:hasEvent[5].ods:Location"));
     var expected = List.of(givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
+        givenSelector("ods:hasEvent[0].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.city",
+        new BatchMetadataSearchParam("ods:hasEvent[*].ods:Location.dwc:city",
             "Paris"))
     );
 
@@ -437,13 +435,13 @@ class JsonPathComponentTest {
   void testCase3b() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].location"));
+        givenSelector("ods:hasEvent[5].ods:Location"));
     var expected = List.of(givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
+        givenSelector("ods:hasEvent[0].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].location.city",
+        new BatchMetadataSearchParam("ods:hasEvent[*].ods:Location.dwc:city",
             "Paris"),
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].remarks.weather",
+        new BatchMetadataSearchParam("ods:hasEvent[*].remarks.weather",
             "good"))
     );
 
@@ -460,15 +458,15 @@ class JsonPathComponentTest {
   void testCase4() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.identifications[5].citation"));
+        givenSelector("ods:hasIdentification[5].ods:hasCitation[0].dcterms:identifier"));
     var expected = List.of(givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.identifications[0].citation")));
+        givenSelector("ods:hasIdentification[0].ods:hasCitation[0].dcterms:identifier")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.identifications[*].taxonIdentification.scientificName",
+            "ods:hasIdentification[*].ods:hasTaxonIdentification[*].dwc:scientificName",
             "bombus bombus"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.identifications[*].taxonIdentification.class", "insecta"))
+            "ods:hasIdentification[*].ods:hasTaxonIdentification[*].dwc:class", "insecta"))
     );
 
     // When
@@ -484,13 +482,14 @@ class JsonPathComponentTest {
   void testCase5() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[5].location"));
+        givenSelector("ods:hasEvent[5].ods:Location"));
     var expected = List.of(givenOaTarget(
-        givenSelector("digitalSpecimenWrapper.occurrences[0].location")));
+        givenSelector("ods:hasEvent[0].ods:Location")));
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.identifications[*].citation",
+        new BatchMetadataSearchParam(
+            "ods:hasIdentification[*].ods:hasCitation[*].dcterms:identifier",
             "Miller 1888"),
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.occurrences[*].remarks.weather",
+        new BatchMetadataSearchParam("ods:hasEvent[*].ods:Location.remarks.weather",
             "good"))
     );
 
@@ -510,22 +509,22 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "digitalSpecimenWrapper.identifications[5].taxonIdentification[5].scientificName"));
+            "ods:hasIdentification[5].ods:hasTaxonIdentification[5].dwc:scientificName"));
     var expected = List.of(givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[0].taxonIdentification[0].scientificName")),
+                "ods:hasIdentification[0].ods:hasTaxonIdentification[0].dwc:scientificName")),
         givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[0].taxonIdentification[1].scientificName")),
+                "ods:hasIdentification[0].ods:hasTaxonIdentification[1].dwc:scientificName")),
         givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[1].taxonIdentification[0].scientificName")),
+                "ods:hasIdentification[1].ods:hasTaxonIdentification[0].dwc:scientificName")),
         givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[1].taxonIdentification[1].scientificName"))
+                "ods:hasIdentification[1].ods:hasTaxonIdentification[1].dwc:scientificName"))
     );
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.livingOrPreserved", "preserved"))
+        new BatchMetadataSearchParam("ods:livingOrPreserved", "Preserved"))
     );
 
     // When
@@ -543,17 +542,17 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "digitalSpecimenWrapper.identifications[5].taxonIdentification[5].scientificName"));
+            "ods:hasIdentification[5].ods:hasTaxonIdentification[5].dwc:scientificName"));
     var expected = List.of(givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[0].taxonIdentification[0].scientificName")),
+                "ods:hasIdentification[0].ods:hasTaxonIdentification[0].dwc:scientificName")),
         givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[1].taxonIdentification[0].scientificName"))
+                "ods:hasIdentification[1].ods:hasTaxonIdentification[0].dwc:scientificName"))
     );
     var batchMetadata = new BatchMetadataExtended(0, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.identifications[*].taxonIdentification[*].scientificName",
+            "ods:hasIdentification[*].ods:hasTaxonIdentification[*].dwc:scientificName",
             "bombus bombus"))
     );
 
@@ -570,17 +569,17 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "digitalSpecimenWrapper.identifications[5].taxonIdentification[5].scientificName"));
+            "ods:hasIdentification[5].ods:hasTaxonIdentification[5].dwc:scientificName"));
     var expected = List.of(givenOaTarget(
         givenSelector(
-            "digitalSpecimenWrapper.identifications[0].taxonIdentification[0].scientificName"))
+            "ods:hasIdentification[0].ods:hasTaxonIdentification[0].dwc:scientificName"))
     );
     var batchMetadata = new BatchMetadataExtended(0, List.of(
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.identifications[*].taxonIdentification[*].scientificName",
+            "ods:hasIdentification[*].ods:hasTaxonIdentification[*].dwc:scientificName",
             "bombus bombus"),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.identifications[*].taxonIdentification[*].class", "insecta"))
+            "ods:hasIdentification[*].ods:hasTaxonIdentification[*].dwc:class", "insecta"))
     );
 
     // When
@@ -597,16 +596,16 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "digitalSpecimenWrapper.identifications[5].taxonIdentification[5].scientificName"));
+            "ods:hasIdentification[5].ods:hasTaxonIdentification[5].dwc:scientificName"));
     var expected = List.of(givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[0].taxonIdentification[0].scientificName")),
+                "ods:hasIdentification[0].ods:hasTaxonIdentification[0].dwc:scientificName")),
         givenOaTarget(
             givenSelector(
-                "digitalSpecimenWrapper.identifications[0].taxonIdentification[1].scientificName"))
+                "ods:hasIdentification[0].ods:hasTaxonIdentification[1].dwc:scientificName"))
     );
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("digitalSpecimenWrapper.identifications[*].citation",
+        new BatchMetadataSearchParam("ods:hasIdentification[*].ods:hasCitation[*].dcterms:identifier",
             "Miller 1888"))
     );
 
@@ -622,55 +621,78 @@ class JsonPathComponentTest {
   private JsonNode givenCaseNode() throws Exception {
     return MAPPER.readTree("""
         {
-         "id": "20.5000.1025/KZL-VC0-ZK2",
-         "digitalSpecimenWrapper": {
-           "livingOrPreserved": "preserved",
-           "institution": "MNH",
-           "occurrences": [
-             {
-               "location": {
-                 "city": "Paris"
-               },
-               "remarks": {
-                 "weather": "good"
-               }
-             },
-             {
-               "location": {
-                 "city": "Marseille"
-               },
-               "remarks": {
-                 "weather": "bad"
-               }
-             }
-           ],
-           "identifications": [
-             {
-               "citation": "Miller 1888",
-               "taxonIdentification": [
-                 {
-                   "scientificName": "bombus bombus",
-                   "class": "insecta"
-                 },
-                 {
-                   "scientificName": "Apis mellifera",
-                   "class": "insecta"
-                 }
-               ]
-             },
-             {
-               "citation": "Frank 1900",
-               "taxonIdentification": [
-                 {
-                   "scientificName": "bombus bombus"
-                 },
-                 {
-                   "scientificName": "Apis mellifera"
-                 }
-               ]
-             }
-           ]
-         }
+          "@id": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+          "@type": "ods:DigitalSpecimen",
+          "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+          "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+          "ods:midsLevel": 0,
+          "ods:version": 4,
+          "dcterms:created": "2022-11-01T09:59:24.000Z",
+          "ods:physicalSpecimenID": "123",
+          "ods:physicalSpecimenIDType": "Resolvable",
+          "ods:isMarkedAsType": true,
+          "ods:isKnownToContainMedia": true,
+          "ods:specimenName": "Abyssothyris Thomson, 1927",
+          "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
+          "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
+          "dcterms:modified": "03/12/2012",
+          "dwc:preparations": "",
+          "ods:livingOrPreserved": "Preserved",
+          "ods:organisationID": "https://ror.org/0349vqz63",
+          "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
+          "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
+          "ods:hasEvent": [
+            {
+              "ods:Location": {
+                "dwc:city": "Paris",
+                "remarks": {
+                  "weather": "good"
+                }
+              }
+            },
+            {
+              "ods:Location": {
+                "dwc:city": "Marseille",
+                "remarks": {
+                  "weather": "bad"
+                }
+              }
+            }
+          ],
+          "ods:hasIdentification": [
+            {
+              "ods:hasCitation": [
+                {
+                  "dcterms:identifier": "Miller 1888"
+                }
+              ],
+              "ods:hasTaxonIdentification": [
+                {
+                  "dwc:scientificName": "bombus bombus",
+                  "dwc:class": "insecta"
+                },
+                {
+                  "dwc:scientificName": "Apis mellifera",
+                  "dwc:class": "insecta"
+                }
+              ]
+            },
+            {
+              "ods:hasCitation": [
+                {
+                  "dcterms:identifier": "Frank 1900"
+                }
+              ],
+              "ods:hasTaxonIdentification": [
+                {
+                  "dwc:scientificName": "bombus bombus"
+                },
+                {
+                  "dwc:scientificName": "Apis mellifera"
+                }
+              ]
+            }
+          ]
         }
         """);
   }

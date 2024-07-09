@@ -81,7 +81,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = mapper.createObjectNode();
-    attributes.put("tombstoneText", "This hashedAnnotation was archived");
+    attributes.put("tombstoneText", "This annotation was archived");
     data.put(ID, id);
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);

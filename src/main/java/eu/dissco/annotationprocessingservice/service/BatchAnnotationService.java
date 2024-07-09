@@ -123,8 +123,8 @@ public class BatchAnnotationService {
     ArrayList<Annotation> newAnnotations = new ArrayList<>();
     for (var target : targets) {
       newAnnotations.add(new Annotation()
-          .withId(null)
           .withOaMotivation(baseAnnotation.getOaMotivation())
+          .withOaMotivatedBy(baseAnnotation.getOaMotivatedBy())
           .withDctermsCreated(baseAnnotation.getDctermsCreated())
           .withDctermsCreator(baseAnnotation.getDctermsCreator())
           .withOaHasBody(baseAnnotation.getOaHasBody())

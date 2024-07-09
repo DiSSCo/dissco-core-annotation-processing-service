@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
+import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
@@ -16,6 +18,7 @@ import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.OaHasBody;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
@@ -60,6 +63,8 @@ public class TestUtils {
     SimpleModule dateModule = new SimpleModule();
     dateModule.addSerializer(Instant.class, new InstantSerializer());
     dateModule.addDeserializer(Instant.class, new InstantDeserializer());
+    dateModule.addSerializer(Date.class, new DateSerializer());
+    dateModule.addDeserializer(Date.class, new DateDeserializer());
     mapper.registerModule(dateModule);
     mapper.setSerializationInclusion(Include.NON_NULL);
     MAPPER = mapper.copy();
@@ -96,13 +101,17 @@ public class TestUtils {
       String targetId) {
     return new Annotation()
         .withId(annotationId)
+        .withType("ods:Annotation")
+        .withRdfType("ods:Annotation")
         .withOdsVersion(1)
+        .withOdsStatus(OdsStatus.ODS_ACTIVE)
         .withOaHasBody(givenOaBody())
         .withOaMotivation(OaMotivation.OA_COMMENTING)
         .withOaHasTarget(givenOaTarget(targetId))
         .withDctermsCreator(givenCreator(userId))
         .withDctermsCreated(Date.from(CREATED))
         .withDctermsIssued(Date.from(CREATED))
+        .withDctermsModified(Date.from(CREATED))
         .withAsGenerator(givenGenerator())
         .withSchemaAggregateRating(givenAggregationRating());
   }
@@ -120,6 +129,8 @@ public class TestUtils {
 
   public static Annotation givenAnnotationRequest(String targetId) {
     return new Annotation()
+        .withType("ods:Annotation")
+        .withRdfType("ods:Annotation")
         .withOaHasBody(givenOaBody())
         .withOaMotivation(OaMotivation.OA_COMMENTING)
         .withOaHasTarget(givenOaTarget(targetId))
@@ -152,6 +163,15 @@ public class TestUtils {
         .withOdsScore(0.99);
   }
 
+  public static OaHasBody givenOaBodySetType(String type) {
+    return new OaHasBody()
+        .withType(type)
+        .withOaValue(new ArrayList<>(List.of("a comment")))
+        .withDctermsReferences(
+            "https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .withOdsScore(0.99);
+  }
+
   public static OaHasTarget givenOaTarget(String targetId) {
     return givenOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
   }
@@ -159,21 +179,25 @@ public class TestUtils {
   public static OaHasTarget givenOaTarget(String targetId, AnnotationTargetType targetType) {
     return new OaHasTarget()
         .withId(DOI_PROXY + targetId)
-        .withOaHasSelector(givenSelector())
-        .withType(targetType.toString());
+        .withType("ods:DigitalSpecimen")
+        .withOdsType(targetType.toString())
+        .withOdsID(DOI_PROXY + targetId)
+        .withOaHasSelector(givenSelector());
   }
 
   public static OaHasTarget givenOaTarget(String targetId, AnnotationTargetType targetType,
       OaHasSelector selector) {
     return new OaHasTarget()
         .withId(DOI_PROXY + targetId)
+        .withOdsID(DOI_PROXY + targetId)
+        .withOdsType(targetType.toString())
         .withOaHasSelector(selector)
-        .withType(targetType.toString());
+        .withType("ods:DigitalSpecimen");
   }
 
   public static OaHasSelector givenSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field", "digitalSpecimenWrapper.occurrences[1].locality")
+        .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
@@ -333,22 +357,22 @@ public class TestUtils {
 
   public static BatchMetadataSearchParam givenBatchMetadataSearchParamCountry() {
     return new BatchMetadataSearchParam(
-        "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+        "ods:hasEvent[*].ods:Location.dwc:country",
         "Netherlands");
   }
 
   public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
     return new BatchMetadataExtended(1,
         List.of(new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-            "11")));
+            "ods:hasEvent[*].ods:Location.ods:GeoReference.dwc:decimalLatitude",
+            "52.123")));
   }
 
   public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam() {
     return new BatchMetadataExtended(1, List.of(
         givenBatchMetadataSearchParamCountry(),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
+            "ods:hasEvent[*].dwc:occurrenceRemarks",
             "Correct"
         )));
   }
@@ -365,7 +389,7 @@ public class TestUtils {
   }
 
   public static JsonNode givenElasticDocument() {
-    return givenElasticDocument("Netherlands", ID);
+    return givenElasticDocument("Netherlands", DOI_PROXY + ID);
   }
 
   public static JsonNode givenElasticDocument(String id) {
@@ -374,68 +398,79 @@ public class TestUtils {
 
   public static JsonNode givenElasticDocument(String country, String id) {
     try {
-
-      return MAPPER.readTree("""
-          {
-            "id": \"""" + id +
+      return MAPPER.readTree(
           """
-              ",
-                  "digitalSpecimenWrapper": {
-                    "other": ["a", "10"],
-                    "fieldNum":1,
-                    "occurrences": [
-                      {
-                        "dwc:occurrenceRemarks": "Correct",
-                        "annotateTarget":"this",
-                        "location": {
-                          "dwc:country": \"""" + country + """
-          ",
-                        "dwc:continent":"Europe",
-                        "georeference": {
-                          "dwc:decimalLatitude": {
-                            "dwc:value":11
-                          },
-                          "dwc:decimalLongitude": "10",
-                          "dwc":["1"]
-                        },
-                        "locality":"known"
-                      }
-                    },
-                    {
-                      "dwc:occurrenceRemarks": "Incorrect",
-                      "annotateTarget":"this",
-                      "location": {
-                        "dwc:country": "Unknown",
-                         "dwc:continent":"Error",
-                        "georeference": {
-                          "dwc:decimalLatitude": {
-                            "dwc:value":10
-                          },
-                          "dwc:decimalLongitude": "10"
-                        },
-                        "locality":"unknown"
-                      }
-                    },
-                    {
-                      "dwc:occurrenceRemarks": "Half Correct",
-                      "annotateTarget":"this",
-                      "location": {
-                        "dwc:country": \"""" + country + """
-          ",
-                              "dwc:continent":"Unknown",
-                              "georeference": {
-                                "dwc:decimalLatitude": {
-                                  "dwc:value":11
-                                },
-                                "dwc:decimalLongitude": "10.1",
-                                "test":"hello"
-                              },
-                              "locality":"unknown"
-                            }
+                     {
+                      "@id":  \"""" + id + """
+                     ",
+                      "@type": "ods:DigitalSpecimen",
+                      "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+                      "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+                      "ods:midsLevel": 0,
+                      "ods:version": 4,
+                      "dcterms:created": "2022-11-01T09:59:24.000Z",
+                      "ods:physicalSpecimenID": "123",
+                      "ods:physicalSpecimenIDType": "Resolvable",
+                      "ods:isMarkedAsType": true,
+                      "ods:isKnownToContainMedia": true,
+                      "ods:specimenName": "Abyssothyris Thomson, 1927",
+                      "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
+                      "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
+                      "dcterms:modified": "03/12/2012",
+                      "dwc:preparations": "",
+                      "ods:organisationID": "https://ror.org/0349vqz63",
+                      "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
+                      "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
+                      "ods:hasEvent": [
+                        {
+                          "dwc:occurrenceRemarks": "Correct",
+                          "annotateTarget": "this",
+                          "ods:Location": {
+                            "dwc:country": \"""" + country + """
+                        ",
+                            "dwc:continent": "Europe",
+                            "ods:GeoReference": {
+                              "dwc:decimalLatitude": "52.123",
+                              "dwc:decimalLongitude": 10.1233,
+                              "dwc": [
+                                "1"
+                              ]
+                            },
+                            "dwc:locality": "known"
                           }
-                        ]
-                      }
-                    }""");
+                        },
+                        {
+                          "dwc:occurrenceRemarks": "Incorrect",
+                          "annotateTarget": "this",
+                          "ods:Location": {
+                            "dwc:country": "Unknown",
+                            "dwc:continent": "Error",
+                            "ods:GeoReference": {
+                              "dwc:decimalLatitude": "51.123",
+                              "dwc:decimalLongitude": 10.5233
+                            },
+                            "dwc:locality": "unknown"
+                          }
+                        },
+                        {
+                          "dwc:occurrenceRemarks": "Half Correct",
+                          "annotateTarget": "this",
+                          "ods:Location": {
+                            "dwc:country": \"""" + country + """
+              ",
+                            "dwc:continent": "Unknown",
+                            "ods:GeoReference": {
+                              "dwc:decimalLatitude": "52.123",
+                              "dwc:decimalLongitude": 10.1233,
+                              "test": "hello"
+                            },
+                            "dwc:locality": "unknown"
+                          }
+                        }
+                      ]
+                    }
+              """
+      );
     } catch (JsonProcessingException e) {
       throw new RuntimeException();
     }
@@ -443,13 +478,6 @@ public class TestUtils {
 
   public static Map<String, UUID> givenBatchIdMap() {
     return Map.of(ID, BATCH_ID);
-  }
-
-  public static Map<String, UUID> givenBatchIdMapTwo() {
-    return Map.of(
-        ID, BATCH_ID,
-        ID_ALT, BATCH_ID_ALT
-    );
   }
 
 }
