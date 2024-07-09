@@ -62,9 +62,7 @@ public class ProvenanceService {
             .withType(annotation.getType())
             .withProvValue(mapEntityToProvValue(annotation))
             .withProvWasGeneratedBy(activityID))
-        .withOdsHasProvAgent(List.of(annotation.getDctermsCreator()
-            , annotation.getAsGenerator()
-        ));
+        .withOdsHasProvAgent(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
   }
 
   private List<OdsChangeValue> mapJsonPatch(JsonNode jsonPatch) {
@@ -93,7 +91,7 @@ public class ProvenanceService {
   }
 
   private JsonNode createJsonPatch(Annotation annotation, Annotation currentAnnotation) {
-    return JsonDiff.asJson(mapper.valueToTree(currentAnnotation),
-        mapper.valueToTree(annotation));
+    return JsonDiff.asJson(mapper.valueToTree(annotation),
+        mapper.valueToTree(currentAnnotation));
   }
 }

@@ -23,7 +23,7 @@ class AnnotationHasherTest {
   @BeforeEach
   void setup() throws NoSuchAlgorithmException {
     this.annotationHasher = new AnnotationHasher(
-        MessageDigest.getInstance("MD5");
+        MessageDigest.getInstance("MD5"));
   }
 
   @Test
