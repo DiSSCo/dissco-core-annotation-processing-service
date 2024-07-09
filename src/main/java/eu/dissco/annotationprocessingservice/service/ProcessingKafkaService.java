@@ -155,6 +155,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     log.info("Annotations {} has been successfully committed to database", idList);
+
     try {
       indexElasticNewAnnotations(
           hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),

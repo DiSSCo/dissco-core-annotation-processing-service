@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.repository;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.NEW_ANNOTATION;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,7 +46,7 @@ public class AnnotationRepository {
   public Optional<Annotation> getAnnotationForUser(String annotationId, String creatorId) {
     return context.select(NEW_ANNOTATION.asterisk())
         .from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotationId))
+        .where(NEW_ANNOTATION.ID.eq(annotationId.replace(HANDLE_PROXY, "")))
         .and(NEW_ANNOTATION.CREATOR_ID.eq(creatorId))
         .fetchOptional()
         .map(this::mapAnnotation);
@@ -89,7 +90,7 @@ public class AnnotationRepository {
   private InsertSetMoreStep<NewAnnotationRecord> insertAnnotation(Annotation annotation) {
     try {
       return context.insertInto(NEW_ANNOTATION)
-          .set(NEW_ANNOTATION.ID, annotation.getId())
+          .set(NEW_ANNOTATION.ID, annotation.getId().replace(HANDLE_PROXY, ""))
           .set(NEW_ANNOTATION.VERSION, annotation.getOdsVersion())
           .set(NEW_ANNOTATION.TYPE, annotation.getRdfType())
           .set(NEW_ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
@@ -130,16 +131,17 @@ public class AnnotationRepository {
   }
 
   public void updateLastChecked(List<String> idList) {
+    var list = idList.stream().map(id -> id.replace(HANDLE_PROXY, "")).toList();
     context.update(NEW_ANNOTATION)
         .set(NEW_ANNOTATION.LAST_CHECKED, Instant.now())
-        .where(NEW_ANNOTATION.ID.in(idList))
+        .where(NEW_ANNOTATION.ID.in(list))
         .execute();
   }
 
   public Optional<String> getAnnotationById(String id) {
     return context.select(NEW_ANNOTATION.ID)
         .from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(id))
+        .where(NEW_ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, "")))
         .and(NEW_ANNOTATION.TOMBSTONED_ON.isNull())
         .fetchOptional(Record1::value1);
   }
@@ -147,15 +149,16 @@ public class AnnotationRepository {
   public void archiveAnnotation(String id) {
     context.update(NEW_ANNOTATION)
         .set(NEW_ANNOTATION.TOMBSTONED_ON, Instant.now())
-        .where(NEW_ANNOTATION.ID.eq(id))
+        .where(NEW_ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, "")))
         .execute();
   }
 
   public void rollbackAnnotation(String id) {
-    context.delete(NEW_ANNOTATION).where(NEW_ANNOTATION.ID.eq(id)).execute();
+    context.delete(NEW_ANNOTATION).where(NEW_ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, ""))).execute();
   }
 
   public void rollbackAnnotations(List<String> idList) {
-    context.delete(NEW_ANNOTATION).where(NEW_ANNOTATION.ID.in(idList)).execute();
+    var list = idList.stream().map(id -> id.replace(HANDLE_PROXY, "")).toList();
+    context.delete(NEW_ANNOTATION).where(NEW_ANNOTATION.ID.in(list)).execute();
   }
 }

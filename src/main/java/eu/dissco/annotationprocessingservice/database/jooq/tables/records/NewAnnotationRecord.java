@@ -5,10 +5,8 @@ package eu.dissco.annotationprocessingservice.database.jooq.tables.records;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
-
 import java.time.Instant;
 import java.util.UUID;
-
 import org.jooq.JSONB;
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;

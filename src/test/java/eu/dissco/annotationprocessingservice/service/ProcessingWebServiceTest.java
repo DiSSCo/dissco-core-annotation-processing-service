@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
@@ -97,7 +98,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
@@ -118,7 +119,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationBatch() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
@@ -161,7 +162,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationElasticIOException() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
@@ -181,7 +182,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationElasticFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
@@ -206,7 +207,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationElasticFailureNoArchive() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
@@ -232,7 +233,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationKafkaFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);

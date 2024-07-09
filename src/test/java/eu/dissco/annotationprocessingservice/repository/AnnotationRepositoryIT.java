@@ -2,7 +2,9 @@ package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
@@ -41,11 +43,11 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testCreateAnnotationRecord() throws DataBaseException {
     // Given
-    var expected = givenAnnotationProcessed();
+    var expected = givenAnnotationProcessed(ID);
 
     // When
     repository.createAnnotationRecord(expected);
-    var actual = getAnnotation(expected.getId());
+    var actual = getAnnotation(ID);
 
     // Then
     assertThat(actual).isEqualTo(expected);
@@ -54,7 +56,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testCreateAnnotationRecordWithHash() throws DataBaseException {
     // Given
-    var expected = givenHashedAnnotation();
+    var expected = givenHashedAnnotation(BARE_ID);
 
     // When
     repository.createAnnotationRecord(List.of(expected));
@@ -100,25 +102,25 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
     var initInstant = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
+        .where(NEW_ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, ""))).fetchOne(Record1::value1);
 
     // When
     repository.updateLastChecked(List.of(annotation.getId()));
 
     // Then
     var updatedTimestamp = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
+        .where(NEW_ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, ""))).fetchOne(Record1::value1);
     assertThat(updatedTimestamp).isAfter(initInstant);
   }
 
   @Test
   void testGetAnnotationById() {
     // Given
-    var annotation = givenAnnotationProcessed();
+    var annotation = givenAnnotationProcessed(BARE_ID);
     repository.createAnnotationRecord(annotation);
 
     // When
-    var result = repository.getAnnotationById(annotation.getId());
+    var result = repository.getAnnotationById(ID);
 
     // Then
     assertThat(result).hasValue(annotation.getId());
@@ -154,11 +156,11 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testArchiveAnnotation() {
     // Given
-    var annotation = givenAnnotationProcessed();
+    var annotation = givenAnnotationProcessed(BARE_ID);
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(annotation.getId());
+    repository.archiveAnnotation(ID);
 
     // Then
     var deletedTimestamp = context.select(NEW_ANNOTATION.TOMBSTONED_ON).from(NEW_ANNOTATION)
@@ -197,7 +199,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   private Annotation getAnnotation(String annotationId) {
     var dbRecord = context.select(NEW_ANNOTATION.asterisk())
         .from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotationId))
+        .where(NEW_ANNOTATION.ID.eq(annotationId.replace(HANDLE_PROXY, "")))
         .fetchOne();
     if (dbRecord == null) {
       return null;

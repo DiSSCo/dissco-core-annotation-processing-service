@@ -1,5 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
+
 import co.elastic.clients.elasticsearch._types.Result;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
@@ -60,7 +62,8 @@ public abstract class AbstractProcessingService {
 
   private void enrichNewAnnotation(Annotation annotation, String id) {
     var now = Date.from(Instant.now());
-    annotation.withId(id)
+    annotation.withId(HANDLE_PROXY + id)
+        .withOdsID(HANDLE_PROXY + id)
         .withOdsVersion(1)
         .withOdsStatus(OdsStatus.ODS_ACTIVE)
         .withAsGenerator(createGenerator())
@@ -78,7 +81,7 @@ public abstract class AbstractProcessingService {
 
   protected void enrichNewAnnotation(Annotation annotation, String id, AnnotationEvent event) {
     enrichNewAnnotation(annotation, id);
-    annotation.setOdsJobID(applicationProperties.getHandleProxy() + event.jobId());
+    annotation.setOdsJobID(HANDLE_PROXY + event.jobId());
   }
 
   protected void addBatchIds(Annotation annotation, Optional<Map<String, UUID>> batchIds,
@@ -100,6 +103,7 @@ public abstract class AbstractProcessingService {
 
   protected void enrichUpdateAnnotation(Annotation annotation, Annotation currentAnnotation) {
     annotation.withId(currentAnnotation.getId())
+        .withOdsID(currentAnnotation.getOdsID())
         .withOdsStatus(currentAnnotation.getOdsStatus())
         .withOdsVersion(currentAnnotation.getOdsVersion() + 1)
         .withDctermsIssued(currentAnnotation.getDctermsIssued())

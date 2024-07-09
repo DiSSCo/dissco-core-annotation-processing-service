@@ -25,6 +25,8 @@ public class ApplicationConfiguration {
   public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern(
       "yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneOffset.UTC);
 
+  public static final String HANDLE_PROXY = "https://hdl.handle.net/";
+
   @Bean
   public ObjectMapper objectMapper() {
     var mapper = new ObjectMapper().findAndRegisterModules();

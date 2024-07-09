@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
-import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
@@ -36,7 +35,7 @@ class SchemaValidatorComponentTest {
   private static Stream<Arguments> validAnnotations() {
     return Stream.of(
         Arguments.of(givenAnnotationRequest(), true),
-        Arguments.of(givenAnnotationRequest().withId(HANDLE_PROXY + ID), false)
+        Arguments.of(givenAnnotationRequest().withId(ID), false)
     );
   }
 
@@ -57,7 +56,7 @@ class SchemaValidatorComponentTest {
   void setup() throws IOException {
     var factory = JsonSchemaFactory.getInstance(VersionFlag.V202012);
     try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream("json-schema/annotation-request.json")) {
+        .getResourceAsStream("json-validation/annotation-request.json")) {
       var schema = factory.getSchema(inputStream);
       schemaValidator = new SchemaValidatorComponent(schema, MAPPER);
     }

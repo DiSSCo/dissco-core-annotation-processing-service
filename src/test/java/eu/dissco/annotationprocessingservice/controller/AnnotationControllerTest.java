@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.controller;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
@@ -70,11 +71,9 @@ class AnnotationControllerTest {
     // Given
     var request = givenAnnotationRequest().withId(ID);
     given(service.updateAnnotation(request)).willReturn(givenAnnotationProcessed());
-    var prefix = ID.split("/")[0];
-    var suffix = ID.split("/")[1];
 
     // When
-    var result = controller.updateAnnotation(prefix, suffix, request);
+    var result = controller.updateAnnotation("20.5000.1025", "KZL-VC0-ZK2", request);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -103,7 +102,7 @@ class AnnotationControllerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    then(service).should().archiveAnnotation(ID);
+    then(service).should().archiveAnnotation(BARE_ID);
   }
 
 }

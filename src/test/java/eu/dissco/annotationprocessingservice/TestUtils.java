@@ -34,8 +34,9 @@ public class TestUtils {
 
   public static final ObjectMapper MAPPER;
 
-  public static final String ID = "20.5000.1025/KZL-VC0-ZK2";
-  public static final String ID_ALT = "20.5000.1025/ZZZ-YYY-XXX";
+  public static final String ID = "https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2";
+  public static final String BARE_ID = "20.5000.1025/KZL-VC0-ZK2";
+  public static final String ID_ALT = "https://hdl.handle.net/20.5000.1025/ZZZ-YYY-XXX";
   public static final String TARGET_ID = "20.5000.1025/QRS-123-ABC";
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
@@ -52,7 +53,7 @@ public class TestUtils {
   public static final UUID BATCH_ID_ALT = UUID.fromString("642a04b8-7a4c-4e53-89e3-0ab1dbab768e");
   public static final String ANNOTATION_JSONB = """
       [
-        "20.5000.1025/KZL-VC0-ZK2"
+        "https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
        ]
       """;
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
@@ -79,12 +80,21 @@ public class TestUtils {
         ANNOTATION_HASH);
   }
 
+  public static HashedAnnotation givenHashedAnnotation(String ID) {
+    return new HashedAnnotation(givenHashedAnnotation().annotation().withOdsBatchID(BATCH_ID).withId(ID),
+        ANNOTATION_HASH);
+  }
+
   public static HashedAnnotation givenHashedAnnotationAlt() {
     return new HashedAnnotation(givenAnnotationProcessedAlt(), ANNOTATION_HASH);
   }
 
-  public static Annotation givenAnnotationProcessed() {
+  public static Annotation givenAnnotationProcessed(String ID) {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
+  }
+
+  public static Annotation givenAnnotationProcessed() {
+    return givenAnnotationProcessed(ID);
   }
 
   public static Annotation givenAnnotationProcessedWeb() {
@@ -101,6 +111,7 @@ public class TestUtils {
       String targetId) {
     return new Annotation()
         .withId(annotationId)
+        .withOdsID(annotationId)
         .withType("ods:Annotation")
         .withRdfType("ods:Annotation")
         .withOdsVersion(1)
@@ -202,7 +213,7 @@ public class TestUtils {
   }
 
   public static OaHasTarget givenOaTarget(OaHasSelector selector) {
-    return givenOaTarget(ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
+    return givenOaTarget(BARE_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
   }
 
   public static OaHasSelector givenSelector(String field) {
@@ -305,7 +316,7 @@ public class TestUtils {
                 "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                 "motivation":"oa:commenting"
             },
-            "id":"20.5000.1025/KZL-VC0-ZK2"
+            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
         }
         """));
@@ -323,7 +334,7 @@ public class TestUtils {
                 "motivation":"oa:commenting",
                 "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               },
-            "id":"20.5000.1025/KZL-VC0-ZK2"
+            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
           }
         """);
@@ -338,7 +349,7 @@ public class TestUtils {
                "motivation":"oa:editing",
                 "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               },
-              "id":"20.5000.1025/KZL-VC0-ZK2"
+              "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
           }
         """);
@@ -349,7 +360,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": [
-            {"id":"20.5000.1025/KZL-VC0-ZK2"}
+            {"id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"}
           ]
         }
         """);
@@ -389,7 +400,7 @@ public class TestUtils {
   }
 
   public static JsonNode givenElasticDocument() {
-    return givenElasticDocument("Netherlands", DOI_PROXY + ID);
+    return givenElasticDocument("Netherlands", DOI_PROXY + BARE_ID);
   }
 
   public static JsonNode givenElasticDocument(String id) {

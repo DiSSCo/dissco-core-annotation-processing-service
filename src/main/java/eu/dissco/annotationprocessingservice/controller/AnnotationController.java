@@ -1,5 +1,7 @@
 package eu.dissco.annotationprocessingservice.controller;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
+
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -73,7 +75,8 @@ public class AnnotationController {
   private void checkId(String prefix, String suffix, Annotation annotation)
       throws ConflictException {
     var id = prefix + "/" + suffix;
-    if (!id.equals(annotation.getId())) {
+    var annotationID = annotation.getId().replace(HANDLE_PROXY, "");
+    if (!id.equals(annotationID)) {
       log.error("provided id does not match annotations id");
       throw new ConflictException();
     }

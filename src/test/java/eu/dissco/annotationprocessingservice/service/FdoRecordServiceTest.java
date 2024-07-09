@@ -1,8 +1,8 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
@@ -88,7 +88,7 @@ class FdoRecordServiceTest {
     var expected = MAPPER.readTree("""
         {
           "data":{
-            "id":"20.5000.1025/KZL-VC0-ZK2",
+            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2",
             "attributes":{
               "tombstoneText":"This annotation was archived"
             }
@@ -109,14 +109,14 @@ class FdoRecordServiceTest {
     var expected = MAPPER.readTree("""
         {
           "data": [
-                      {"id":"20.5000.1025/KZL-VC0-ZK2"},
-                      {"id":"20.5000.1025/QRS-123-ABC"}
+                      {"id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"},
+                      {"id":"https://hdl.handle.net/20.5000.1025/ZZZ-YYY-XXX"}
                     ]
                   }
         """);
 
     // When
-    var result = fdoRecordService.buildRollbackCreationRequest(List.of(ID, TARGET_ID));
+    var result = fdoRecordService.buildRollbackCreationRequest(List.of(ID, ID_ALT));
 
     // Then
     assertThat(result).isEqualTo(expected);
