@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
-import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;

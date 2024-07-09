@@ -1,6 +1,5 @@
 package eu.dissco.annotationprocessingservice.component;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
@@ -12,7 +11,6 @@ import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.security.MessageDigest;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
