@@ -27,7 +27,7 @@ public class AnnotationHasher {
     var selectorType = SelectorType.fromString((String) selector.get("@type"));
     switch (selectorType) {
       case FIELD_SELECTOR -> targetString = (String) selector.get("ods:field");
-      case FRAGMENT_SELECTOR -> targetString = selector.get("oa:hasRoi").toString();
+      case FRAGMENT_SELECTOR -> targetString = selector.get("ac:hasRoi").toString();
       case CLASS_SELECTOR -> targetString = (String) selector.get("ods:class");
     }
 

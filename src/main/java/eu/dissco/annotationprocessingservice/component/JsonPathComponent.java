@@ -240,7 +240,9 @@ public class JsonPathComponent {
     if (jsonPath.contains(".") || jsonPath.contains("[")) {
       var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
       lastKeyMatcher.find();
-      var lastKey = lastKeyMatcher.group().replace("\\.", "");
+      var lastKey = lastKeyMatcher.group()
+          .replace("\\.", "")
+          .replaceAll("[\\d+]", "[*]");
       if (lastKey.length() < jsonPath.length()) {
         return lastKey;
       } else {

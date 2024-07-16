@@ -56,7 +56,7 @@ public class ProvenanceService {
                     .withId(annotation.getAsGenerator().getId())
                     .withProvHadRole(ProvHadRole.ODS_GENERATOR)))
             .withProvUsed(entityID)
-            .withRdfsComment("Specimen newly created"))
+            .withRdfsComment("Annotation newly created"))
         .withProvEntity(new ProvEntity()
             .withId(entityID)
             .withType(annotation.getType())
