@@ -5,7 +5,6 @@ package eu.dissco.annotationprocessingservice.database.jooq.enums;
 
 
 import eu.dissco.annotationprocessingservice.database.jooq.Public;
-
 import org.jooq.Catalog;
 import org.jooq.EnumType;
 import org.jooq.Schema;
@@ -52,7 +51,9 @@ public enum JobState implements EnumType {
     }
 
     /**
-     * Lookup a value of this EnumType by its literal
+     * Lookup a value of this EnumType by its literal. Returns
+     * <code>null</code>, if no such value could be found, see {@link
+     * EnumType#lookupLiteral(Class, String)}.
      */
     public static JobState lookupLiteral(String literal) {
         return EnumType.lookupLiteral(JobState.class, literal);

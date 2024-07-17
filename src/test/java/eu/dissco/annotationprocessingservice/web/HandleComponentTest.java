@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.web;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
@@ -67,7 +68,7 @@ class HandleComponentTest {
     var response = handleComponent.postHandle(requestBody);
 
     // Then
-    assertThat(response).isEqualTo(List.of(ID));
+    assertThat(response).isEqualTo(List.of(BARE_ID));
   }
 
   @Test
@@ -99,7 +100,7 @@ class HandleComponentTest {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = givenHandleResponse();
-    var expected = List.of(ID);
+    var expected = List.of(BARE_ID);
     int requestCount = mockHandleServer.getRequestCount();
 
     mockHandleServer.enqueue(new MockResponse().setResponseCode(501));

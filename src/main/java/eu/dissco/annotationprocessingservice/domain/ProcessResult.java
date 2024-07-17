@@ -1,6 +1,6 @@
 package eu.dissco.annotationprocessingservice.domain;
 
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
 import java.util.List;
 import java.util.Set;
 

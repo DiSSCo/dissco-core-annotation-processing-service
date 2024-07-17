@@ -1,9 +1,8 @@
 package eu.dissco.annotationprocessingservice.repository;
 
-import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
-
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION_BATCH_RECORD;
 
+import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +47,7 @@ public class AnnotationBatchRecordRepository {
         .execute();
   }
 
-  // To be used only if the parent annotation fails
+  // To be used only if the parent hashedAnnotation fails
   public void rollbackAnnotationBatchRecord(Set<UUID> batchIds) {
     context.deleteFrom(ANNOTATION_BATCH_RECORD)
         .where(ANNOTATION_BATCH_RECORD.BATCH_ID.in(batchIds))

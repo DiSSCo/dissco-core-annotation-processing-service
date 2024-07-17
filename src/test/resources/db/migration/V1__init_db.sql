@@ -1,26 +1,21 @@
-create table annotation
+create table new_annotation
 (
-    id               text                     not null
-        constraint annotation_pk
+    id              text                     not null
+        constraint new_annotation_pk
             primary key,
-    version          integer                  not null,
-    type             text                     not null,
-    motivation       text                     not null,
-    motivated_by     text,
-    target_id        text                     not null,
-    target           jsonb                    not null,
-    body             jsonb                    not null,
-    creator_id       text                     not null,
-    creator          jsonb                    not null,
-    created          timestamp with time zone not null,
-    generator        jsonb                    not null,
-    generated        timestamp with time zone not null,
-    last_checked     timestamp with time zone not null,
-    aggregate_rating jsonb,
-    deleted_on       timestamp with time zone,
-    annotation_hash  uuid,
-    mjr_job_id       text,
-    batch_id         uuid
+    version         integer                  not null,
+    type            text                     not null,
+    annotation_hash uuid,
+    motivation      text                     not null,
+    mjr_job_id      text,
+    batch_id        uuid,
+    creator_id      text                     not null,
+    created         timestamp with time zone not null,
+    modified        timestamp with time zone not null,
+    last_checked    timestamp with time zone not null,
+    tombstoned_on   timestamp with time zone,
+    target_id       text                     not null,
+    data            jsonb
 );
 
 create type job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
@@ -51,10 +46,10 @@ create table annotation_batch_record
         constraint annotation_batch_pk
             primary key,
     creator_id           text                     not null,
-    parent_annotation_id text                     not null,
     created_on           timestamp with time zone not null,
     last_updated         timestamp with time zone,
     job_id               text,
-    batch_quantity       bigint
+    batch_quantity       bigint,
+    parent_annotation_id text
 );
 

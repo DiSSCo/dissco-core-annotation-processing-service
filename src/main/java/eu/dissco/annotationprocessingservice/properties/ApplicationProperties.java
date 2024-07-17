@@ -21,6 +21,6 @@ public class ApplicationProperties {
   private int maxBatchRetries = 10;
 
   @NotBlank
-  private String handleProxy = "https://hdl.handle.net/";
+  private String createUpdateTombstoneEventType = "https://hdl.handle.net/TEST/123-123-123";
 
 }

@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.controller;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
@@ -35,7 +36,8 @@ class AnnotationControllerTest {
   void testCreateAnnotation()
       throws Exception {
     // Given
-    given(service.persistNewAnnotation(givenAnnotationRequest(), false)).willReturn(givenAnnotationProcessed());
+    given(service.persistNewAnnotation(givenAnnotationRequest(), false)).willReturn(
+        givenAnnotationProcessed());
 
     // When
     var result = controller.createAnnotation(givenAnnotationRequest());
@@ -67,13 +69,11 @@ class AnnotationControllerTest {
   void testUpdateAnnotation()
       throws Exception {
     // Given
-    var request = givenAnnotationRequest().setOdsId(ID);
+    var request = givenAnnotationRequest().withId(ID);
     given(service.updateAnnotation(request)).willReturn(givenAnnotationProcessed());
-    var prefix = ID.split("/")[0];
-    var suffix = ID.split("/")[1];
 
     // When
-    var result = controller.updateAnnotation(prefix, suffix, request);
+    var result = controller.updateAnnotation("20.5000.1025", "KZL-VC0-ZK2", request);
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -83,12 +83,13 @@ class AnnotationControllerTest {
   @Test
   void testUpdateAnnotationIdMismatch() {
     // Given
-    var request = givenAnnotationRequest().setOdsId(ID);
+    var request = givenAnnotationRequest().withId(ID);
     var prefix = ID.split("/")[0];
     var suffix = "wrong";
 
     // Then
-    assertThrows(ConflictException.class, () -> controller.updateAnnotation(prefix, suffix, request));
+    assertThrows(ConflictException.class,
+        () -> controller.updateAnnotation(prefix, suffix, request));
 
   }
 
@@ -101,7 +102,7 @@ class AnnotationControllerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    then(service).should().archiveAnnotation(ID);
+    then(service).should().archiveAnnotation(BARE_ID);
   }
 
 }

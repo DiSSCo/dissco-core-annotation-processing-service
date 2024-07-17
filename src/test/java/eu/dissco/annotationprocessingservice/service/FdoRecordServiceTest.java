@@ -1,8 +1,8 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
@@ -14,9 +14,9 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequestBa
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +28,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 class FdoRecordServiceTest {
 
   private FdoRecordService fdoRecordService;
+
+  private static Stream<Arguments> handleNeedsUpdate() {
+    return Stream.of(
+        Arguments.of(givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING)),
+        Arguments.of(
+            givenAnnotationProcessed().withOaHasTarget(givenOaTarget("different target"))));
+  }
 
   @BeforeEach
   void setUp() {
@@ -81,7 +88,7 @@ class FdoRecordServiceTest {
     var expected = MAPPER.readTree("""
         {
           "data":{
-            "id":"20.5000.1025/KZL-VC0-ZK2",
+            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2",
             "attributes":{
               "tombstoneText":"This annotation was archived"
             }
@@ -102,14 +109,14 @@ class FdoRecordServiceTest {
     var expected = MAPPER.readTree("""
         {
           "data": [
-                      {"id":"20.5000.1025/KZL-VC0-ZK2"},
-                      {"id":"20.5000.1025/QRS-123-ABC"}
+                      {"id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"},
+                      {"id":"https://hdl.handle.net/20.5000.1025/ZZZ-YYY-XXX"}
                     ]
                   }
         """);
 
     // When
-    var result = fdoRecordService.buildRollbackCreationRequest(List.of(ID, TARGET_ID));
+    var result = fdoRecordService.buildRollbackCreationRequest(List.of(ID, ID_ALT));
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -119,12 +126,6 @@ class FdoRecordServiceTest {
   void testHandleNeedsUpdateFalse() {
     assertThat(fdoRecordService.handleNeedsUpdate(givenAnnotationProcessed(),
         givenAnnotationProcessed())).isFalse();
-  }
-
-  private static Stream<Arguments> handleNeedsUpdate() {
-    return Stream.of(
-        Arguments.of(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING)),
-        Arguments.of(givenAnnotationProcessed().setOaTarget(givenOaTarget("different target"))));
   }
 
   @ParameterizedTest

@@ -10,10 +10,10 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ public class ElasticSearchRepository {
   public IndexResponse indexAnnotation(Annotation annotation) throws IOException {
     return client.index(
         idx -> idx.index(properties.getIndexName())
-            .id(annotation.getOdsId())
+            .id(annotation.getId())
             .document(annotation));
   }
 
@@ -41,7 +41,7 @@ public class ElasticSearchRepository {
       bulkRequest.operations(op ->
           op.index(idx -> idx
               .index(properties.getIndexName())
-              .id(annotation.getOdsId())
+              .id(annotation.getId())
               .document(annotation))
       );
     }

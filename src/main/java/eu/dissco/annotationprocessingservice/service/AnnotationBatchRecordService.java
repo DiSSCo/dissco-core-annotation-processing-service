@@ -2,9 +2,8 @@ package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,17 +28,16 @@ public class AnnotationBatchRecordService {
     Optional<Map<String, UUID>> batchIds;
     if (batchingRequested && event.batchId() == null) {
       batchIds = Optional.of(newAnnotations.stream().collect(Collectors.toMap(
-          Annotation::getOdsId,
+          Annotation::getId,
           value -> UUID.randomUUID()
       )));
       createNewAnnotationBatchRecord(batchIds.get(), newAnnotations);
     } else if (event.batchId() != null) {
       batchIds = Optional.of(newAnnotations.stream().collect(Collectors.toMap(
-          Annotation::getOdsId,
+          Annotation::getId,
           value -> event.batchId()
       )));
-    }
-    else {
+    } else {
       batchIds = Optional.empty();
     }
     return batchIds;
@@ -47,9 +45,9 @@ public class AnnotationBatchRecordService {
 
   public void mintBatchId(Annotation annotation) {
     var batchId = UUID.randomUUID();
-    annotation.setOdsBatchId(batchId);
-    createNewAnnotationBatchRecord(Map.of(annotation.getOdsId(), batchId), List.of(annotation));
-    log.info("Batch record {} has been created for annotation", batchId);
+    annotation.setOdsBatchID(batchId);
+    createNewAnnotationBatchRecord(Map.of(annotation.getId(), batchId), List.of(annotation));
+    log.info("Batch record {} has been created for hashedAnnotation", batchId);
   }
 
   private void createNewAnnotationBatchRecord(Map<String, UUID> batchIds,
@@ -57,11 +55,11 @@ public class AnnotationBatchRecordService {
     var batchRecords = new ArrayList<AnnotationBatchRecord>();
     for (var annotation : annotations) {
       batchRecords.add(new AnnotationBatchRecord(
-          batchIds.get(annotation.getOdsId()),
-          annotation.getOaCreator().getOdsId(),
-          annotation.getOdsId(),
+          batchIds.get(annotation.getId()),
+          annotation.getDctermsCreator().getId(),
+          annotation.getId(),
           Instant.now(),
-          annotation.getOdsJobId()
+          annotation.getOdsJobID()
       ));
     }
     repository.createAnnotationBatchRecord(batchRecords);

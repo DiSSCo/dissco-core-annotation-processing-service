@@ -11,8 +11,8 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
 import eu.dissco.annotationprocessingservice.properties.KafkaConsumerProperties;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,13 +28,16 @@ class KafkaPublisherServiceTest {
   private KafkaTemplate<String, String> kafkaTemplate;
   @Mock
   private KafkaConsumerProperties consumerProperties;
+  @Mock
+  private ProvenanceService provenanceService;
 
   private KafkaPublisherService service;
 
 
   @BeforeEach
   void setup() {
-    service = new KafkaPublisherService(MAPPER, kafkaTemplate, consumerProperties);
+    service = new KafkaPublisherService(MAPPER, kafkaTemplate, consumerProperties,
+        provenanceService);
   }
 
   @Test
@@ -53,7 +56,7 @@ class KafkaPublisherServiceTest {
     // Given
 
     // When
-    service.publishUpdateEvent(givenAnnotationProcessed().setOaMotivation(Motivation.EDITING),
+    service.publishUpdateEvent(givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING),
         givenAnnotationProcessed());
 
     // Then

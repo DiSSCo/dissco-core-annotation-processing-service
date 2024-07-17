@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
@@ -25,13 +26,13 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -51,6 +52,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessingWebServiceTest {
 
+  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
+  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
   @Mock
   private AnnotationRepository repository;
   @Mock
@@ -71,12 +75,8 @@ class ProcessingWebServiceTest {
   private BatchAnnotationService batchAnnotationService;
   @Mock
   private AnnotationBatchRecordService annotationBatchRecordService;
-
   private MockedStatic<Instant> mockedStatic;
-  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   private ProcessingWebService service;
-  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
 
   @BeforeEach
   void setup() {
@@ -98,7 +98,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
@@ -110,7 +110,7 @@ class ProcessingWebServiceTest {
 
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
+    assertThat(result.getId()).isEqualTo(ID);
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedWeb());
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
@@ -119,7 +119,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationBatch() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
@@ -127,7 +127,7 @@ class ProcessingWebServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     doAnswer(invocation -> {
       var args = invocation.getArguments();
-      ((Annotation) args[0]).setOdsBatchId(BATCH_ID);
+      ((Annotation) args[0]).withOdsBatchID(BATCH_ID);
       return null;
     }).when(annotationBatchRecordService).mintBatchId(any());
 
@@ -136,7 +136,7 @@ class ProcessingWebServiceTest {
 
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
-    assertThat(result.getOdsId()).isEqualTo(ID);
+    assertThat(result.getId()).isEqualTo(ID);
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedWebBatch());
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
@@ -162,7 +162,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationElasticIOException() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
@@ -182,7 +182,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationElasticFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
@@ -207,7 +207,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationElasticFailureNoArchive() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
@@ -233,7 +233,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationKafkaFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
@@ -273,7 +273,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotation() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -285,19 +285,19 @@ class ProcessingWebServiceTest {
     var result = service.updateAnnotation(annotationRequest);
 
     // Then
-    assertThat(result).isEqualTo(givenAnnotationProcessedWeb().setOdsVersion(2));
-    assertThat(result.getOdsId()).isEqualTo(ID);
+    assertThat(result).isEqualTo(givenAnnotationProcessedWeb().withOdsVersion(2));
+    assertThat(result.getId()).isEqualTo(ID);
     then(fdoRecordService).should().buildPatchRollbackHandleRequest(annotationRequest);
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
-            givenAnnotationProcessedWeb().setOdsVersion(2));
+            givenAnnotationProcessedWeb().withOdsVersion(2));
   }
 
   @Test
   void testUpdateEqualAnnotation() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     var currentResult = givenAnnotationProcessedWeb();
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(currentResult));
@@ -317,7 +317,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationNotFound() {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(Optional.empty());
 
     // Then
@@ -327,7 +327,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationPidException() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -346,7 +346,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationElasticIOException() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
@@ -367,7 +367,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationElasticFailure() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -390,7 +390,7 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationKafkaFailure() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
@@ -399,7 +399,7 @@ class ProcessingWebServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
-            givenAnnotationProcessedWeb().setOdsVersion(2));
+            givenAnnotationProcessedWeb().withOdsVersion(2));
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -431,7 +431,7 @@ class ProcessingWebServiceTest {
 
   @Test
   void testDataAccessExceptionUpdateAnnotation() throws Exception {
-    var annotationRequest = givenAnnotationRequest().setOdsId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(ID);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);

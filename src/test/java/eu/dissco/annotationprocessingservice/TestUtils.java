@@ -5,24 +5,27 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
+import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.AggregateRating;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.annotation.Body;
-import eu.dissco.annotationprocessingservice.domain.annotation.Creator;
-import eu.dissco.annotationprocessingservice.domain.annotation.FieldSelector;
-import eu.dissco.annotationprocessingservice.domain.annotation.Generator;
-import eu.dissco.annotationprocessingservice.domain.annotation.Motivation;
-import eu.dissco.annotationprocessingservice.domain.annotation.Selector;
-import eu.dissco.annotationprocessingservice.domain.annotation.Target;
+import eu.dissco.annotationprocessingservice.schema.Agent;
+import eu.dissco.annotationprocessingservice.schema.Agent.Type;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
+import eu.dissco.annotationprocessingservice.schema.OaHasBody;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
+import eu.dissco.annotationprocessingservice.schema.SchemaAggregateRating;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,8 +34,9 @@ public class TestUtils {
 
   public static final ObjectMapper MAPPER;
 
-  public static final String ID = "20.5000.1025/KZL-VC0-ZK2";
-  public static final String ID_ALT = "20.5000.1025/ZZZ-YYY-XXX";
+  public static final String ID = "https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2";
+  public static final String BARE_ID = "20.5000.1025/KZL-VC0-ZK2";
+  public static final String ID_ALT = "https://hdl.handle.net/20.5000.1025/ZZZ-YYY-XXX";
   public static final String TARGET_ID = "20.5000.1025/QRS-123-ABC";
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
@@ -49,7 +53,7 @@ public class TestUtils {
   public static final UUID BATCH_ID_ALT = UUID.fromString("642a04b8-7a4c-4e53-89e3-0ab1dbab768e");
   public static final String ANNOTATION_JSONB = """
       [
-        "20.5000.1025/KZL-VC0-ZK2"
+        "https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
        ]
       """;
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
@@ -60,6 +64,8 @@ public class TestUtils {
     SimpleModule dateModule = new SimpleModule();
     dateModule.addSerializer(Instant.class, new InstantSerializer());
     dateModule.addDeserializer(Instant.class, new InstantDeserializer());
+    dateModule.addSerializer(Date.class, new DateSerializer());
+    dateModule.addDeserializer(Date.class, new DateDeserializer());
     mapper.registerModule(dateModule);
     mapper.setSerializationInclusion(Include.NON_NULL);
     MAPPER = mapper.copy();
@@ -70,7 +76,13 @@ public class TestUtils {
   }
 
   public static HashedAnnotation givenHashedAnnotation(UUID batchId) {
-    return new HashedAnnotation(givenHashedAnnotation().annotation().setOdsBatchId(batchId),
+    return new HashedAnnotation(givenHashedAnnotation().annotation().withOdsBatchID(batchId),
+        ANNOTATION_HASH);
+  }
+
+  public static HashedAnnotation givenHashedAnnotation(String id) {
+    return new HashedAnnotation(
+        givenHashedAnnotation().annotation().withOdsBatchID(BATCH_ID).withId(id),
         ANNOTATION_HASH);
   }
 
@@ -78,8 +90,12 @@ public class TestUtils {
     return new HashedAnnotation(givenAnnotationProcessedAlt(), ANNOTATION_HASH);
   }
 
+  public static Annotation givenAnnotationProcessed(String id) {
+    return givenAnnotationProcessed(id, CREATOR, TARGET_ID);
+  }
+
   public static Annotation givenAnnotationProcessed() {
-    return givenAnnotationProcessed(ID, CREATOR, TARGET_ID);
+    return givenAnnotationProcessed(ID);
   }
 
   public static Annotation givenAnnotationProcessedWeb() {
@@ -88,44 +104,51 @@ public class TestUtils {
 
   public static Annotation givenAnnotationProcessedWebBatch() {
     return givenAnnotationProcessedWeb(ID, CREATOR, TARGET_ID)
-        .setOdsBatchId(BATCH_ID)
-        .setPlaceInBatch(1);
+        .withOdsBatchID(BATCH_ID)
+        .withOdsPlaceInBatch(1);
   }
 
   public static Annotation givenAnnotationProcessedWeb(String annotationId, String userId,
       String targetId) {
-    return Annotation.builder()
-        .odsId(annotationId)
-        .odsVersion(1)
-        .oaBody(givenOaBody())
-        .oaMotivation(Motivation.COMMENTING)
-        .oaTarget(givenOaTarget(targetId))
-        .oaCreator(givenCreator(userId))
-        .dcTermsCreated(CREATED)
-        .oaGenerated(CREATED)
-        .asGenerator(givenGenerator())
-        .odsAggregateRating(givenAggregationRating())
-        .build();
+    return new Annotation()
+        .withId(annotationId)
+        .withOdsID(annotationId)
+        .withType("ods:Annotation")
+        .withRdfType("ods:Annotation")
+        .withOdsVersion(1)
+        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOaHasBody(givenOaBody())
+        .withOaMotivation(OaMotivation.OA_COMMENTING)
+        .withOaHasTarget(givenOaTarget(targetId))
+        .withDctermsCreator(givenCreator(userId))
+        .withDctermsCreated(Date.from(CREATED))
+        .withDctermsIssued(Date.from(CREATED))
+        .withDctermsModified(Date.from(CREATED))
+        .withAsGenerator(givenGenerator())
+        .withSchemaAggregateRating(givenAggregationRating());
   }
 
   public static Annotation givenAnnotationProcessedAlt() {
     return givenAnnotationProcessed(ID, CREATOR, TARGET_ID)
-        .setOaMotivation(Motivation.EDITING);
+        .withOaMotivation(OaMotivation.OA_EDITING);
   }
 
   public static Annotation givenAnnotationProcessed(String annotationId, String userId,
       String targetId) {
     return givenAnnotationProcessedWeb(annotationId, userId, targetId)
-        .setOdsJobId(HANDLE_PROXY + JOB_ID);
+        .withOdsJobID(HANDLE_PROXY + JOB_ID);
   }
 
   public static Annotation givenAnnotationRequest(String targetId) {
-    return Annotation.builder()
-        .oaBody(givenOaBody())
-        .oaMotivation(Motivation.COMMENTING).oaTarget(givenOaTarget(targetId))
-        .dcTermsCreated(CREATED).oaCreator(givenCreator(CREATOR))
-        .odsAggregateRating(givenAggregationRating())
-        .build();
+    return new Annotation()
+        .withType("ods:Annotation")
+        .withRdfType("ods:Annotation")
+        .withOaHasBody(givenOaBody())
+        .withOaMotivation(OaMotivation.OA_COMMENTING)
+        .withOaHasTarget(givenOaTarget(targetId))
+        .withDctermsCreated(Date.from(CREATED))
+        .withDctermsCreator(givenCreator(CREATOR))
+        .withSchemaAggregateRating(givenAggregationRating());
   }
 
   public static Annotation givenAnnotationRequest() {
@@ -134,95 +157,96 @@ public class TestUtils {
 
   public static Annotation givenBaseAnnotationForBatch(int placeInBatch, String id, UUID bachId) {
     return givenAnnotationProcessed()
-        .setOdsBatchId(bachId)
-        .setOdsId(id)
-        .setPlaceInBatch(placeInBatch);
+        .withOdsBatchID(bachId)
+        .withId(id)
+        .withOdsPlaceInBatch(placeInBatch);
   }
 
-  public static Body givenOaBody() {
+  public static OaHasBody givenOaBody() {
     return givenOaBody("a comment");
   }
 
-  public static Body givenOaBodySetType(String type) {
-    return Body.builder()
-        .odsType(type)
-        .oaValue(new ArrayList<>(List.of("a comment")))
-        .dcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
-        .odsScore(0.99)
-        .build();
+  public static OaHasBody givenOaBody(String value) {
+    return new OaHasBody()
+        .withType("oa:TextualBody")
+        .withOaValue(new ArrayList<>(List.of(value)))
+        .withDctermsReferences(
+            "https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .withOdsScore(0.99);
   }
 
-  public static Body givenOaBody(String value) {
-    return Body.builder()
-        .odsType("ods:specimenName")
-        .oaValue(new ArrayList<>(List.of(value)))
-        .dcTermsReference("https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
-        .odsScore(0.99)
-        .build();
+  public static OaHasBody givenOaBodySetType(String type) {
+    return new OaHasBody()
+        .withType(type)
+        .withOaValue(new ArrayList<>(List.of("a comment")))
+        .withDctermsReferences(
+            "https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .withOdsScore(0.99);
   }
 
-  public static Target givenOaTarget(String targetId) {
+  public static OaHasTarget givenOaTarget(String targetId) {
     return givenOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
-  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType) {
-    return Target.builder()
-        .odsId(DOI_PROXY + targetId)
-        .oaSelector(givenSelector())
-        .odsType(targetType)
-        .build();
+  public static OaHasTarget givenOaTarget(String targetId, AnnotationTargetType targetType) {
+    return new OaHasTarget()
+        .withId(DOI_PROXY + targetId)
+        .withType("ods:DigitalSpecimen")
+        .withOdsType(targetType.toString())
+        .withOdsID(DOI_PROXY + targetId)
+        .withOaHasSelector(givenSelector());
   }
 
-  public static Target givenOaTarget(String targetId, AnnotationTargetType targetType,
-      Selector selector) {
-    return Target.builder()
-        .odsId(DOI_PROXY + targetId)
-        .oaSelector(selector)
-        .odsType(targetType)
-        .build();
+  public static OaHasTarget givenOaTarget(String targetId, AnnotationTargetType targetType,
+      OaHasSelector selector) {
+    return new OaHasTarget()
+        .withId(DOI_PROXY + targetId)
+        .withOdsID(DOI_PROXY + targetId)
+        .withOdsType(targetType.toString())
+        .withOaHasSelector(selector)
+        .withType("ods:DigitalSpecimen");
   }
 
-  public static FieldSelector givenSelector() {
-    return new FieldSelector()
-        .withOdsField("digitalSpecimenWrapper.occurrences[1].locality");
+  public static OaHasSelector givenSelector() {
+    return new OaHasSelector()
+        .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
+        .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
-  public static Target givenOaTarget(Selector selector) {
-    return givenOaTarget(ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
+  public static OaHasTarget givenOaTarget(OaHasSelector selector) {
+    return givenOaTarget(BARE_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
   }
 
-  public static FieldSelector givenSelector(String field) {
-    return new FieldSelector()
-        .withOdsField(field);
+  public static OaHasSelector givenSelector(String field) {
+    return new OaHasSelector()
+        .withAdditionalProperty("ods:field", field)
+        .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
 
-  public static Creator givenCreator(String userId) {
-    return Creator.builder()
-        .foafName("Test User")
-        .odsId(userId)
-        .odsType("ORCID")
-        .build();
+  public static Agent givenCreator(String userId) {
+    return new Agent()
+        .withSchemaName("Test User")
+        .withId(userId)
+        .withType(Type.SCHEMA_PERSON);
   }
 
-  public static Generator givenGenerator() {
-    return Generator.builder()
-        .foafName("Annotation Processing Service")
-        .odsId(PROCESSOR_HANDLE)
-        .odsType("oa:SoftwareAgent")
-        .build();
+  public static Agent givenGenerator() {
+    return new Agent()
+        .withSchemaName("Annotation Processing Service")
+        .withId(PROCESSOR_HANDLE)
+        .withType(Type.AS_APPLICATION);
   }
 
-  public static AggregateRating givenAggregationRating() {
+  public static SchemaAggregateRating givenAggregationRating() {
     return givenAggregationRating(0.1);
   }
 
-  public static AggregateRating givenAggregationRating(double ratingValue) {
-    return AggregateRating.builder()
-        .ratingValue(ratingValue)
-        .odsType("Score")
-        .ratingCount(0.2)
-        .build();
+  public static SchemaAggregateRating givenAggregationRating(double ratingValue) {
+    return new SchemaAggregateRating()
+        .withSchemaRatingValue(ratingValue)
+        .withType("schema:AggregateRating")
+        .withSchemaRatingCount(2);
   }
 
 
@@ -293,7 +317,7 @@ public class TestUtils {
                 "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
                 "motivation":"oa:commenting"
             },
-            "id":"20.5000.1025/KZL-VC0-ZK2"
+            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
         }
         """));
@@ -311,7 +335,7 @@ public class TestUtils {
                 "motivation":"oa:commenting",
                 "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               },
-            "id":"20.5000.1025/KZL-VC0-ZK2"
+            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
           }
         """);
@@ -326,7 +350,7 @@ public class TestUtils {
                "motivation":"oa:editing",
                 "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
               },
-              "id":"20.5000.1025/KZL-VC0-ZK2"
+              "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
           }
         """);
@@ -337,7 +361,7 @@ public class TestUtils {
     return MAPPER.readTree("""
         {
           "data": [
-            {"id":"20.5000.1025/KZL-VC0-ZK2"}
+            {"id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"}
           ]
         }
         """);
@@ -345,22 +369,22 @@ public class TestUtils {
 
   public static BatchMetadataSearchParam givenBatchMetadataSearchParamCountry() {
     return new BatchMetadataSearchParam(
-        "digitalSpecimenWrapper.occurrences[*].location.dwc:country",
+        "ods:hasEvent[*].ods:Location.dwc:country",
         "Netherlands");
   }
 
   public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
     return new BatchMetadataExtended(1,
         List.of(new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].location.georeference.dwc:decimalLatitude.dwc:value",
-            "11")));
+            "ods:hasEvent[*].ods:Location.ods:GeoReference.dwc:decimalLatitude",
+            "52.123")));
   }
 
   public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam() {
     return new BatchMetadataExtended(1, List.of(
         givenBatchMetadataSearchParamCountry(),
         new BatchMetadataSearchParam(
-            "digitalSpecimenWrapper.occurrences[*].dwc:occurrenceRemarks",
+            "ods:hasEvent[*].dwc:occurrenceRemarks",
             "Correct"
         )));
   }
@@ -372,12 +396,12 @@ public class TestUtils {
 
   public static AnnotationEvent givenAnnotationEventBatchEnabled() {
     return new AnnotationEvent(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
-        .setPlaceInBatch(1)), JOB_ID,
+        .withOdsPlaceInBatch(1)), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
   }
 
   public static JsonNode givenElasticDocument() {
-    return givenElasticDocument("Netherlands", ID);
+    return givenElasticDocument("Netherlands", DOI_PROXY + BARE_ID);
   }
 
   public static JsonNode givenElasticDocument(String id) {
@@ -386,68 +410,79 @@ public class TestUtils {
 
   public static JsonNode givenElasticDocument(String country, String id) {
     try {
-
-      return MAPPER.readTree("""
-          {
-            "id": \"""" + id +
+      return MAPPER.readTree(
           """
+              {
+               "@id":  \"""" + id + """
               ",
-                  "digitalSpecimenWrapper": {
-                    "other": ["a", "10"],
-                    "fieldNum":1,
-                    "occurrences": [
-                      {
-                        "dwc:occurrenceRemarks": "Correct",
-                        "annotateTarget":"this",
-                        "location": {
-                          "dwc:country": \"""" + country + """
-          ",
-                        "dwc:continent":"Europe",
-                        "georeference": {
-                          "dwc:decimalLatitude": {
-                            "dwc:value":11
-                          },
-                          "dwc:decimalLongitude": "10",
-                          "dwc":["1"]
-                        },
-                        "locality":"known"
-                      }
-                    },
-                    {
-                      "dwc:occurrenceRemarks": "Incorrect",
-                      "annotateTarget":"this",
-                      "location": {
-                        "dwc:country": "Unknown",
-                         "dwc:continent":"Error",
-                        "georeference": {
-                          "dwc:decimalLatitude": {
-                            "dwc:value":10
-                          },
-                          "dwc:decimalLongitude": "10"
-                        },
-                        "locality":"unknown"
-                      }
-                    },
-                    {
-                      "dwc:occurrenceRemarks": "Half Correct",
-                      "annotateTarget":"this",
-                      "location": {
-                        "dwc:country": \"""" + country + """
-          ",
-                              "dwc:continent":"Unknown",
-                              "georeference": {
-                                "dwc:decimalLatitude": {
-                                  "dwc:value":11
-                                },
-                                "dwc:decimalLongitude": "10.1",
-                                "test":"hello"
-                              },
-                              "locality":"unknown"
-                            }
+               "@type": "ods:DigitalSpecimen",
+               "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+               "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+               "ods:midsLevel": 0,
+               "ods:version": 4,
+               "dcterms:created": "2022-11-01T09:59:24.000Z",
+               "ods:physicalSpecimenID": "123",
+               "ods:physicalSpecimenIDType": "Resolvable",
+               "ods:isMarkedAsType": true,
+               "ods:isKnownToContainMedia": true,
+               "ods:specimenName": "Abyssothyris Thomson, 1927",
+               "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
+               "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
+               "dcterms:modified": "03/12/2012",
+               "dwc:preparations": "",
+               "ods:organisationID": "https://ror.org/0349vqz63",
+               "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
+               "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
+               "ods:hasEvent": [
+                 {
+                   "dwc:occurrenceRemarks": "Correct",
+                   "annotateTarget": "this",
+                   "ods:Location": {
+                     "dwc:country": \"""" + country + """
+              ",
+                  "dwc:continent": "Europe",
+                  "ods:GeoReference": {
+                    "dwc:decimalLatitude": "52.123",
+                    "dwc:decimalLongitude": 10.1233,
+                    "dwc": [
+                      "1"
+                    ]
+                  },
+                  "dwc:locality": "known"
+                }
+              },
+              {
+                "dwc:occurrenceRemarks": "Incorrect",
+                "annotateTarget": "this",
+                "ods:Location": {
+                  "dwc:country": "Unknown",
+                  "dwc:continent": "Error",
+                  "ods:GeoReference": {
+                    "dwc:decimalLatitude": "51.123",
+                    "dwc:decimalLongitude": 10.5233
+                  },
+                  "dwc:locality": "unknown"
+                }
+              },
+              {
+                "dwc:occurrenceRemarks": "Half Correct",
+                "annotateTarget": "this",
+                "ods:Location": {
+                  "dwc:country": \"""" + country + """
+              ",
+                            "dwc:continent": "Unknown",
+                            "ods:GeoReference": {
+                              "dwc:decimalLatitude": "52.123",
+                              "dwc:decimalLongitude": 10.1233,
+                              "test": "hello"
+                            },
+                            "dwc:locality": "unknown"
                           }
-                        ]
-                      }
-                    }""");
+                        }
+                      ]
+                    }
+              """
+      );
     } catch (JsonProcessingException e) {
       throw new RuntimeException();
     }
@@ -455,13 +490,6 @@ public class TestUtils {
 
   public static Map<String, UUID> givenBatchIdMap() {
     return Map.of(ID, BATCH_ID);
-  }
-
-  public static Map<String, UUID> givenBatchIdMapTwo() {
-    return Map.of(
-        ID, BATCH_ID,
-        ID_ALT, BATCH_ID_ALT
-    );
   }
 
 }

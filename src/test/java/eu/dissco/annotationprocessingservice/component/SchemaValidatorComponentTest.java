@@ -12,10 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,24 +25,40 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
 class SchemaValidatorComponentTest {
 
   private SchemaValidatorComponent schemaValidator;
-  @Mock
-  private Environment env;
+
+  private static Stream<Arguments> validAnnotations() {
+    return Stream.of(
+        Arguments.of(givenAnnotationRequest(), true),
+        Arguments.of(givenAnnotationRequest().withId(ID), false)
+    );
+  }
+
+  private static Stream<Arguments> invalidAnnotations() {
+    return Stream.of(
+        Arguments.of(givenAnnotationRequest().withDctermsIssued(Date.from(CREATED))),
+        Arguments.of(givenAnnotationRequest().withAsGenerator(givenGenerator())),
+        Arguments.of(givenAnnotationRequest().withId(ID)),
+        Arguments.of(givenAnnotationRequest().withDctermsCreator(null)),
+        Arguments.of(givenAnnotationRequest().withDctermsCreated(null)),
+        Arguments.of(givenAnnotationRequest().withRdfType(null)),
+        Arguments.of(givenAnnotationRequest().withOaHasTarget(null)),
+        Arguments.of(givenAnnotationRequest().withOaMotivation(null))
+    );
+  }
 
   @BeforeEach
   void setup() throws IOException {
     var factory = JsonSchemaFactory.getInstance(VersionFlag.V202012);
     try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream("json-schema/annotation_request.json")) {
+        .getResourceAsStream("json-validation/annotation-request.json")) {
       var schema = factory.getSchema(inputStream);
-      schemaValidator = new SchemaValidatorComponent(schema, MAPPER, env);
+      schemaValidator = new SchemaValidatorComponent(schema, MAPPER);
     }
   }
 
@@ -61,7 +78,6 @@ class SchemaValidatorComponentTest {
     assertThrows(AnnotationValidationException.class,
         () -> schemaValidator.validateAnnotationRequest(annotationRequest,
             true));
-
   }
 
   @Test
@@ -78,7 +94,7 @@ class SchemaValidatorComponentTest {
   @Test
   void testCreateMissingCreated() {
     // Given
-    var annotationRequest = givenAnnotationRequest().setDcTermsCreated(null);
+    var annotationRequest = givenAnnotationRequest().withDctermsCreated(null);
 
     // Then
     assertThrows(AnnotationValidationException.class,
@@ -93,27 +109,6 @@ class SchemaValidatorComponentTest {
     // Then
     assertDoesNotThrow(() ->
         schemaValidator.validateAnnotationRequest(annotationRequest, isNew));
-  }
-
-  private static Stream<Arguments> validAnnotations() {
-    return Stream.of(
-        Arguments.of(givenAnnotationRequest(), true),
-        Arguments.of(givenAnnotationRequest().setOdsId(ID), false)
-    );
-  }
-
-  private static Stream<Arguments> invalidAnnotations() {
-    return Stream.of(
-        Arguments.of(givenAnnotationRequest().setOaGenerated(CREATED)),
-        Arguments.of(givenAnnotationRequest().setAsGenerator(givenGenerator())),
-        Arguments.of(givenAnnotationRequest().setOdsId(ID)),
-        Arguments.of(givenAnnotationRequest().setOaCreator(null)),
-        Arguments.of(givenAnnotationRequest().setDcTermsCreated(null)),
-        Arguments.of(givenAnnotationRequest().setRdfType(null)),
-        Arguments.of(givenAnnotationRequest().setOaBody(null)),
-        Arguments.of(givenAnnotationRequest().setOaTarget(null)),
-        Arguments.of(givenAnnotationRequest().setOaMotivation(null))
-    );
   }
 
 

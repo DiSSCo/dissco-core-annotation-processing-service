@@ -3,14 +3,14 @@ package eu.dissco.annotationprocessingservice.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
-import eu.dissco.annotationprocessingservice.domain.annotation.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.annotation.Target;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,12 +59,13 @@ public class BatchAnnotationService {
         log.info("Successfully identified {} {}s to apply batch annotations to",
             annotatedObjects.size(), targetType);
         for (var baseAnnotation : baseAnnotations) {
-          // Find our batch id based on the parent annotation
+          // Find our batch id based on the parent hashedAnnotation
           var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
               annotatedObjects);
           if (!annotations.isEmpty()) {
-            var batchEvents = annotations.stream().map(p ->  new AnnotationEvent(List.of(p), jobId, null,
-                    baseAnnotation.getOdsBatchId())).toList();
+            var batchEvents = annotations.stream()
+                .map(p -> new AnnotationEvent(List.of(p), jobId, null,
+                    baseAnnotation.getOdsBatchID())).toList();
             kafkaService.publishBatchAnnotation(batchEvents);
             log.info("Successfully published {} batch annotations to queue",
                 annotatedObjects.size());
@@ -83,21 +84,23 @@ public class BatchAnnotationService {
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)
       throws ConflictException {
-    var types = baseAnnotations.stream().map(p -> p.getOaTarget().getOdsType()).distinct().toList();
+    var types = baseAnnotations.stream().map(p -> p.getOaHasTarget().getOdsType()).distinct()
+        .toList();
     if (types.size() != 1) {
       log.error("Annotations corresponding to the same batch metadata have different types: {}",
           types);
       throw new ConflictException();
     }
-    return types.get(0);
+    return AnnotationTargetType.fromString(types.get(0));
   }
 
   private List<Annotation> getBaseAnnotation(Integer placeInBatch, List<Annotation> annotations)
       throws ConflictException {
-    var subAnnotations = annotations.stream().filter(p -> placeInBatch.equals(p.getPlaceInBatch()))
+    var subAnnotations = annotations.stream()
+        .filter(p -> placeInBatch.equals(p.getOdsPlaceInBatch()))
         .toList();
     if (subAnnotations.isEmpty()) {
-      log.error("Unable to find batch metadata for annotation with placeInBatch {}",
+      log.error("Unable to find batch metadata for hashedAnnotation with placeInBatch {}",
           placeInBatch);
       throw new ConflictException();
     }
@@ -110,25 +113,24 @@ public class BatchAnnotationService {
     var batchAnnotations = new ArrayList<Annotation>();
     for (var annotatedObject : annotatedObjects) {
       var targets = jsonPathComponent.getAnnotationTargets(batchMetadata, annotatedObject,
-          baseAnnotation.getOaTarget());
+          baseAnnotation.getOaHasTarget());
       batchAnnotations.addAll(copyAnnotation(baseAnnotation, targets));
     }
     return batchAnnotations;
   }
 
-  private List<Annotation> copyAnnotation(Annotation baseAnnotation, List<Target> targets) {
+  private List<Annotation> copyAnnotation(Annotation baseAnnotation, List<OaHasTarget> targets) {
     ArrayList<Annotation> newAnnotations = new ArrayList<>();
     for (var target : targets) {
-      newAnnotations.add(Annotation.builder()
-          .odsId(null)
-          .oaMotivation(baseAnnotation.getOaMotivation())
-          .dcTermsCreated(baseAnnotation.getDcTermsCreated())
-          .oaCreator(baseAnnotation.getOaCreator())
-          .oaBody(baseAnnotation.getOaBody())
-          .odsAggregateRating(baseAnnotation.getOdsAggregateRating())
-          .oaTarget(target)
-          .odsBatchId(baseAnnotation.getOdsBatchId())
-          .build());
+      newAnnotations.add(new Annotation()
+          .withOaMotivation(baseAnnotation.getOaMotivation())
+          .withOaMotivatedBy(baseAnnotation.getOaMotivatedBy())
+          .withDctermsCreated(baseAnnotation.getDctermsCreated())
+          .withDctermsCreator(baseAnnotation.getDctermsCreator())
+          .withOaHasBody(baseAnnotation.getOaHasBody())
+          .withSchemaAggregateRating(baseAnnotation.getSchemaAggregateRating())
+          .withOaHasTarget(target)
+          .withOdsBatchID(baseAnnotation.getOdsBatchID()));
     }
     return newAnnotations;
   }

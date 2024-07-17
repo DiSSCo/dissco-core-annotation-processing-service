@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.Random;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -24,12 +25,16 @@ public class ApplicationConfiguration {
   public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern(
       "yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneOffset.UTC);
 
+  public static final String HANDLE_PROXY = "https://hdl.handle.net/";
+
   @Bean
   public ObjectMapper objectMapper() {
     var mapper = new ObjectMapper().findAndRegisterModules();
     SimpleModule dateModule = new SimpleModule();
     dateModule.addSerializer(Instant.class, new InstantSerializer());
     dateModule.addDeserializer(Instant.class, new InstantDeserializer());
+    dateModule.addSerializer(Date.class, new DateSerializer());
+    dateModule.addDeserializer(Date.class, new DateDeserializer());
     mapper.registerModule(dateModule);
     mapper.setSerializationInclusion(Include.NON_NULL);
     return mapper;

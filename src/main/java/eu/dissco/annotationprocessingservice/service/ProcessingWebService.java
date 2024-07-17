@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
-import eu.dissco.annotationprocessingservice.domain.annotation.Annotation;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -15,9 +14,9 @@ import eu.dissco.annotationprocessingservice.exception.FailedProcessingException
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
-import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.List;
@@ -51,7 +50,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     if (batchingRequested) {
       annotationBatchRecordService.mintBatchId(annotation);
     }
-    log.info("New id has been generated for Annotation: {}", annotation.getOdsId());
+    log.info("New id has been generated for Annotation: {}", annotation.getId());
     try {
       repository.createAnnotationRecord(annotation);
     } catch (DataAccessException e) {
@@ -65,25 +64,25 @@ public class ProcessingWebService extends AbstractProcessingService {
   }
 
   public void batchWebAnnotations(AnnotationEvent event, Annotation result) {
-    log.info("Batching annotations for web annotation {}", result);
+    log.info("Batching annotations for web hashedAnnotation {}", result);
     try {
       applyBatchAnnotations(event, List.of(result));
     } catch (ConflictException | BatchingException e) {
       log.error(
-          "An exception has occurred while creating batch annotations for parent annotation {}",
-          result.getOdsId(), e);
+          "An exception has occurred while creating batch annotations for parent hashedAnnotation {}",
+          result.getId(), e);
     }
   }
 
   public Annotation updateAnnotation(Annotation annotation)
       throws FailedProcessingException, NotFoundException, AnnotationValidationException {
     schemaValidator.validateAnnotationRequest(annotation, false);
-    var currentAnnotationOptional = repository.getAnnotationForUser(annotation.getOdsId(),
-        annotation.getOaCreator().getOdsId());
+    var currentAnnotationOptional = repository.getAnnotationForUser(annotation.getId(),
+        annotation.getDctermsCreator().getId());
     if (currentAnnotationOptional.isEmpty()) {
-      log.error("No annotations with id {} found for creator {}", annotation.getOdsId(),
-          annotation.getOaCreator().getOdsId());
-      throw new NotFoundException(annotation.getOdsId(), annotation.getOaCreator().getOdsId());
+      log.error("No annotations with id {} found for creator {}", annotation.getId(),
+          annotation.getDctermsCreator().getId());
+      throw new NotFoundException(annotation.getId(), annotation.getDctermsCreator().getId());
     }
     var currentAnnotation = currentAnnotationOptional.get();
     if (annotationsAreEqual(currentAnnotation, annotation)) {
@@ -94,7 +93,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
     } catch (PidCreationException e) {
-      log.error("Unable to post update for annotations {}", currentAnnotation.getOdsId(), e);
+      log.error("Unable to post update for annotations {}", currentAnnotation.getId(), e);
       throw new FailedProcessingException();
     }
     try {
@@ -105,7 +104,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     log.info("Annotation: {} has been successfully committed to database",
-        currentAnnotation.getOdsId());
+        currentAnnotation.getId());
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
     return annotation;
   }
@@ -151,12 +150,12 @@ public class ProcessingWebService extends AbstractProcessingService {
     log.warn("Rolling back for annotations: {}", annotation);
     if (elasticRollback) {
       try {
-        elasticRepository.archiveAnnotation(annotation.getOdsId());
+        elasticRepository.archiveAnnotation(annotation.getId());
       } catch (IOException | ElasticsearchException e) {
-        log.info("Fatal exception, unable to rollback: {}", annotation.getOdsId(), e);
+        log.info("Fatal exception, unable to rollback: {}", annotation.getId(), e);
       }
     }
-    repository.rollbackAnnotation(annotation.getOdsId());
+    repository.rollbackAnnotation(annotation.getId());
     rollbackHandleCreation(annotation);
     throw new FailedProcessingException();
   }
@@ -166,7 +165,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     try {
       handleComponent.rollbackHandleCreation(requestBody);
     } catch (PidCreationException e) {
-      log.error("Unable to rollback creation for annotations {}", annotation.getOdsId(), e);
+      log.error("Unable to rollback creation for annotations {}", annotation.getId(), e);
     }
   }
 
@@ -190,7 +189,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     try {
       handleComponent.rollbackHandleUpdate(requestBody);
     } catch (PidCreationException e) {
-      log.error("Unable to rollback handle update for annotations {}", currentAnnotation.getOdsId(),
+      log.error("Unable to rollback handle update for annotations {}", currentAnnotation.getId(),
           e);
     }
   }
@@ -207,8 +206,8 @@ public class ProcessingWebService extends AbstractProcessingService {
     try {
       repository.createAnnotationRecord(currentAnnotation);
     } catch (DataAccessException e) {
-      log.error("Fatal exception: unable to revert annotation {} to its original state",
-          currentAnnotation.getOdsId(), e);
+      log.error("Fatal exception: unable to revert hashedAnnotation {} to its original state",
+          currentAnnotation.getId(), e);
       throw new FailedProcessingException();
     }
 
@@ -227,7 +226,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     if (indexDocument.result().equals(Result.Updated)) {
-      log.info("Annotation: {} has been successfully indexed", currentAnnotation.getOdsId());
+      log.info("Annotation: {} has been successfully indexed", currentAnnotation.getId());
       try {
         kafkaService.publishUpdateEvent(currentAnnotation, annotation);
       } catch (JsonProcessingException e) {
