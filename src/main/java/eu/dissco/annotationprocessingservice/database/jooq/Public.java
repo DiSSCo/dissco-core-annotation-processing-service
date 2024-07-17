@@ -4,12 +4,13 @@
 package eu.dissco.annotationprocessingservice.database.jooq;
 
 
+import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatchRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.NewAnnotation;
-import eu.dissco.annotationprocessingservice.database.jooq.tables.SourceSystem;
+
 import java.util.Arrays;
 import java.util.List;
+
 import org.jooq.Catalog;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
@@ -29,6 +30,11 @@ public class Public extends SchemaImpl {
     public static final Public PUBLIC = new Public();
 
     /**
+     * The table <code>public.annotation</code>.
+     */
+    public final Annotation ANNOTATION = Annotation.ANNOTATION;
+
+    /**
      * The table <code>public.annotation_batch_record</code>.
      */
     public final AnnotationBatchRecord ANNOTATION_BATCH_RECORD = AnnotationBatchRecord.ANNOTATION_BATCH_RECORD;
@@ -37,16 +43,6 @@ public class Public extends SchemaImpl {
      * The table <code>public.mas_job_record</code>.
      */
     public final MasJobRecord MAS_JOB_RECORD = MasJobRecord.MAS_JOB_RECORD;
-
-    /**
-     * The table <code>public.new_annotation</code>.
-     */
-    public final NewAnnotation NEW_ANNOTATION = NewAnnotation.NEW_ANNOTATION;
-
-    /**
-     * The table <code>public.source_system</code>.
-     */
-    public final SourceSystem SOURCE_SYSTEM = SourceSystem.SOURCE_SYSTEM;
 
     /**
      * No further instances allowed
@@ -64,10 +60,9 @@ public class Public extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
+            Annotation.ANNOTATION,
             AnnotationBatchRecord.ANNOTATION_BATCH_RECORD,
-            MasJobRecord.MAS_JOB_RECORD,
-            NewAnnotation.NEW_ANNOTATION,
-            SourceSystem.SOURCE_SYSTEM
+            MasJobRecord.MAS_JOB_RECORD
         );
     }
 }
