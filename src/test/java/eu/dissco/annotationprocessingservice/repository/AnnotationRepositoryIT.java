@@ -8,7 +8,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
-import static eu.dissco.annotationprocessingservice.database.jooq.Tables.NEW_ANNOTATION;
+import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,7 +37,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   @AfterEach
   void destroy() {
-    context.truncate(NEW_ANNOTATION).execute();
+    context.truncate(ANNOTATION).execute();
   }
 
   @Test
@@ -101,15 +101,17 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var annotation = givenAnnotationProcessed();
     repository.createAnnotationRecord(annotation);
-    var initInstant = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, ""))).fetchOne(Record1::value1);
+    var initInstant = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
+        .fetchOne(Record1::value1);
 
     // When
     repository.updateLastChecked(List.of(annotation.getId()));
 
     // Then
-    var updatedTimestamp = context.select(NEW_ANNOTATION.LAST_CHECKED).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, ""))).fetchOne(Record1::value1);
+    var updatedTimestamp = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
+        .fetchOne(Record1::value1);
     assertThat(updatedTimestamp).isAfter(initInstant);
   }
 
@@ -163,8 +165,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.archiveAnnotation(ID);
 
     // Then
-    var deletedTimestamp = context.select(NEW_ANNOTATION.TOMBSTONED_ON).from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
+    var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED_ON).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
     assertThat(deletedTimestamp).isNotNull();
   }
 
@@ -197,9 +199,9 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   private Annotation getAnnotation(String annotationId) {
-    var dbRecord = context.select(NEW_ANNOTATION.asterisk())
-        .from(NEW_ANNOTATION)
-        .where(NEW_ANNOTATION.ID.eq(annotationId.replace(HANDLE_PROXY, "")))
+    var dbRecord = context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotationId.replace(HANDLE_PROXY, "")))
         .fetchOne();
     if (dbRecord == null) {
       return null;
@@ -209,7 +211,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   private Annotation mapAnnotation(Record dbRecord) {
     try {
-      return mapper.readValue(dbRecord.get(NEW_ANNOTATION.DATA).data(), Annotation.class);
+      return mapper.readValue(dbRecord.get(ANNOTATION.DATA).data(), Annotation.class);
     } catch (JsonProcessingException ignored) {
       return null;
     }
