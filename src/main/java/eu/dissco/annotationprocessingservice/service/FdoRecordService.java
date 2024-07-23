@@ -11,8 +11,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,11 +32,11 @@ public class FdoRecordService {
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
 
-  public List<JsonNode> buildPostHandleRequest(Annotation annotation) {
-    return List.of(buildSinglePostHandleRequest(annotation, null));
+  public List<JsonNode> buildPostHandleRequest(AnnotationProcessingRequest annotationRequest) {
+    return List.of(buildSinglePostHandleRequest(annotationRequest, null));
   }
 
-  public List<JsonNode> buildPostHandleRequest(List<HashedAnnotation> annotations) {
+  public List<JsonNode> buildPostHandleRequest(List<HashedAnnotationRequest> annotations) {
     List<JsonNode> requestBody = new ArrayList<>();
     for (var annotation : annotations) {
       requestBody.add(buildSinglePostHandleRequest(annotation.annotation(), annotation.hash()));
@@ -42,10 +44,13 @@ public class FdoRecordService {
     return requestBody;
   }
 
-  private JsonNode buildSinglePostHandleRequest(Annotation annotation, UUID annotationHash) {
+  private JsonNode buildSinglePostHandleRequest(AnnotationProcessingRequest annotation,
+      UUID annotationHash) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
-    var attributes = generateAttributes(annotation, annotationHash);
+    var attributes = generateAttributes(annotation.getOaHasTarget().getId(),
+        annotation.getOaHasTarget().getOdsType(), annotation.getOaMotivation().value(),
+        annotationHash);
     data.put(TYPE.getAttribute(), fdoProperties.getType());
     data.set(ATTRIBUTES, attributes);
     request.set(DATA, data);
@@ -69,7 +74,9 @@ public class FdoRecordService {
       UUID annotationHash) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
-    var attributes = generateAttributes(annotation, annotationHash);
+    var attributes = generateAttributes(annotation.getOaHasTarget().getId(),
+        annotation.getOaHasTarget().getOdsType(),
+        annotation.getOaMotivation().value(), annotationHash);
     data.put(TYPE.getAttribute(), fdoProperties.getType());
     data.set(ATTRIBUTES, attributes);
     data.put(ID, annotation.getId());
@@ -88,12 +95,13 @@ public class FdoRecordService {
     return request;
   }
 
-  private JsonNode generateAttributes(Annotation annotation, UUID annotationHash) {
+  private JsonNode generateAttributes(String targetPid, String targetType, String motivation,
+      UUID annotationHash) {
     var attributes = mapper.createObjectNode();
     attributes.put(ISSUED_FOR_AGENT.getAttribute(), fdoProperties.getIssuedForAgent());
-    attributes.put(TARGET_PID.getAttribute(), annotation.getOaHasTarget().getId());
-    attributes.put(TARGET_TYPE.getAttribute(), annotation.getOaHasTarget().getOdsType());
-    attributes.put(MOTIVATION.getAttribute(), annotation.getOaMotivation().toString());
+    attributes.put(TARGET_PID.getAttribute(), targetPid);
+    attributes.put(TARGET_TYPE.getAttribute(), targetType);
+    attributes.put(MOTIVATION.getAttribute(), motivation);
     if (annotationHash != null) {
       attributes.put(ANNOTATION_HASH.getAttribute(), annotationHash.toString());
     }

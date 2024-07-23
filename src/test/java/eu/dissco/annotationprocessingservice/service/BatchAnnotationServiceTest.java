@@ -9,9 +9,8 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBaseAnnotationForBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
@@ -29,8 +28,8 @@ import static org.mockito.Mockito.times;
 
 import eu.dissco.annotationprocessingservice.TestUtils;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
@@ -39,7 +38,7 @@ import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -84,11 +83,10 @@ class BatchAnnotationServiceTest {
             .withOaHasTarget(givenOaTarget(id))
             .withDctermsCreated(Date.from(CREATED))
             .withDctermsCreator(givenCreator(CREATOR))
-            .withSchemaAggregateRating(givenAggregationRating())
             .withOdsBatchID(BATCH_ID)
     ).toList();
     var batchEvent = batchAnnotations.stream()
-        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
@@ -133,7 +131,7 @@ class BatchAnnotationServiceTest {
     var baseAnnotationA = givenBaseAnnotationForBatch(placeInBatch, ID, BATCH_ID);
     var baseAnnotationB = givenBaseAnnotationForBatch(placeInBatch, ID_ALT, BATCH_ID_ALT)
         .withOaHasBody(annotationBodyB);
-    var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+    var event = new BatchMetadata(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
     var annotatableIds = List.of("0", "1", "2");
     int pageSize = annotatableIds.size();
@@ -146,7 +144,6 @@ class BatchAnnotationServiceTest {
             .withOaHasTarget(givenOaTarget(id))
             .withDctermsCreated(Date.from(CREATED))
             .withDctermsCreator(givenCreator(CREATOR))
-            .withSchemaAggregateRating(givenAggregationRating())
             .withOdsBatchID(BATCH_ID)
     ).toList();
     var batchAnnotationsB = annotatableIds.stream().map(id ->
@@ -156,14 +153,13 @@ class BatchAnnotationServiceTest {
             .withOaHasTarget(givenOaTarget(id))
             .withDctermsCreated(Date.from(CREATED))
             .withDctermsCreator(givenCreator(CREATOR))
-            .withSchemaAggregateRating(givenAggregationRating())
             .withOdsBatchID(BATCH_ID_ALT)
     ).toList();
 
     var batchEventA = batchAnnotationsA.stream()
-        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     var batchEventB = batchAnnotationsB.stream()
-        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
+        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
 
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -183,10 +179,10 @@ class BatchAnnotationServiceTest {
   void testApplyBatchingTwoBaseAnnotationsTypeMismatch() {
     // Given
     int placeInBatch = 1;
-    var baseAnnotationA = givenAnnotationRequest().withOdsPlaceInBatch(placeInBatch);
-    var baseAnnotationB = givenAnnotationRequest().withOdsPlaceInBatch(placeInBatch)
+    var baseAnnotationA = givenAnnotationProcessed().withOdsPlaceInBatch(placeInBatch);
+    var baseAnnotationB = givenAnnotationProcessed().withOdsPlaceInBatch(placeInBatch)
         .withOaHasTarget(givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT));
-    var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+    var event = new BatchMetadata(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
 
     // When
@@ -216,7 +212,7 @@ class BatchAnnotationServiceTest {
     var baseAnnotationB = givenBaseAnnotationForBatch(2, ID, BATCH_ID_ALT)
         .withOaHasBody(annotationBodyB)
         .withOaHasTarget(annotationTargetB);
-    var event = new AnnotationEvent(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+    var event = new BatchMetadata(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         batchMetadataList, null);
 
     int pageSize = annotatableIdsA.size();
@@ -230,7 +226,6 @@ class BatchAnnotationServiceTest {
             .withOaHasTarget(givenOaTarget(id))
             .withDctermsCreated(Date.from(CREATED))
             .withDctermsCreator(givenCreator(CREATOR))
-            .withSchemaAggregateRating(givenAggregationRating())
             .withOdsBatchID(BATCH_ID)
     ).toList();
 
@@ -241,13 +236,12 @@ class BatchAnnotationServiceTest {
             .withOaHasTarget(givenOaTarget(id))
             .withDctermsCreated(Date.from(CREATED))
             .withDctermsCreator(givenCreator(CREATOR))
-            .withSchemaAggregateRating(givenAggregationRating())
             .withOdsBatchID(BATCH_ID_ALT)
     ).toList();
     var batchEventA = batchAnnotationsA.stream()
-        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     var batchEventB = batchAnnotationsB.stream()
-        .map(p -> new AnnotationEvent(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
+        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -269,7 +263,7 @@ class BatchAnnotationServiceTest {
   @Test
   void testApplyBatchAnnotationsMissingPlaceInBatch() {
     // Given
-    var event = new AnnotationEvent(List.of(givenAnnotationRequest()), JOB_ID,
+    var event = new BatchMetadata(List.of(givenAnnotationProcessed()), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
 
     // When
@@ -345,7 +339,7 @@ class BatchAnnotationServiceTest {
     givenJsonPathResponse(ids, givenOaTarget(TARGET_ID));
   }
 
-  private void givenJsonPathResponse(List<String> ids, OaHasTarget target)
+  private void givenJsonPathResponse(List<String> ids, OaHasTarget__1 target)
       throws BatchingException {
     for (var id : ids) {
       given(jsonPathComponent.getAnnotationTargets(any(), eq(givenElasticDocument(id)),

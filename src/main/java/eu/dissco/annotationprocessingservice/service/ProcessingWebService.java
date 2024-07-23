@@ -1,12 +1,14 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
+
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -17,6 +19,7 @@ import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.List;
@@ -42,11 +45,12 @@ public class ProcessingWebService extends AbstractProcessingService {
         annotationBatchRecordService);
   }
 
-  public Annotation persistNewAnnotation(Annotation annotation, boolean batchingRequested)
+  public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,
+      boolean batchingRequested)
       throws FailedProcessingException, AnnotationValidationException {
-    schemaValidator.validateAnnotationRequest(annotation, true);
-    var id = postHandle(annotation);
-    enrichNewAnnotation(annotation, id, batchingRequested);
+    schemaValidator.validateAnnotationRequest(annotationRequest, true);
+    var id = postHandle(annotationRequest);
+    var annotation = buildAnnotation(annotationRequest, HANDLE_PROXY + id, batchingRequested, 1);
     if (batchingRequested) {
       annotationBatchRecordService.mintBatchId(annotation);
     }
@@ -63,7 +67,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     return annotation;
   }
 
-  public void batchWebAnnotations(AnnotationEvent event, Annotation result) {
+  public void batchWebAnnotations(AnnotationProcessingEvent event, Annotation result) {
     log.info("Batching annotations for web hashedAnnotation {}", result);
     try {
       applyBatchAnnotations(event, List.of(result));
@@ -74,22 +78,24 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
   }
 
-  public Annotation updateAnnotation(Annotation annotation)
+  public Annotation updateAnnotation(AnnotationProcessingRequest annotationRequest)
       throws FailedProcessingException, NotFoundException, AnnotationValidationException {
-    schemaValidator.validateAnnotationRequest(annotation, false);
-    var currentAnnotationOptional = repository.getAnnotationForUser(annotation.getId(),
-        annotation.getDctermsCreator().getId());
+    schemaValidator.validateAnnotationRequest(annotationRequest, false);
+    var currentAnnotationOptional = repository.getAnnotationForUser(annotationRequest.getId(),
+        annotationRequest.getDctermsCreator().getId());
     if (currentAnnotationOptional.isEmpty()) {
-      log.error("No annotations with id {} found for creator {}", annotation.getId(),
-          annotation.getDctermsCreator().getId());
-      throw new NotFoundException(annotation.getId(), annotation.getDctermsCreator().getId());
+      log.error("No annotations with id {} found for creator {}", annotationRequest.getId(),
+          annotationRequest.getDctermsCreator().getId());
+      throw new NotFoundException(annotationRequest.getId(),
+          annotationRequest.getDctermsCreator().getId());
     }
     var currentAnnotation = currentAnnotationOptional.get();
+    var annotation = buildAnnotation(annotationRequest, annotationRequest.getId(),
+        currentAnnotation.getOdsVersion() + 1);
     if (annotationsAreEqual(currentAnnotation, annotation)) {
       processEqualAnnotations(Set.of(currentAnnotation));
       return currentAnnotation;
     }
-    enrichUpdateAnnotation(annotation, currentAnnotation);
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
     } catch (PidCreationException e) {
@@ -109,8 +115,9 @@ public class ProcessingWebService extends AbstractProcessingService {
     return annotation;
   }
 
-  private String postHandle(Annotation annotation) throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequest(annotation);
+  private String postHandle(AnnotationProcessingRequest annotationRequest)
+      throws FailedProcessingException {
+    var requestBody = fdoRecordService.buildPostHandleRequest(annotationRequest);
     try {
       return handleComponent.postHandle(requestBody).get(0);
     } catch (PidCreationException e) {
@@ -174,8 +181,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
       return;
     }
-    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation
-    );
+    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation);
     handleComponent.updateHandle(requestBody);
   }
 

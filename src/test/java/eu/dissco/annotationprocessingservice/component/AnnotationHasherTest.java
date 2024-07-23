@@ -2,8 +2,8 @@ package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenRequestOaTarget;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
@@ -29,7 +29,7 @@ class AnnotationHasherTest {
   @Test
   void hashTestFieldValueSelector() {
     // When
-    var result = annotationHasher.getAnnotationHash(givenAnnotationProcessed());
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest());
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("2fc042f6-34ff-4bcd-9d7f-71bf449a720f"));
@@ -51,7 +51,7 @@ class AnnotationHasherTest {
 
     // When
     var result = annotationHasher.getAnnotationHash(
-        givenAnnotationProcessed().withOaHasTarget(
+        givenAnnotationRequest().withOaHasTarget(
             new OaHasTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
@@ -70,8 +70,8 @@ class AnnotationHasherTest {
 
     // When
     var result = annotationHasher.getAnnotationHash(
-        givenAnnotationProcessed().withOaHasTarget(
-            givenOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
+        givenAnnotationRequest().withOaHasTarget(
+            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
 
     // Then
     assertThat(result).isEqualTo(expected);

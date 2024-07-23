@@ -9,19 +9,25 @@ import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.schema.OaHasBody;
+import eu.dissco.annotationprocessingservice.schema.OaHasBody__1;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector__1;
 import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
 import eu.dissco.annotationprocessingservice.schema.SchemaAggregateRating;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -75,6 +81,10 @@ public class TestUtils {
     return new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH);
   }
 
+  public static HashedAnnotationRequest givenHashedAnnotationRequest() {
+    return new HashedAnnotationRequest(givenAnnotationRequest(), ANNOTATION_HASH);
+  }
+
   public static HashedAnnotation givenHashedAnnotation(UUID batchId) {
     return new HashedAnnotation(givenHashedAnnotation().annotation().withOdsBatchID(batchId),
         ANNOTATION_HASH);
@@ -84,6 +94,11 @@ public class TestUtils {
     return new HashedAnnotation(
         givenHashedAnnotation().annotation().withOdsBatchID(BATCH_ID).withId(id),
         ANNOTATION_HASH);
+  }
+
+  public static HashedAnnotationRequest givenHashedAnnotationRequestAlt() {
+    return new HashedAnnotationRequest(givenAnnotationRequest().withOaMotivation(
+        AnnotationProcessingRequest.OaMotivation.OA_EDITING), ANNOTATION_HASH);
   }
 
   public static HashedAnnotation givenHashedAnnotationAlt() {
@@ -124,8 +139,7 @@ public class TestUtils {
         .withDctermsCreated(Date.from(CREATED))
         .withDctermsIssued(Date.from(CREATED))
         .withDctermsModified(Date.from(CREATED))
-        .withAsGenerator(givenGenerator())
-        .withSchemaAggregateRating(givenAggregationRating());
+        .withAsGenerator(givenGenerator());
   }
 
   public static Annotation givenAnnotationProcessedAlt() {
@@ -139,19 +153,16 @@ public class TestUtils {
         .withOdsJobID(HANDLE_PROXY + JOB_ID);
   }
 
-  public static Annotation givenAnnotationRequest(String targetId) {
-    return new Annotation()
-        .withType("ods:Annotation")
-        .withRdfType("ods:Annotation")
-        .withOaHasBody(givenOaBody())
-        .withOaMotivation(OaMotivation.OA_COMMENTING)
-        .withOaHasTarget(givenOaTarget(targetId))
+  public static AnnotationProcessingRequest givenAnnotationRequest(String targetId) {
+    return new AnnotationProcessingRequest()
+        .withOaHasBody(givenRequestOaBody())
+        .withOaMotivation(AnnotationProcessingRequest.OaMotivation.OA_COMMENTING)
+        .withOaHasTarget(givenRequestOaTarget(targetId))
         .withDctermsCreated(Date.from(CREATED))
-        .withDctermsCreator(givenCreator(CREATOR))
-        .withSchemaAggregateRating(givenAggregationRating());
+        .withDctermsCreator(givenCreator(CREATOR));
   }
 
-  public static Annotation givenAnnotationRequest() {
+  public static AnnotationProcessingRequest givenAnnotationRequest() {
     return givenAnnotationRequest(TARGET_ID);
   }
 
@@ -162,12 +173,21 @@ public class TestUtils {
         .withOdsPlaceInBatch(placeInBatch);
   }
 
-  public static OaHasBody givenOaBody() {
+  public static OaHasBody givenRequestOaBody() {
+    return new OaHasBody()
+        .withType("oa:TextualBody")
+        .withOaValue(new ArrayList<>(List.of("a comment")))
+        .withDctermsReferences(
+            "https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
+        .withOdsScore(0.99);
+  }
+
+  public static OaHasBody__1 givenOaBody() {
     return givenOaBody("a comment");
   }
 
-  public static OaHasBody givenOaBody(String value) {
-    return new OaHasBody()
+  public static OaHasBody__1 givenOaBody(String value) {
+    return new OaHasBody__1()
         .withType("oa:TextualBody")
         .withOaValue(new ArrayList<>(List.of(value)))
         .withDctermsReferences(
@@ -175,8 +195,8 @@ public class TestUtils {
         .withOdsScore(0.99);
   }
 
-  public static OaHasBody givenOaBodySetType(String type) {
-    return new OaHasBody()
+  public static OaHasBody__1 givenOaBodySetType(String type) {
+    return new OaHasBody__1()
         .withType(type)
         .withOaValue(new ArrayList<>(List.of("a comment")))
         .withDctermsReferences(
@@ -184,12 +204,36 @@ public class TestUtils {
         .withOdsScore(0.99);
   }
 
-  public static OaHasTarget givenOaTarget(String targetId) {
+  public static OaHasTarget__1 givenOaTarget(String targetId) {
     return givenOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
-  public static OaHasTarget givenOaTarget(String targetId, AnnotationTargetType targetType) {
+  public static OaHasTarget givenRequestOaTarget(String targetId) {
+    return givenRequestOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
+  }
+
+  public static OaHasTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType) {
+    return givenRequestOaTarget(targetId, targetType, givenRequestSelector());
+  }
+
+  public static OaHasTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType,
+      OaHasSelector selector) {
     return new OaHasTarget()
+        .withId(DOI_PROXY + targetId)
+        .withType("ods:DigitalSpecimen")
+        .withOdsType(targetType.toString())
+        .withOdsID(DOI_PROXY + targetId)
+        .withOaHasSelector(selector);
+  }
+
+  public static OaHasSelector givenRequestSelector() {
+    return new OaHasSelector()
+        .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
+        .withAdditionalProperty("@type", "ods:FieldSelector");
+  }
+
+  public static OaHasTarget__1 givenOaTarget(String targetId, AnnotationTargetType targetType) {
+    return new OaHasTarget__1()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
         .withOdsType(targetType.toString())
@@ -197,9 +241,9 @@ public class TestUtils {
         .withOaHasSelector(givenSelector());
   }
 
-  public static OaHasTarget givenOaTarget(String targetId, AnnotationTargetType targetType,
-      OaHasSelector selector) {
-    return new OaHasTarget()
+  public static OaHasTarget__1 givenOaTarget(String targetId, AnnotationTargetType targetType,
+      OaHasSelector__1 selector) {
+    return new OaHasTarget__1()
         .withId(DOI_PROXY + targetId)
         .withOdsID(DOI_PROXY + targetId)
         .withOdsType(targetType.toString())
@@ -207,18 +251,18 @@ public class TestUtils {
         .withType("ods:DigitalSpecimen");
   }
 
-  public static OaHasSelector givenSelector() {
-    return new OaHasSelector()
+  public static OaHasSelector__1 givenSelector() {
+    return new OaHasSelector__1()
         .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
-  public static OaHasTarget givenOaTarget(OaHasSelector selector) {
+  public static OaHasTarget__1 givenOaTarget(OaHasSelector__1 selector) {
     return givenOaTarget(BARE_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
   }
 
-  public static OaHasSelector givenSelector(String field) {
-    return new OaHasSelector()
+  public static OaHasSelector__1 givenSelector(String field) {
+    return new OaHasSelector__1()
         .withAdditionalProperty("ods:field", field)
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
@@ -250,12 +294,13 @@ public class TestUtils {
   }
 
 
-  public static AnnotationEvent givenAnnotationEvent() {
-    return givenAnnotationEvent(givenAnnotationProcessed());
+  public static AnnotationProcessingEvent givenAnnotationEvent() {
+    return givenAnnotationEvent(givenAnnotationRequest());
   }
 
-  public static AnnotationEvent givenAnnotationEvent(Annotation annotation) {
-    return new AnnotationEvent(List.of(annotation), JOB_ID, null, null);
+  public static AnnotationProcessingEvent givenAnnotationEvent(
+      AnnotationProcessingRequest annotation) {
+    return new AnnotationProcessingEvent(List.of(annotation), JOB_ID, null, null);
   }
 
   public static List<JsonNode> givenPostRequest() throws Exception {
@@ -394,8 +439,8 @@ public class TestUtils {
         givenBatchMetadataSearchParamCountry()));
   }
 
-  public static AnnotationEvent givenAnnotationEventBatchEnabled() {
-    return new AnnotationEvent(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
+  public static BatchMetadata givenAnnotationEventBatchEnabled() {
+    return new BatchMetadata(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
         .withOdsPlaceInBatch(1)), JOB_ID,
         List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
   }

@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -67,10 +67,10 @@ class KafkaPublisherServiceTest {
   void testPublishBatchAnnotation() throws JsonProcessingException {
     // Given
     given(consumerProperties.getTopic()).willReturn("topic");
-    var eventMessage = MAPPER.writeValueAsString(givenAnnotationEvent());
+    var eventMessage = MAPPER.writeValueAsString(givenAnnotationEventBatchEnabled());
 
     // When
-    service.publishBatchAnnotation(List.of(givenAnnotationEvent()));
+    service.publishBatchAnnotation(List.of(givenAnnotationEventBatchEnabled()));
 
     // Then
     then(kafkaTemplate).should(times(1)).send("topic", eventMessage);

@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.properties.KafkaConsumerProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import java.util.List;
@@ -30,9 +30,9 @@ public class KafkaPublisherService {
     kafkaTemplate.send("createUpdateDeleteTopic", mapper.writeValueAsString(event));
   }
 
-  public void publishBatchAnnotation(List<AnnotationEvent> annotationEvents)
+  public void publishBatchAnnotation(List<BatchMetadata> batchMetadata)
       throws JsonProcessingException {
-    for (var annotationEvent : annotationEvents) {
+    for (var annotationEvent : batchMetadata) {
       kafkaTemplate.send(consumerProperties.getTopic(), mapper.writeValueAsString(annotationEvent));
     }
   }

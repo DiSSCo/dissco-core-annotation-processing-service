@@ -16,8 +16,8 @@ import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.SelectorType;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
-import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector__1;
+import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,8 +70,8 @@ public class JsonPathComponent {
     return String.join(".", jsonPathArray);
   }
 
-  public List<OaHasTarget> getAnnotationTargets(BatchMetadataExtended batchMetadata,
-      JsonNode annotatedObject, OaHasTarget baseTarget) throws BatchingException {
+  public List<OaHasTarget__1> getAnnotationTargets(BatchMetadataExtended batchMetadata,
+      JsonNode annotatedObject, OaHasTarget__1 baseTarget) throws BatchingException {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
     DocumentContext context;
     try {
@@ -90,7 +90,7 @@ public class JsonPathComponent {
   }
 
   private List<String> getAnnotationTargetPaths(
-      Map<List<String>, List<List<Integer>>> commonIndexes, OaHasTarget baseTarget,
+      Map<List<String>, List<List<Integer>>> commonIndexes, OaHasTarget__1 baseTarget,
       DocumentContext context) {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
@@ -189,13 +189,13 @@ public class JsonPathComponent {
     return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
-  private List<OaHasTarget> buildOaTargets(List<String> targetPaths, OaHasTarget baseTarget,
+  private List<OaHasTarget__1> buildOaTargets(List<String> targetPaths, OaHasTarget__1 baseTarget,
       String newTargetId) {
     boolean isClassSelector = baseTarget.getOaHasSelector().getAdditionalProperties().get(TYPE)
         .equals(SelectorType.CLASS_SELECTOR.toString());
-    var newTargets = new ArrayList<OaHasTarget>();
+    var newTargets = new ArrayList<OaHasTarget__1>();
     for (var targetPath : targetPaths) {
-      var selector = new OaHasSelector();
+      var selector = new OaHasSelector__1();
       if (isClassSelector) {
         selector.setAdditionalProperty(TYPE, "ods:ClassSelector");
         selector.setAdditionalProperty("ods:class", targetPath);
@@ -203,7 +203,7 @@ public class JsonPathComponent {
         selector.setAdditionalProperty(TYPE, "ods:FieldSelector");
         selector.setAdditionalProperty("ods:field", targetPath);
       }
-      newTargets.add(new OaHasTarget()
+      newTargets.add(new OaHasTarget__1()
           .withOdsType(baseTarget.getOdsType())
           .withType(baseTarget.getType())
           .withOdsID(newTargetId)
@@ -213,7 +213,7 @@ public class JsonPathComponent {
     return newTargets;
   }
 
-  private String getTargetPath(OaHasTarget baseTarget) throws BatchingRuntimeException {
+  private String getTargetPath(OaHasTarget__1 baseTarget) throws BatchingRuntimeException {
     var selector = baseTarget.getOaHasSelector().getAdditionalProperties();
     var selectorType = SelectorType.fromString((String) selector.get(TYPE));
     switch (selectorType) {
@@ -260,7 +260,7 @@ public class JsonPathComponent {
   }
 
   /*
-  Checks if a given elastic result is a true match - meaning all the criteria in the batchMetadata are met
+  Checks if a given elastic result is a true match - meaning all the criteria in the batchMetadataExtended are met
   1. For each parameter in the batch metadata, find all jsonPaths that match that parameter
   2. Index array paths: collect the indexes of any arrays in the valid json paths (step 1).
   Group array indexes by name of field(s) containing arrays, and the parameter these indexes meet.

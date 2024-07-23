@@ -5,6 +5,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWebBatch;
@@ -25,7 +26,8 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -145,9 +147,9 @@ class ProcessingWebServiceTest {
   void batchWebAnnotations() throws Exception {
     // Given
     var processedAnnotation = givenAnnotationProcessedWebBatch();
-    var requestEvent = new AnnotationEvent(List.of(givenAnnotationRequest()), null,
+    var requestEvent = new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), null,
         List.of(givenBatchMetadataExtendedTwoParam()), null);
-    var processedEvent = new AnnotationEvent(List.of(givenAnnotationProcessedWebBatch()), null,
+    var processedEvent = new BatchMetadata(List.of(givenAnnotationProcessedWebBatch()), null,
         List.of(givenBatchMetadataExtendedTwoParam()), null);
 
     // When
@@ -274,12 +276,15 @@ class ProcessingWebServiceTest {
   void testUpdateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest().withId(ID);
+    var annotation = givenAnnotationProcessed().withOdsVersion(2).withOdsJobID(null);
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     var result = service.updateAnnotation(annotationRequest);
@@ -287,7 +292,8 @@ class ProcessingWebServiceTest {
     // Then
     assertThat(result).isEqualTo(givenAnnotationProcessedWeb().withOdsVersion(2));
     assertThat(result.getId()).isEqualTo(ID);
-    then(fdoRecordService).should().buildPatchRollbackHandleRequest(annotationRequest);
+    then(fdoRecordService).should()
+        .buildPatchRollbackHandleRequest(annotation);
     then(handleComponent).should().updateHandle(any());
     then(kafkaPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
@@ -400,6 +406,8 @@ class ProcessingWebServiceTest {
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
     assertThrows(FailedProcessingException.class,
