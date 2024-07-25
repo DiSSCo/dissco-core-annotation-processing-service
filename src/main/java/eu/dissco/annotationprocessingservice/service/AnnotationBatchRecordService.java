@@ -1,7 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import java.time.Instant;
@@ -24,7 +24,7 @@ public class AnnotationBatchRecordService {
   private final AnnotationBatchRecordRepository repository;
 
   public Optional<Map<String, UUID>> mintBatchIds(List<Annotation> newAnnotations,
-      boolean batchingRequested, AnnotationEvent event) {
+      boolean batchingRequested, AnnotationProcessingEvent event) {
     Optional<Map<String, UUID>> batchIds;
     if (batchingRequested && event.batchId() == null) {
       batchIds = Optional.of(newAnnotations.stream().collect(Collectors.toMap(

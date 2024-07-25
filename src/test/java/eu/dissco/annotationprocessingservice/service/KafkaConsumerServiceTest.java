@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static org.mockito.BDDMockito.then;
 
 import java.util.List;
@@ -39,7 +39,7 @@ class KafkaConsumerServiceTest {
   }
 
   private String givenMessage() throws Exception {
-    var annotationNode = MAPPER.valueToTree(List.of(givenAnnotationProcessed()));
+    var annotationNode = MAPPER.valueToTree(List.of(givenAnnotationRequest()));
     var messageNode = MAPPER.createObjectNode();
     messageNode.set("annotations", annotationNode);
     messageNode.put("jobId", JOB_ID);

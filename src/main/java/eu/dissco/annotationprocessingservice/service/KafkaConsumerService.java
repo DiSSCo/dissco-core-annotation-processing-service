@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -28,7 +28,7 @@ public class KafkaConsumerService {
   @KafkaListener(topics = "${kafka.consumer.topic}")
   public void getMessages(@Payload String message)
       throws IOException, DataBaseException, FailedProcessingException, AnnotationValidationException, ConflictException, BatchingException {
-    var event = mapper.readValue(message, AnnotationEvent.class);
+    var event = mapper.readValue(message, AnnotationProcessingEvent.class);
     service.handleMessage(event);
   }
 

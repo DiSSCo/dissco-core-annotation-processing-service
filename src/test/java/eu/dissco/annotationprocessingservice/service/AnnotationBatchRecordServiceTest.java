@@ -7,6 +7,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchIdMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,7 +15,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -53,11 +54,11 @@ class AnnotationBatchRecordServiceTest {
     try (MockedStatic<UUID> mockedUuid = mockStatic(UUID.class)) {
       // Given
       mockedUuid.when(UUID::randomUUID).thenReturn(batchId);
-      var annotations = List.of(givenAnnotationProcessed());
+      var annotations = List.of(givenAnnotationRequest());
 
       // When
-      var result = service.mintBatchIds(annotations, true,
-          new AnnotationEvent(annotations, JOB_ID, null, null));
+      var result = service.mintBatchIds(List.of(givenAnnotationProcessed()), true,
+          new AnnotationProcessingEvent(annotations, JOB_ID, null, null));
 
       // Then
       assertThat(result).contains(givenBatchIdMap());
@@ -95,7 +96,7 @@ class AnnotationBatchRecordServiceTest {
 
     // When
     var result = service.mintBatchIds(annotations, false,
-        new AnnotationEvent(annotations, JOB_ID, null, null));
+        new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), JOB_ID, null, null));
 
     // Then
     assertThat(result).isEmpty();
@@ -108,7 +109,7 @@ class AnnotationBatchRecordServiceTest {
 
     // When
     var result = service.mintBatchIds(annotations, true,
-        new AnnotationEvent(annotations, JOB_ID, null, BATCH_ID));
+        new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), JOB_ID, null, BATCH_ID));
 
     // Then
     assertThat(result).contains(expected);

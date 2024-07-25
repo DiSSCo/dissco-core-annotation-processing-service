@@ -17,7 +17,7 @@ import com.jayway.jsonpath.Option;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
-import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector__1;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,12 +107,13 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsClassSelector() throws Exception {
     // Given
-    var classSelector = new OaHasSelector().withAdditionalProperty("ods:class", "ods:hasEvent[0]")
+    var classSelector = new OaHasSelector__1().withAdditionalProperty("ods:class",
+            "ods:hasEvent[0]")
         .withAdditionalProperty("@type", "ods:ClassSelector");
     var baseTarget = givenOaTarget(classSelector);
     var expected = List.of(
         givenOaTarget(classSelector),
-        givenOaTarget(new OaHasSelector().withAdditionalProperty("ods:class", "ods:hasEvent[2]")
+        givenOaTarget(new OaHasSelector__1().withAdditionalProperty("ods:class", "ods:hasEvent[2]")
             .withAdditionalProperty("@type", "ods:ClassSelector")));
 
     // When
@@ -128,7 +129,7 @@ class JsonPathComponentTest {
   @Test
   void testWrongSelectorType() {
     var baseTarget = givenOaTarget(
-        new OaHasSelector().withAdditionalProperty("@type", "oa:FragmentSelector"));
+        new OaHasSelector__1().withAdditionalProperty("@type", "oa:FragmentSelector"));
     var doc = givenElasticDocument();
     var batchMetadata = givenBatchMetadataExtendedOneParam();
 
@@ -605,7 +606,8 @@ class JsonPathComponentTest {
                 "ods:hasIdentification[0].ods:hasTaxonIdentification[1].dwc:scientificName"))
     );
     var batchMetadata = new BatchMetadataExtended(0, List.of(
-        new BatchMetadataSearchParam("ods:hasIdentification[*].ods:hasCitation[*].dcterms:identifier",
+        new BatchMetadataSearchParam(
+            "ods:hasIdentification[*].ods:hasCitation[*].dcterms:identifier",
             "Miller 1888"))
     );
 

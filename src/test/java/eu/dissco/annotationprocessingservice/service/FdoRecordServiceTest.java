@@ -4,8 +4,11 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationRequestAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequestBatch;
@@ -43,14 +46,14 @@ class FdoRecordServiceTest {
 
   @Test
   void testBuildPostRequest() throws Exception {
-    assertThat(fdoRecordService.buildPostHandleRequest(givenAnnotationProcessed()))
+    assertThat(fdoRecordService.buildPostHandleRequest(givenAnnotationRequest()))
         .isEqualTo(givenPostRequest());
   }
 
   @Test
   void testBuildPostRequestBatch() throws Exception {
     assertThat(fdoRecordService.buildPostHandleRequest(
-        List.of(givenHashedAnnotation(), givenHashedAnnotationAlt())))
+        List.of(givenHashedAnnotationRequest(), givenHashedAnnotationRequestAlt())))
         .isEqualTo(givenPostRequestBatch());
   }
 

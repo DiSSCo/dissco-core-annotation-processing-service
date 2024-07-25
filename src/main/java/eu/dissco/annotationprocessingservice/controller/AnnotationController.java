@@ -3,13 +3,14 @@ package eu.dissco.annotationprocessingservice.controller;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationEvent;
+import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class AnnotationController {
   private final ProcessingWebService processingService;
 
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Annotation> createAnnotation(@RequestBody Annotation annotation)
+  public ResponseEntity<Annotation> createAnnotation(@RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received hashedAnnotation creation request");
     var result = processingService.persistNewAnnotation(annotation, false);
@@ -44,7 +45,7 @@ public class AnnotationController {
   }
 
   @PostMapping(value = "batch", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Annotation> createAnnotationBatch(@RequestBody AnnotationEvent event)
+  public ResponseEntity<Annotation> createAnnotationBatch(@RequestBody AnnotationProcessingEvent event)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received batch hashedAnnotation creation request");
     var result = processingService.persistNewAnnotation(event.annotations().get(0), true);
@@ -55,7 +56,7 @@ public class AnnotationController {
   @PutMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> updateAnnotation(
       @PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, @RequestBody Annotation annotation)
+      @PathVariable("suffix") String suffix, @RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException, AnnotationValidationException {
     checkId(prefix, suffix, annotation);
     log.info("Received hashedAnnotation update request for annotations {}", annotation.getId());
@@ -72,7 +73,7 @@ public class AnnotationController {
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 
-  private void checkId(String prefix, String suffix, Annotation annotation)
+  private void checkId(String prefix, String suffix, AnnotationProcessingRequest annotation)
       throws ConflictException {
     var id = prefix + "/" + suffix;
     var annotationID = annotation.getId().replace(HANDLE_PROXY, "");

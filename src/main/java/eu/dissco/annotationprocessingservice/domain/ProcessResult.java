@@ -7,7 +7,7 @@ import java.util.Set;
 public record ProcessResult(
     Set<Annotation> equalAnnotations,
     Set<UpdatedAnnotation> changedAnnotations,
-    List<HashedAnnotation> newAnnotations
+    List<HashedAnnotationRequest> newAnnotations
 ) {
 
 }
