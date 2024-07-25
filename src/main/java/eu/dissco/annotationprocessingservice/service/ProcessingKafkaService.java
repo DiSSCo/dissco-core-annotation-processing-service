@@ -119,14 +119,14 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
     for (var currentAnnotation : existingAnnotations) {
       var eventAnnotation = equalOrUpdatedAnnotationsMap.get(currentAnnotation.hash());
-      var newAnnotation = buildAnnotation(eventAnnotation.annotation(),
+      var updatedAnnotation = buildAnnotation(eventAnnotation.annotation(),
           currentAnnotation.annotation().getId(),
           event, currentAnnotation.annotation().getOdsVersion() + 1);
-      if (annotationsAreEqual(currentAnnotation.annotation(), newAnnotation)) {
+      if (annotationsAreEqual(currentAnnotation.annotation(), updatedAnnotation)) {
         equalAnnotations.add(currentAnnotation.annotation());
       } else {
         changedAnnotations.add(new UpdatedAnnotation(currentAnnotation,
-            new HashedAnnotation(newAnnotation, eventAnnotation.hash())));
+            new HashedAnnotation(updatedAnnotation, eventAnnotation.hash())));
       }
     }
     return new ProcessResult(equalAnnotations, changedAnnotations, newAnnotations);
