@@ -61,6 +61,7 @@ public class TestUtils {
       """;
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
   public static final String DOI_PROXY = "https://doi.org/";
+  public static final String COMMENT = "a comment";
 
   static {
     var mapper = new ObjectMapper().findAndRegisterModules();
@@ -152,7 +153,7 @@ public class TestUtils {
 
   public static AnnotationProcessingRequest givenAnnotationRequest(String targetId) {
     return new AnnotationProcessingRequest()
-        .withOaHasBody(givenOaBody("A comment"))
+        .withOaHasBody(givenOaBody(COMMENT))
         .withOaMotivation(AnnotationProcessingRequest.OaMotivation.OA_COMMENTING)
         .withOaHasTarget(givenRequestOaTarget(targetId))
         .withDctermsCreated(Date.from(CREATED))
@@ -171,7 +172,7 @@ public class TestUtils {
   }
 
   public static AnnotationBody givenOaBody() {
-    return givenOaBody("a comment");
+    return givenOaBody(COMMENT);
   }
 
   public static AnnotationBody givenOaBody(String value) {
@@ -186,7 +187,7 @@ public class TestUtils {
   public static AnnotationBody givenOaBodySetType(String type) {
     return new AnnotationBody()
         .withType(type)
-        .withOaValue(new ArrayList<>(List.of("a comment")))
+        .withOaValue(new ArrayList<>(List.of(COMMENT)))
         .withDctermsReferences(
             "https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
         .withOdsScore(0.99);
@@ -288,7 +289,9 @@ public class TestUtils {
 
   public static AnnotationProcessingEvent givenAnnotationEvent(
       AnnotationProcessingRequest annotation) {
-    return new AnnotationProcessingEvent(JOB_ID, List.of(annotation), null, null);
+    return new AnnotationProcessingEvent()
+        .withJobId(JOB_ID)
+        .withAnnotations(List.of(annotation));
   }
 
   public static List<JsonNode> givenPostRequest() throws Exception {

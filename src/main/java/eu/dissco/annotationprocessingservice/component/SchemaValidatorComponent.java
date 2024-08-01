@@ -14,9 +14,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SchemaValidatorComponent {
 
-  private final JsonSchema annotationSchema;
-  private final ObjectMapper mapper;
-
   public void validateEvent(AnnotationProcessingEvent event) throws AnnotationValidationException {
     for (var annotation : event.getAnnotations()) {
       validateAnnotationRequest(annotation, true);
@@ -27,23 +24,17 @@ public class SchemaValidatorComponent {
       boolean isNewAnnotation)
       throws AnnotationValidationException {
     validateId(annotation, isNewAnnotation);
-    var annotationRequest = mapper.valueToTree(annotation);
-    var errors = annotationSchema.validate(annotationRequest);
-    if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getDctermsCreated() == null) {
-      log.error("Invalid hashedAnnotation received. Missing dcterms created");
+    if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getDctermsCreated() == null
+    || Boolean.TRUE.equals(isNewAnnotation && annotation.getDctermsCreator() == null)) {
+      log.error("Invalid hashedAnnotation received. dcterms:creator and dcterms:created are required for new annotations");
       throw new AnnotationValidationException();
     }
-    if (errors.isEmpty()) {
-      return;
-    }
-    log.error("Invalid hashedAnnotation received: {}. errors: {}", annotation, errors);
-    throw new AnnotationValidationException();
   }
 
   private void validateId(AnnotationProcessingRequest annotation, Boolean isNewAnnotation)
       throws AnnotationValidationException {
     if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getId() != null) {
-      log.warn("Attempting overwrite hashedAnnotation with \"@id\" " + annotation.getId());
+      log.warn("Attempting overwrite hashedAnnotation with \"@id\" {}", annotation.getId());
       throw new AnnotationValidationException();
     }
     if (Boolean.FALSE.equals(isNewAnnotation) && annotation.getId() == null) {
