@@ -10,7 +10,7 @@ import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
@@ -75,24 +75,24 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       throws DataBaseException, FailedProcessingException, AnnotationValidationException, BatchingException, ConflictException {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
-    var isBatchResult = event.batchId() != null;
-    if (event.annotations().isEmpty()) {
+    var isBatchResult = event.getBatchId() != null;
+    if (event.getAnnotations().isEmpty()) {
       log.info("MAS job completed without any annotations");
-      masJobRecordService.markEmptyMasJobRecordAsComplete(event.jobId(), isBatchResult);
+      masJobRecordService.markEmptyMasJobRecordAsComplete(event.getJobId(), isBatchResult);
     } else {
       schemaValidator.validateEvent(event);
-      var masJobRecord = masJobRecordService.getMasJobRecord(event.jobId());
+      var masJobRecord = masJobRecordService.getMasJobRecord(event.getJobId());
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
-      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.jobId(),
+      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.getJobId(),
           isBatchResult);
-      var newAnnotations = persistNewAnnotation(processResult.newAnnotations(), event.jobId(),
+      var newAnnotations = persistNewAnnotation(processResult.newAnnotations(), event.getJobId(),
           isBatchResult, masJobRecord.batchingRequested(), event);
       var idList = Stream.of(equalIds, updatedIds,
               newAnnotations.stream().map(Annotation::getId).toList()).flatMap(Collection::stream)
           .toList();
-      checkForTimeoutErrors(masJobRecord.error(), event.jobId());
-      masJobRecordService.markMasJobRecordAsComplete(event.jobId(), idList, isBatchResult);
+      checkForTimeoutErrors(masJobRecord.error(), event.getJobId());
+      masJobRecordService.markMasJobRecordAsComplete(event.getJobId(), idList, isBatchResult);
       applyBatchAnnotations(event, newAnnotations);
     }
   }
@@ -107,7 +107,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     var equalAnnotations = new HashSet<Annotation>();
     var changedAnnotations = new HashSet<UpdatedAnnotation>();
     var hashedAnnotations =
-        event.annotations().stream()
+        event.getAnnotations().stream()
             .map(annotation -> new HashedAnnotationRequest(annotation, hashAnnotation(annotation)))
             .collect(Collectors.toSet());
     var existingAnnotations = repository.getAnnotationFromHash(

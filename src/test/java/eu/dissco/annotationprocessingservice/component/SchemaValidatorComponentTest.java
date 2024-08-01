@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion.VersionFlag;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +50,7 @@ class SchemaValidatorComponentTest {
   void setup() throws IOException {
     var factory = JsonSchemaFactory.getInstance(VersionFlag.V202012);
     try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream("json-schema/annotation-processing-request.json")) {
+        .getResourceAsStream("json-schema/mas-annotation-request.json")) {
       var schema = factory.getSchema(inputStream);
       schemaValidator = new SchemaValidatorComponent(schema, MAPPER);
     }
@@ -59,8 +59,11 @@ class SchemaValidatorComponentTest {
   @Test
   void testValidateProcessResults() {
     // Given
-    var event = new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), JOB_ID, null,
-        null);
+
+    //String id, String type, String odsID, String jobId, List<AnnotationProcessingRequest> annotations, List<AnnotationBatchMetadata> batchMetadata, UUID batchId
+    var event = new AnnotationProcessingEvent()
+        .withAnnotations(List.of(givenAnnotationRequest()))
+        .withJobId(JOB_ID);
 
     // Then
     assertDoesNotThrow(() -> schemaValidator.validateEvent(event));

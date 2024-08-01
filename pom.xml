@@ -203,6 +203,7 @@
           <mainClass>eu.dissco.annotationprocessingservice.maven.MavenRunner</mainClass>
           <arguments>
             <argument>https://schemas.dissco.tech/schemas/fdo-type/annotation/0.3.0/annotation.json</argument>
+            <argument>https://schemas.dissco.tech/schemas/developer-schema/annotation/0.3.0/annotation-processing-event.json</argument>
             <argument>https://schemas.dissco.tech/schemas/fdo-type/create-update-tombstone-event/0.3.0/create-update-tombstone-event.json</argument>
           </arguments>
         </configuration>

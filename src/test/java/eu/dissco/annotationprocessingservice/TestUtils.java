@@ -9,11 +9,11 @@ import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
+import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.schema.Agent;
@@ -22,13 +22,10 @@ import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
-import eu.dissco.annotationprocessingservice.schema.OaHasBody;
-import eu.dissco.annotationprocessingservice.schema.OaHasBody__1;
+import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
-import eu.dissco.annotationprocessingservice.schema.OaHasSelector__1;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
 import eu.dissco.annotationprocessingservice.schema.SchemaAggregateRating;
+import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -155,7 +152,7 @@ public class TestUtils {
 
   public static AnnotationProcessingRequest givenAnnotationRequest(String targetId) {
     return new AnnotationProcessingRequest()
-        .withOaHasBody(givenRequestOaBody())
+        .withOaHasBody(givenOaBody("A comment"))
         .withOaMotivation(AnnotationProcessingRequest.OaMotivation.OA_COMMENTING)
         .withOaHasTarget(givenRequestOaTarget(targetId))
         .withDctermsCreated(Date.from(CREATED))
@@ -173,21 +170,12 @@ public class TestUtils {
         .withOdsPlaceInBatch(placeInBatch);
   }
 
-  public static OaHasBody givenRequestOaBody() {
-    return new OaHasBody()
-        .withType("oa:TextualBody")
-        .withOaValue(new ArrayList<>(List.of("a comment")))
-        .withDctermsReferences(
-            "https://medialib.naturalis.nl/file/id/ZMA.UROCH.P.1555/format/large")
-        .withOdsScore(0.99);
-  }
-
-  public static OaHasBody__1 givenOaBody() {
+  public static AnnotationBody givenOaBody() {
     return givenOaBody("a comment");
   }
 
-  public static OaHasBody__1 givenOaBody(String value) {
-    return new OaHasBody__1()
+  public static AnnotationBody givenOaBody(String value) {
+    return new AnnotationBody()
         .withType("oa:TextualBody")
         .withOaValue(new ArrayList<>(List.of(value)))
         .withDctermsReferences(
@@ -195,8 +183,8 @@ public class TestUtils {
         .withOdsScore(0.99);
   }
 
-  public static OaHasBody__1 givenOaBodySetType(String type) {
-    return new OaHasBody__1()
+  public static AnnotationBody givenOaBodySetType(String type) {
+    return new AnnotationBody()
         .withType(type)
         .withOaValue(new ArrayList<>(List.of("a comment")))
         .withDctermsReferences(
@@ -204,21 +192,21 @@ public class TestUtils {
         .withOdsScore(0.99);
   }
 
-  public static OaHasTarget__1 givenOaTarget(String targetId) {
+  public static AnnotationTarget givenOaTarget(String targetId) {
     return givenOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
-  public static OaHasTarget givenRequestOaTarget(String targetId) {
+  public static AnnotationTarget givenRequestOaTarget(String targetId) {
     return givenRequestOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
-  public static OaHasTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType) {
+  public static AnnotationTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType) {
     return givenRequestOaTarget(targetId, targetType, givenRequestSelector());
   }
 
-  public static OaHasTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType,
+  public static AnnotationTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType,
       OaHasSelector selector) {
-    return new OaHasTarget()
+    return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
         .withOdsType(targetType.toString())
@@ -232,8 +220,8 @@ public class TestUtils {
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
-  public static OaHasTarget__1 givenOaTarget(String targetId, AnnotationTargetType targetType) {
-    return new OaHasTarget__1()
+  public static AnnotationTarget givenOaTarget(String targetId, AnnotationTargetType targetType) {
+    return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
         .withOdsType(targetType.toString())
@@ -241,9 +229,9 @@ public class TestUtils {
         .withOaHasSelector(givenSelector());
   }
 
-  public static OaHasTarget__1 givenOaTarget(String targetId, AnnotationTargetType targetType,
-      OaHasSelector__1 selector) {
-    return new OaHasTarget__1()
+  public static AnnotationTarget givenOaTarget(String targetId, AnnotationTargetType targetType,
+      OaHasSelector selector) {
+    return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withOdsID(DOI_PROXY + targetId)
         .withOdsType(targetType.toString())
@@ -251,18 +239,18 @@ public class TestUtils {
         .withType("ods:DigitalSpecimen");
   }
 
-  public static OaHasSelector__1 givenSelector() {
-    return new OaHasSelector__1()
+  public static OaHasSelector givenSelector() {
+    return new OaHasSelector()
         .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
-  public static OaHasTarget__1 givenOaTarget(OaHasSelector__1 selector) {
+  public static AnnotationTarget givenOaTarget(OaHasSelector selector) {
     return givenOaTarget(BARE_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector);
   }
 
-  public static OaHasSelector__1 givenSelector(String field) {
-    return new OaHasSelector__1()
+  public static OaHasSelector givenSelector(String field) {
+    return new OaHasSelector()
         .withAdditionalProperty("ods:field", field)
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
@@ -300,7 +288,7 @@ public class TestUtils {
 
   public static AnnotationProcessingEvent givenAnnotationEvent(
       AnnotationProcessingRequest annotation) {
-    return new AnnotationProcessingEvent(List.of(annotation), JOB_ID, null, null);
+    return new AnnotationProcessingEvent(JOB_ID, List.of(annotation), null, null);
   }
 
   public static List<JsonNode> givenPostRequest() throws Exception {
@@ -412,37 +400,37 @@ public class TestUtils {
         """);
   }
 
-  public static BatchMetadataSearchParam givenBatchMetadataSearchParamCountry() {
-    return new BatchMetadataSearchParam(
+  public static SearchParam givenSearchParamCountry() {
+    return new SearchParam(
         "ods:hasEvent[*].ods:Location.dwc:country",
         "Netherlands");
   }
 
-  public static BatchMetadataExtended givenBatchMetadataExtendedLatitudeSearch() {
-    return new BatchMetadataExtended(1,
-        List.of(new BatchMetadataSearchParam(
+  public static AnnotationBatchMetadata givenAnnotationBatchMetadataLatitudeSearch() {
+    return new AnnotationBatchMetadata(1,
+        List.of(new SearchParam(
             "ods:hasEvent[*].ods:Location.ods:GeoReference.dwc:decimalLatitude",
             "52.123")));
   }
 
-  public static BatchMetadataExtended givenBatchMetadataExtendedTwoParam() {
-    return new BatchMetadataExtended(1, List.of(
-        givenBatchMetadataSearchParamCountry(),
-        new BatchMetadataSearchParam(
+  public static AnnotationBatchMetadata givenAnnotationBatchMetadataTwoParam() {
+    return new AnnotationBatchMetadata(1, List.of(
+        givenSearchParamCountry(),
+        new SearchParam(
             "ods:hasEvent[*].dwc:occurrenceRemarks",
             "Correct"
         )));
   }
 
-  public static BatchMetadataExtended givenBatchMetadataExtendedOneParam() {
-    return new BatchMetadataExtended(1, List.of(
-        givenBatchMetadataSearchParamCountry()));
+  public static AnnotationBatchMetadata givenAnnotationBatchMetadataOneParam() {
+    return new AnnotationBatchMetadata(1, List.of(
+        givenSearchParamCountry()));
   }
 
-  public static BatchMetadata givenAnnotationEventBatchEnabled() {
-    return new BatchMetadata(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
+  public static ProcessedAnnotationBatch givenAnnotationEventBatchEnabled() {
+    return new ProcessedAnnotationBatch(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
         .withOdsPlaceInBatch(1)), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
+        List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
   }
 
   public static JsonNode givenElasticDocument() {

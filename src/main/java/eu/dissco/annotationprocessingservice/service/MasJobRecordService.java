@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
@@ -24,7 +24,7 @@ public class MasJobRecordService {
   private final ObjectMapper mapper;
 
   public void verifyMasJobId(AnnotationProcessingEvent event) throws FailedProcessingException {
-    if (environment.matchesProfiles(Profiles.KAFKA) && event.jobId() == null) {
+    if (environment.matchesProfiles(Profiles.KAFKA) && event.getJobId() == null) {
       log.error("Missing MAS Job ID for event {}", event);
       throw new FailedProcessingException();
     }

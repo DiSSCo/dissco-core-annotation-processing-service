@@ -11,13 +11,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.Filter;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.domain.SelectorType;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
-import eu.dissco.annotationprocessingservice.schema.OaHasSelector__1;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
+import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,8 +70,8 @@ public class JsonPathComponent {
     return String.join(".", jsonPathArray);
   }
 
-  public List<OaHasTarget__1> getAnnotationTargets(BatchMetadataExtended batchMetadata,
-      JsonNode annotatedObject, OaHasTarget__1 baseTarget) throws BatchingException {
+  public List<AnnotationTarget> getAnnotationTargets(AnnotationBatchMetadata batchMetadata,
+      JsonNode annotatedObject, AnnotationTarget baseTarget) throws BatchingException {
     var commonIndexes = new HashMap<List<String>, List<List<Integer>>>();
     DocumentContext context;
     try {
@@ -90,7 +90,7 @@ public class JsonPathComponent {
   }
 
   private List<String> getAnnotationTargetPaths(
-      Map<List<String>, List<List<Integer>>> commonIndexes, OaHasTarget__1 baseTarget,
+      Map<List<String>, List<List<Integer>>> commonIndexes, AnnotationTarget baseTarget,
       DocumentContext context) {
     var baseTargetPath = getTargetPath(baseTarget);
     var matcher = arrayFieldPattern.matcher(baseTargetPath);
@@ -189,13 +189,13 @@ public class JsonPathComponent {
     return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
-  private List<OaHasTarget__1> buildOaTargets(List<String> targetPaths, OaHasTarget__1 baseTarget,
+  private List<AnnotationTarget> buildOaTargets(List<String> targetPaths, AnnotationTarget baseTarget,
       String newTargetId) {
     boolean isClassSelector = baseTarget.getOaHasSelector().getAdditionalProperties().get(TYPE)
         .equals(SelectorType.CLASS_SELECTOR.toString());
-    var newTargets = new ArrayList<OaHasTarget__1>();
+    var newTargets = new ArrayList<AnnotationTarget>();
     for (var targetPath : targetPaths) {
-      var selector = new OaHasSelector__1();
+      var selector = new OaHasSelector();
       if (isClassSelector) {
         selector.setAdditionalProperty(TYPE, "ods:ClassSelector");
         selector.setAdditionalProperty("ods:class", targetPath);
@@ -203,7 +203,7 @@ public class JsonPathComponent {
         selector.setAdditionalProperty(TYPE, "ods:FieldSelector");
         selector.setAdditionalProperty("ods:field", targetPath);
       }
-      newTargets.add(new OaHasTarget__1()
+      newTargets.add(new AnnotationTarget()
           .withOdsType(baseTarget.getOdsType())
           .withType(baseTarget.getType())
           .withOdsID(newTargetId)
@@ -213,7 +213,7 @@ public class JsonPathComponent {
     return newTargets;
   }
 
-  private String getTargetPath(OaHasTarget__1 baseTarget) throws BatchingRuntimeException {
+  private String getTargetPath(AnnotationTarget baseTarget) throws BatchingRuntimeException {
     var selector = baseTarget.getOaHasSelector().getAdditionalProperties();
     var selectorType = SelectorType.fromString((String) selector.get(TYPE));
     switch (selectorType) {
@@ -230,9 +230,9 @@ public class JsonPathComponent {
     }
   }
 
-  private Filter generateFilter(BatchMetadataSearchParam batchMetadata) {
-    var targetField = getLastKey(batchMetadata.inputField());
-    var targetValue = batchMetadata.inputValue();
+  private Filter generateFilter(SearchParam batchMetadata) {
+    var targetField = getLastKey(batchMetadata.getInputField());
+    var targetValue = batchMetadata.getInputValue();
     return filter(where(targetField).is(targetValue));
   }
 
@@ -260,18 +260,18 @@ public class JsonPathComponent {
   }
 
   /*
-  Checks if a given elastic result is a true match - meaning all the criteria in the batchMetadataExtended are met
+  Checks if a given elastic result is a true match - meaning all the criteria in the annotationBatchMetadata are met
   1. For each parameter in the batch metadata, find all jsonPaths that match that parameter
   2. Index array paths: collect the indexes of any arrays in the valid json paths (step 1).
   Group array indexes by name of field(s) containing arrays, and the parameter these indexes meet.
   3. Check that there is at least one common sequence of indexes that fulfills each batch parameter (that has a common array field)
    */
-  private boolean isTrueMatch(BatchMetadataExtended batchMetadata,
+  private boolean isTrueMatch(AnnotationBatchMetadata batchMetadata,
       HashMap<List<String>, List<List<Integer>>> commonIndexes, DocumentContext context) {
-    HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
-    for (var param : batchMetadata.searchParams()) {
+    HashMap<List<String>, HashMap<SearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
+    for (var param : batchMetadata.getSearchParams()) {
       var validPaths = new HashSet<String>(
-          context.read(removeLastKey(param.inputField()), generateFilter(param)))
+          context.read(removeLastKey(param.getInputField()), generateFilter(param)))
           .stream().map(JsonPathComponent::toDotNotation)
           .collect(Collectors.toCollection(HashSet::new));
       var newIndexedPaths = indexArrayPaths(validPaths);
@@ -312,9 +312,9 @@ public class JsonPathComponent {
   }
 
   private void mergePathMaps(
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam,
+      HashMap<List<String>, HashMap<SearchParam,
           ArrayList<List<Integer>>>> indexedPaths,
-      Map<List<String>, List<List<Integer>>> newPaths, BatchMetadataSearchParam param) {
+      Map<List<String>, List<List<Integer>>> newPaths, SearchParam param) {
     for (var newIndexedPaths : newPaths.entrySet()) {
       if (indexedPaths.containsKey(newIndexedPaths.getKey())) {
         indexedPaths.get(newIndexedPaths.getKey())
@@ -341,7 +341,7 @@ public class JsonPathComponent {
   By looking at the common paths, we can determine if this is a true match.
    */
   private boolean indexedPathsHaveCommonality(
-      HashMap<List<String>, HashMap<BatchMetadataSearchParam, ArrayList<List<Integer>>>> commonPathMap,
+      HashMap<List<String>, HashMap<SearchParam, ArrayList<List<Integer>>>> commonPathMap,
       HashMap<List<String>, List<List<Integer>>> commonIndexes) {
     for (var fields : commonPathMap.entrySet()) {
       var firstList = fields.getValue().entrySet().iterator().next().getValue();

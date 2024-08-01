@@ -5,12 +5,12 @@ import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationBatchMetadataTwoParam;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWebBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedTwoParam;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,8 +26,8 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -147,10 +147,10 @@ class ProcessingWebServiceTest {
   void batchWebAnnotations() throws Exception {
     // Given
     var processedAnnotation = givenAnnotationProcessedWebBatch();
-    var requestEvent = new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), null,
-        List.of(givenBatchMetadataExtendedTwoParam()), null);
-    var processedEvent = new BatchMetadata(List.of(givenAnnotationProcessedWebBatch()), null,
-        List.of(givenBatchMetadataExtendedTwoParam()), null);
+    var requestEvent = new AnnotationProcessingEvent(null, List.of(givenAnnotationRequest()),
+        List.of(givenAnnotationBatchMetadataTwoParam()), null);
+    var processedEvent = new ProcessedAnnotationBatch(List.of(givenAnnotationProcessedWebBatch()), null,
+        List.of(givenAnnotationBatchMetadataTwoParam()), null);
 
     // When
     service.batchWebAnnotations(requestEvent, processedAnnotation);
