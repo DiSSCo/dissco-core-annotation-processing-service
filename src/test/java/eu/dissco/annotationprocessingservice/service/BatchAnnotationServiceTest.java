@@ -9,10 +9,10 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationBatchMetadataLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenBaseAnnotationForBatch;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedLatitudeSearch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
@@ -29,16 +29,16 @@ import static org.mockito.Mockito.times;
 import eu.dissco.annotationprocessingservice.TestUtils;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
+import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
+import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -86,11 +86,11 @@ class BatchAnnotationServiceTest {
             .withOdsBatchID(BATCH_ID)
     ).toList();
     var batchEvent = batchAnnotations.stream()
-        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
-        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
         pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
@@ -112,7 +112,7 @@ class BatchAnnotationServiceTest {
         Collections.emptyList());
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
-        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
         pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
@@ -131,8 +131,8 @@ class BatchAnnotationServiceTest {
     var baseAnnotationA = givenBaseAnnotationForBatch(placeInBatch, ID, BATCH_ID);
     var baseAnnotationB = givenBaseAnnotationForBatch(placeInBatch, ID_ALT, BATCH_ID_ALT)
         .withOaHasBody(annotationBodyB);
-    var event = new BatchMetadata(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
+    var event = new ProcessedAnnotationBatch(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+        List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
     var annotatableIds = List.of("0", "1", "2");
     int pageSize = annotatableIds.size();
     int pageSizePlusOne = pageSize + 1;
@@ -157,14 +157,14 @@ class BatchAnnotationServiceTest {
     ).toList();
 
     var batchEventA = batchAnnotationsA.stream()
-        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     var batchEventB = batchAnnotationsB.stream()
-        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
+        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
 
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
-        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
         pageSizePlusOne)).willReturn(elasticDocuments);
 
     // When
@@ -182,8 +182,8 @@ class BatchAnnotationServiceTest {
     var baseAnnotationA = givenAnnotationProcessed().withOdsPlaceInBatch(placeInBatch);
     var baseAnnotationB = givenAnnotationProcessed().withOdsPlaceInBatch(placeInBatch)
         .withOaHasTarget(givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT));
-    var event = new BatchMetadata(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
+    var event = new ProcessedAnnotationBatch(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+        List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
 
     // When
     assertThrows(ConflictException.class, () -> batchAnnotationService.applyBatchAnnotations(event
@@ -202,9 +202,9 @@ class BatchAnnotationServiceTest {
     var annotatableIdsB = List.of("3", "4", "5");
     var annotationBodyB = givenOaBody("alt value");
     var annotationTargetB = givenOaTarget(ID_ALT, AnnotationTargetType.MEDIA_OBJECT);
-    var batchMetadataA = givenBatchMetadataExtendedLatitudeSearch();
-    var batchMetadataB = new BatchMetadataExtended(2,
-        List.of(new BatchMetadataSearchParam(
+    var batchMetadataA = givenAnnotationBatchMetadataLatitudeSearch();
+    var batchMetadataB = new AnnotationBatchMetadata(2,
+        List.of(new SearchParam(
             "ods:hasEvent[*].ods:Location.ods:GeoReference.dwc:decimalLatitude",
             "62.123")));
     var batchMetadataList = List.of(batchMetadataA, batchMetadataB);
@@ -212,7 +212,7 @@ class BatchAnnotationServiceTest {
     var baseAnnotationB = givenBaseAnnotationForBatch(2, ID, BATCH_ID_ALT)
         .withOaHasBody(annotationBodyB)
         .withOaHasTarget(annotationTargetB);
-    var event = new BatchMetadata(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
+    var event = new ProcessedAnnotationBatch(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         batchMetadataList, null);
 
     int pageSize = annotatableIdsA.size();
@@ -239,9 +239,9 @@ class BatchAnnotationServiceTest {
             .withOdsBatchID(BATCH_ID_ALT)
     ).toList();
     var batchEventA = batchAnnotationsA.stream()
-        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID)).toList();
     var batchEventB = batchAnnotationsB.stream()
-        .map(p -> new BatchMetadata(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
+        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -263,8 +263,8 @@ class BatchAnnotationServiceTest {
   @Test
   void testApplyBatchAnnotationsMissingPlaceInBatch() {
     // Given
-    var event = new BatchMetadata(List.of(givenAnnotationProcessed()), JOB_ID,
-        List.of(givenBatchMetadataExtendedLatitudeSearch()), null);
+    var event = new ProcessedAnnotationBatch(List.of(givenAnnotationProcessed()), JOB_ID,
+        List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
 
     // When
     assertThrows(ConflictException.class,
@@ -303,10 +303,10 @@ class BatchAnnotationServiceTest {
     var elasticPageTwo = List.of(givenElasticDocument());
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
-        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
         pageSizePlusOne)).willReturn(elasticPageOne);
     given(elasticRepository.searchByBatchMetadataExtended(
-        givenBatchMetadataExtendedLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 2,
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 2,
         pageSizePlusOne)).willReturn(elasticPageTwo);
     given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
         List.of(givenOaTarget(ID)));
@@ -339,7 +339,7 @@ class BatchAnnotationServiceTest {
     givenJsonPathResponse(ids, givenOaTarget(TARGET_ID));
   }
 
-  private void givenJsonPathResponse(List<String> ids, OaHasTarget__1 target)
+  private void givenJsonPathResponse(List<String> ids, AnnotationTarget target)
       throws BatchingException {
     for (var id : ids) {
       given(jsonPathComponent.getAnnotationTargets(any(), eq(givenElasticDocument(id)),

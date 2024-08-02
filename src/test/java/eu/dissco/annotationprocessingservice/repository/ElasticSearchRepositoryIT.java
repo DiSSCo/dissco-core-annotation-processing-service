@@ -5,10 +5,10 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationBatchMetadataTwoParam;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataExtendedTwoParam;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenBatchMetadataSearchParamCountry;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenElasticDocument;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenSearchParamCountry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -18,9 +18,9 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataSearchParam;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import java.io.IOException;
 import java.util.List;
 import org.apache.http.HttpHost;
@@ -167,7 +167,7 @@ class ElasticSearchRepositoryIT {
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
-    var batchMetadata = givenBatchMetadataExtendedTwoParam();
+    var batchMetadata = givenAnnotationBatchMetadataTwoParam();
 
     // When
     var result = repository.searchByBatchMetadataExtended(batchMetadata,
@@ -183,9 +183,9 @@ class ElasticSearchRepositoryIT {
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
     var altDocument = givenElasticDocument("OtherCountry", ID_ALT);
     postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
-    var batchMetadata = new BatchMetadataExtended(1, List.of(
-        givenBatchMetadataSearchParamCountry(),
-        new BatchMetadataSearchParam(
+    var batchMetadata = new AnnotationBatchMetadata(1, List.of(
+        givenSearchParamCountry(),
+        new SearchParam(
             "digitalSpecimenWrapper.thisFieldIsNotPresent",
             ""
         )));

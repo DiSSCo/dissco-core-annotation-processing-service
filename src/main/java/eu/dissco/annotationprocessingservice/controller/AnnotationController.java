@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.controller;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
@@ -48,7 +48,7 @@ public class AnnotationController {
   public ResponseEntity<Annotation> createAnnotationBatch(@RequestBody AnnotationProcessingEvent event)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received batch hashedAnnotation creation request");
-    var result = processingService.persistNewAnnotation(event.annotations().get(0), true);
+    var result = processingService.persistNewAnnotation(event.getAnnotations().get(0), true);
     processingService.batchWebAnnotations(event, result);
     return ResponseEntity.ok(result);
   }
@@ -59,7 +59,7 @@ public class AnnotationController {
       @PathVariable("suffix") String suffix, @RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException, AnnotationValidationException {
     checkId(prefix, suffix, annotation);
-    log.info("Received hashedAnnotation update request for annotations {}", annotation.getId());
+    log.info("Received hashedAnnotation update request for annotations {}", annotation.getOdsID());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }

@@ -2,18 +2,13 @@ package eu.dissco.annotationprocessingservice.component;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion.VersionFlag;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,38 +24,19 @@ class SchemaValidatorComponentTest {
 
   private SchemaValidatorComponent schemaValidator;
 
-  private static Stream<Arguments> validAnnotations() {
-    return Stream.of(
-        Arguments.of(givenAnnotationRequest(), true),
-        Arguments.of(givenAnnotationRequest().withId(ID), false)
-    );
-  }
-
-  private static Stream<Arguments> invalidAnnotations() {
-    return Stream.of(
-        Arguments.of(givenAnnotationRequest().withId(ID)),
-        Arguments.of(givenAnnotationRequest().withDctermsCreator(null)),
-        Arguments.of(givenAnnotationRequest().withDctermsCreated(null)),
-        Arguments.of(givenAnnotationRequest().withOaHasTarget(null)),
-        Arguments.of(givenAnnotationRequest().withOaMotivation(null))
-    );
-  }
-
   @BeforeEach
-  void setup() throws IOException {
-    var factory = JsonSchemaFactory.getInstance(VersionFlag.V202012);
-    try (InputStream inputStream = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream("json-schema/annotation-processing-request.json")) {
-      var schema = factory.getSchema(inputStream);
-      schemaValidator = new SchemaValidatorComponent(schema, MAPPER);
-    }
+  void setup() {
+    schemaValidator = new SchemaValidatorComponent();
   }
 
   @Test
   void testValidateProcessResults() {
     // Given
-    var event = new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), JOB_ID, null,
-        null);
+
+    //String id, String type, String odsID, String jobId, List<AnnotationProcessingRequest> annotations, List<AnnotationBatchMetadata> batchMetadata, UUID batchId
+    var event = new AnnotationProcessingEvent()
+        .withAnnotations(List.of(givenAnnotationRequest()))
+        .withJobId(JOB_ID);
 
     // Then
     assertDoesNotThrow(() -> schemaValidator.validateEvent(event));
@@ -106,5 +82,19 @@ class SchemaValidatorComponentTest {
         schemaValidator.validateAnnotationRequest(annotationRequest, isNew));
   }
 
+  private static Stream<Arguments> validAnnotations() {
+    return Stream.of(
+        Arguments.of(givenAnnotationRequest(), true),
+        Arguments.of(givenAnnotationRequest().withId(ID), false)
+    );
+  }
+
+  private static Stream<Arguments> invalidAnnotations() {
+    return Stream.of(
+        Arguments.of(givenAnnotationRequest().withId(ID)),
+        Arguments.of(givenAnnotationRequest().withDctermsCreator(null)),
+        Arguments.of(givenAnnotationRequest().withDctermsCreated(null))
+    );
+  }
 
 }

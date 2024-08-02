@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;

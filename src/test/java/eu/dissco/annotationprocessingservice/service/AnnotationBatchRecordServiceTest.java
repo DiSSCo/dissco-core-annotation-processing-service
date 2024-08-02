@@ -15,7 +15,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -58,7 +58,7 @@ class AnnotationBatchRecordServiceTest {
 
       // When
       var result = service.mintBatchIds(List.of(givenAnnotationProcessed()), true,
-          new AnnotationProcessingEvent(annotations, JOB_ID, null, null));
+          new AnnotationProcessingEvent(JOB_ID, annotations, null, null));
 
       // Then
       assertThat(result).contains(givenBatchIdMap());
@@ -96,7 +96,7 @@ class AnnotationBatchRecordServiceTest {
 
     // When
     var result = service.mintBatchIds(annotations, false,
-        new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), JOB_ID, null, null));
+        new AnnotationProcessingEvent(JOB_ID, List.of(givenAnnotationRequest()), null, null));
 
     // Then
     assertThat(result).isEmpty();
@@ -109,7 +109,7 @@ class AnnotationBatchRecordServiceTest {
 
     // When
     var result = service.mintBatchIds(annotations, true,
-        new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), JOB_ID, null, BATCH_ID));
+        new AnnotationProcessingEvent(JOB_ID, List.of(givenAnnotationRequest()), null, BATCH_ID));
 
     // Then
     assertThat(result).contains(expected);

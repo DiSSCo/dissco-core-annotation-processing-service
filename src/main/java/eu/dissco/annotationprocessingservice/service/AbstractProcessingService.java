@@ -4,8 +4,8 @@ import static eu.dissco.annotationprocessingservice.configuration.ApplicationCon
 
 import co.elastic.clients.elasticsearch._types.Result;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -19,11 +19,6 @@ import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
-import eu.dissco.annotationprocessingservice.schema.OaHasBody;
-import eu.dissco.annotationprocessingservice.schema.OaHasBody__1;
-import eu.dissco.annotationprocessingservice.schema.OaHasSelector__1;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget__1;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
@@ -68,16 +63,7 @@ public abstract class AbstractProcessingService {
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
-  private static OaHasSelector__1 buildSelector(OaHasTarget oaHasTarget) {
-    var selector = new OaHasSelector__1();
-    for (var entry : oaHasTarget.getOaHasSelector()
-        .getAdditionalProperties().entrySet()) {
-      selector.setAdditionalProperty(entry.getKey(), entry.getValue());
-    }
-    return selector;
-  }
-
-  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id, int version) {
+  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id, int version, String jobId) {
     return new Annotation()
         .withId(id)
         .withOdsID(id)
@@ -87,37 +73,21 @@ public abstract class AbstractProcessingService {
         .withOdsStatus(OdsStatus.ODS_ACTIVE)
         .withOaMotivation(OaMotivation.fromValue(annotationRequest.getOaMotivation().value()))
         .withOaMotivatedBy(annotationRequest.getOaMotivatedBy())
-        .withOaHasTarget(buildTarget(annotationRequest.getOaHasTarget()))
-        .withOaHasBody(buildBody(annotationRequest.getOaHasBody()))
+        .withOaHasTarget(annotationRequest.getOaHasTarget())
+        .withOaHasBody(annotationRequest.getOaHasBody())
         .withDctermsCreator(annotationRequest.getDctermsCreator())
         .withDctermsCreated(annotationRequest.getDctermsCreated())
         .withAsGenerator(createGenerator())
         .withDctermsIssued(Date.from(Instant.now()))
         .withDctermsModified(Date.from(Instant.now()))
+        .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationRequest.getOdsBatchID());
   }
 
-  private OaHasTarget__1 buildTarget(OaHasTarget oaHasTarget) {
-    return new OaHasTarget__1()
-        .withId(oaHasTarget.getId())
-        .withOdsID(oaHasTarget.getOdsID())
-        .withType(oaHasTarget.getType())
-        .withOdsType(oaHasTarget.getOdsType())
-        .withOaHasSelector(buildSelector(oaHasTarget));
-  }
-
-  private OaHasBody__1 buildBody(OaHasBody annotationRequestBody) {
-    return new OaHasBody__1()
-        .withType(annotationRequestBody.getType())
-        .withOaValue(annotationRequestBody.getOaValue())
-        .withDctermsReferences(annotationRequestBody.getDctermsReferences())
-        .withOdsScore(annotationRequestBody.getOdsScore());
-  }
-
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       boolean batchingRequested, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version);
+    var annotation = buildAnnotation(annotationRequest, id, version, null);
     if (batchingRequested) {
       annotationBatchRecordService.mintBatchId(annotation);
       annotation.setOdsPlaceInBatch(1);
@@ -126,18 +96,18 @@ public abstract class AbstractProcessingService {
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
-      String batchId, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version);
+      UUID batchId, int version) {
+    var annotation = buildAnnotation(annotationRequest, id, version, null);
     if (batchId != null) {
-      annotation.setOdsBatchID(UUID.fromString(batchId));
+      annotation.setOdsBatchID(batchId);
     }
     return annotation;
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       AnnotationProcessingEvent event, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version);
-    annotation.setOdsJobID(HANDLE_PROXY + event.jobId());
+    var annotation = buildAnnotation(annotationRequest, id, version, event.getJobId());
+    annotation.setOdsJobID(HANDLE_PROXY + event.getJobId());
     return annotation;
   }
 
@@ -145,8 +115,8 @@ public abstract class AbstractProcessingService {
       AnnotationProcessingEvent event) {
     batchIds.ifPresentOrElse(idMap -> annotation.setOdsBatchID(idMap.get(annotation.getId())),
         () -> {
-          if (event.batchId() != null) {
-            annotation.setOdsBatchID(event.batchId());
+          if (event.getBatchId() != null) {
+            annotation.setOdsBatchID(event.getBatchId());
           }
         });
   }
@@ -198,15 +168,15 @@ public abstract class AbstractProcessingService {
       return;
     }
 
-    if (event.batchId() != null) { // This is a batchResult
-      annotationBatchRecordService.updateAnnotationBatchRecord(event.batchId(),
+    if (event.getBatchId() != null) { // This is a batchResult
+      annotationBatchRecordService.updateAnnotationBatchRecord(event.getBatchId(),
           newAnnotations.size());
       return;
     }
-    if (event.batchMetadata() != null) {
+    if (event.getBatchMetadata() != null) {
       // New hashedAnnotation event with processed annotations because we need the ids of the parent annotations for batching
-      var processedEvent = new BatchMetadata(newAnnotations, event.jobId(),
-          event.batchMetadata(), null);
+      var processedEvent = new ProcessedAnnotationBatch(newAnnotations, event.getJobId(),
+          event.getBatchMetadata(), null);
       try {
         batchAnnotationService.applyBatchAnnotations(processedEvent);
       } catch (IOException e) {
@@ -216,7 +186,7 @@ public abstract class AbstractProcessingService {
     } else {
       log.warn(
           "User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
-          event.jobId());
+          event.getJobId());
     }
   }
 

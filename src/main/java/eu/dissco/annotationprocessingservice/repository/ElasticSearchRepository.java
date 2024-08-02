@@ -11,9 +11,9 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.BatchMetadataExtended;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,11 +67,11 @@ public class ElasticSearchRepository {
     return client.bulk(bulkRequest.build());
   }
 
-  private List<Query> generateBatchQueryExtended(BatchMetadataExtended bme) {
+  private List<Query> generateBatchQueryExtended(AnnotationBatchMetadata ame) {
     var qList = new ArrayList<Query>();
-    for (var searchParam : bme.searchParams()) {
-      var key = searchParam.inputField().replaceAll("\\[[^]]*]", "") + ".keyword";
-      var val = searchParam.inputValue();
+    for (var searchParam : ame.getSearchParams()) {
+      var key = searchParam.getInputField().replaceAll("\\[[^]]*]", "") + ".keyword";
+      var val = searchParam.getInputValue();
       if (val.isEmpty()) {
         qList.add(
             new Query.Builder().bool(b -> b.mustNot(q -> q.exists(e -> e.field(key)))).build());
@@ -83,7 +83,7 @@ public class ElasticSearchRepository {
     return qList;
   }
 
-  public List<JsonNode> searchByBatchMetadataExtended(BatchMetadataExtended batchMetadata,
+  public List<JsonNode> searchByBatchMetadataExtended(AnnotationBatchMetadata batchMetadata,
       AnnotationTargetType targetType, int pageNumber, int pageSize) throws IOException {
     var query = generateBatchQueryExtended(batchMetadata);
     var index =

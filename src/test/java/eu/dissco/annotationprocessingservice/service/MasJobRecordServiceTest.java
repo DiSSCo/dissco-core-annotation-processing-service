@@ -15,7 +15,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
@@ -77,7 +77,7 @@ class MasJobRecordServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationProcessingEvent(List.of(givenAnnotationRequest()), null, null,
+        () -> service.verifyMasJobId(new AnnotationProcessingEvent(null, List.of(givenAnnotationRequest()), null,
             null)));
   }
 

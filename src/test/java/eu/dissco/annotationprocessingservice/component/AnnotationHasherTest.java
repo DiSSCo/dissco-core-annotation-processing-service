@@ -7,8 +7,8 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenRequestOaTarg
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
+import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
-import eu.dissco.annotationprocessingservice.schema.OaHasTarget;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
@@ -52,7 +52,7 @@ class AnnotationHasherTest {
     // When
     var result = annotationHasher.getAnnotationHash(
         givenAnnotationRequest().withOaHasTarget(
-            new OaHasTarget()
+            new AnnotationTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
                 .withType(AnnotationTargetType.DIGITAL_SPECIMEN.toString())));

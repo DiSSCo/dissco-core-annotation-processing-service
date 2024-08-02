@@ -8,7 +8,7 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.domain.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -91,7 +91,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     var currentAnnotation = currentAnnotationOptional.get();
     var annotation = buildAnnotation(annotationRequest, annotationRequest.getId(),
-        currentAnnotation.getOdsVersion() + 1);
+        currentAnnotation.getOdsVersion() + 1, null);
     if (annotationsAreEqual(currentAnnotation, annotation)) {
       processEqualAnnotations(Set.of(currentAnnotation));
       return currentAnnotation;
