@@ -74,7 +74,6 @@ public class BatchAnnotationService {
           }
         }
         pageNumber = pageNumber + 1;
-        moreBatching = false;
       } catch (BatchingException e) {
         errorCount = errorCount + 1;
         if (errorCount >= applicationProperties.getMaxBatchRetries()) {
