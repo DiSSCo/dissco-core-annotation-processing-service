@@ -76,7 +76,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     log.info("Received annotations event of: {}", event);
     masJobRecordService.verifyMasJobId(event);
     var isBatchResult = event.getBatchId() != null;
-    if (event.getAnnotations().isEmpty()) {
+    if (event.getAnnotations().isEmpty() && event.getJobId() != null) {
       log.info("MAS job completed without any annotations");
       masJobRecordService.markEmptyMasJobRecordAsComplete(event.getJobId(), isBatchResult);
     } else {
