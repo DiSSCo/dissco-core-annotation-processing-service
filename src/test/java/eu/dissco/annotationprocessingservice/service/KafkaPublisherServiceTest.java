@@ -13,7 +13,6 @@ import static org.mockito.Mockito.times;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.properties.KafkaConsumerProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,7 +69,7 @@ class KafkaPublisherServiceTest {
     var eventMessage = MAPPER.writeValueAsString(givenAnnotationEventBatchEnabled());
 
     // When
-    service.publishBatchAnnotation(List.of(givenAnnotationEventBatchEnabled()));
+    service.publishBatchAnnotation(givenAnnotationEventBatchEnabled());
 
     // Then
     then(kafkaTemplate).should(times(1)).send("topic", eventMessage);
