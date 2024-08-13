@@ -1,7 +1,9 @@
 package eu.dissco.annotationprocessingservice.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public enum AnnotationTargetType {
   @JsonProperty("https://doi.org/21.T11148/894b1e6cad57e921764e") DIGITAL_SPECIMEN(
       "https://doi.org/21.T11148/894b1e6cad57e921764e"),
@@ -25,6 +27,7 @@ public enum AnnotationTargetType {
         return type;
       }
     }
-    return null;
+    log.error("Invalid annotation target type: {}", name);
+    throw new IllegalStateException();
   }
 }

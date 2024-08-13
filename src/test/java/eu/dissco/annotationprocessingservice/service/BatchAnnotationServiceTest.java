@@ -85,8 +85,7 @@ class BatchAnnotationServiceTest {
             .withDctermsCreator(givenCreator(CREATOR))
             .withOdsBatchID(BATCH_ID)
     ).toList();
-    var batchEvent = batchAnnotations.stream()
-        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID)).toList();
+    var batchEvent = new ProcessedAnnotationBatch(batchAnnotations, JOB_ID, null, BATCH_ID);
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
     given(elasticRepository.searchByBatchMetadataExtended(
@@ -155,11 +154,8 @@ class BatchAnnotationServiceTest {
             .withDctermsCreator(givenCreator(CREATOR))
             .withOdsBatchID(BATCH_ID_ALT)
     ).toList();
-
-    var batchEventA = batchAnnotationsA.stream()
-        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID)).toList();
-    var batchEventB = batchAnnotationsB.stream()
-        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
+    var batchEventA = new ProcessedAnnotationBatch(batchAnnotationsA, JOB_ID, null, BATCH_ID);
+    var batchEventB = new ProcessedAnnotationBatch(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
 
     givenJsonPathResponse(annotatableIds);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
@@ -214,7 +210,6 @@ class BatchAnnotationServiceTest {
         .withOaHasTarget(annotationTargetB);
     var event = new ProcessedAnnotationBatch(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         batchMetadataList, null);
-
     int pageSize = annotatableIdsA.size();
     int pageSizePlusOne = pageSize + 1;
     var elasticDocumentsA = annotatableIdsA.stream().map(TestUtils::givenElasticDocument).toList();
@@ -228,7 +223,6 @@ class BatchAnnotationServiceTest {
             .withDctermsCreator(givenCreator(CREATOR))
             .withOdsBatchID(BATCH_ID)
     ).toList();
-
     var batchAnnotationsB = annotatableIdsB.stream().map(id ->
         new Annotation()
             .withOaHasBody(annotationBodyB)
@@ -238,10 +232,8 @@ class BatchAnnotationServiceTest {
             .withDctermsCreator(givenCreator(CREATOR))
             .withOdsBatchID(BATCH_ID_ALT)
     ).toList();
-    var batchEventA = batchAnnotationsA.stream()
-        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID)).toList();
-    var batchEventB = batchAnnotationsB.stream()
-        .map(p -> new ProcessedAnnotationBatch(List.of(p), JOB_ID, null, BATCH_ID_ALT)).toList();
+    var batchEventA = new ProcessedAnnotationBatch(batchAnnotationsA, JOB_ID, null, BATCH_ID);
+    var batchEventB = new ProcessedAnnotationBatch(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
     given(applicationProperties.getBatchPageSize()).willReturn(pageSize);

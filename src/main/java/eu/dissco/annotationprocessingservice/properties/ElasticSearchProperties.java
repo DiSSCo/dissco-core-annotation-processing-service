@@ -29,5 +29,5 @@ public class ElasticSearchProperties {
   private String digitalSpecimenIndex = "digital-specimen";
 
   @NotBlank
-  private String digitalMediaObjectIndex = "digital-media-object";
+  private String digitalMediaObjectIndex = "digital-media";
 }
