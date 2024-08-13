@@ -32,7 +32,7 @@ public class BatchAnnotationService {
       throws IOException, ConflictException, BatchingException {
     int pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
     for (var batchMetadata : batchmetadata.annotationBatchMetadata()) {
-      var baseAnnotations = getBaseAnnotation(batchMetadata.getPlaceInBatch(),
+      var baseAnnotations = getBaseAnnotation(batchMetadata.getOdsPlaceInBatch(),
           batchmetadata.annotations());
       runBatchForMetadata(baseAnnotations, batchMetadata, batchmetadata.jobId(), pageSizePlusOne);
     }
