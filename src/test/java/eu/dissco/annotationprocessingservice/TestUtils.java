@@ -298,7 +298,7 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
+              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
@@ -314,7 +314,7 @@ public class TestUtils {
     var jsonNode = MAPPER.readTree("""
         {
             "data": {
-              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
+              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
@@ -328,7 +328,7 @@ public class TestUtils {
     var jsonNode2 = MAPPER.readTree("""
         {
             "data": {
-              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
+              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
@@ -346,7 +346,7 @@ public class TestUtils {
     return List.of(MAPPER.readTree("""
         {
             "data": {
-              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
+              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                 "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
@@ -363,7 +363,7 @@ public class TestUtils {
     var node1 = MAPPER.readTree("""
         {
             "data": {
-              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
+              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                 "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
@@ -378,7 +378,7 @@ public class TestUtils {
     var node2 = MAPPER.readTree("""
           {
             "data": {
-              "type": "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f",
+              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
                "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",

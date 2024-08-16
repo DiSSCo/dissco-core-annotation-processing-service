@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("fdo")
 public class FdoProperties {
   @NotBlank
-  private String type = "https://hdl.handle.net/21.T11148/cf458ca9ee1d44a5608f";
+  private String type = "https://doi.org/21.T11148/cf458ca9ee1d44a5608f";
 
   @NotBlank
   private String issuedForAgent = "https://ror.org/0566bfb96";
