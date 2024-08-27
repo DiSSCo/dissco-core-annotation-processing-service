@@ -46,8 +46,7 @@ public class ProcessingWebService extends AbstractProcessingService {
   }
 
   public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,
-      boolean batchingRequested)
-      throws FailedProcessingException, AnnotationValidationException {
+      boolean batchingRequested) throws FailedProcessingException, AnnotationValidationException {
     schemaValidator.validateAnnotationRequest(annotationRequest, true);
     var id = postHandle(annotationRequest);
     var annotation = buildAnnotation(annotationRequest, HANDLE_PROXY + id, batchingRequested, 1);
