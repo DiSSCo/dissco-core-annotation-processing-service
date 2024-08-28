@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.1</version>
+    <version>3.3.3</version>
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>eu.dissco.core</groupId>
@@ -16,14 +16,14 @@
   <description>Processing services for annotations</description>
   <properties>
     <java.version>17</java.version>
-    <elasticsearch.version>8.12.2</elasticsearch.version>
+    <elasticsearch.version>8.15.0</elasticsearch.version>
     <json-patch.version>1.13</json-patch.version>
     <json-path.version>2.9.0</json-path.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
+    <testcontainers.version>1.20.1</testcontainers.version>
     <sonar.organization>dissco</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <json-schema-validator.version>1.0.87</json-schema-validator.version>
+    <json-schema-validator.version>1.5.1</json-schema-validator.version>
     <sonar.coverage.jacoco.xmlReportPaths>../app-it/target/site/jacoco-aggregate/jacoco.xml
     </sonar.coverage.jacoco.xmlReportPaths>
   </properties>
