@@ -9,6 +9,8 @@ import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
+import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
@@ -434,6 +436,25 @@ public class TestUtils {
     return new ProcessedAnnotationBatch(List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)
         .withOdsPlaceInBatch(1)), JOB_ID,
         List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
+  }
+
+  public static Annotation givenAcceptedAnnotation() {
+    var annotation = givenAnnotationProcessedWeb();
+    annotation.setOdsMergingStateChangeDate(Date.from(CREATED));
+    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_APPROVED);
+    annotation.setOdsMergingStateChangedBy(givenProcessingAgent());
+    return annotation;
+  }
+
+  public static AutoAcceptedAnnotation givenAutoAcceptedRequest() {
+    return new AutoAcceptedAnnotation(givenProcessingAgent(), givenAnnotationRequest());
+  }
+
+  public static Agent givenProcessingAgent() {
+    return new Agent()
+        .withType(Type.AS_APPLICATION)
+        .withId(ID)
+        .withSchemaName("A processing service");
   }
 
   public static JsonNode givenElasticDocument() {
