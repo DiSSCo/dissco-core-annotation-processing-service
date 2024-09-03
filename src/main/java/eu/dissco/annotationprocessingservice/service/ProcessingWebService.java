@@ -114,66 +114,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     return annotation;
   }
 
-  private String postHandle(AnnotationProcessingRequest annotationRequest)
-      throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequest(annotationRequest);
-    try {
-      return handleComponent.postHandle(requestBody).get(0);
-    } catch (PidCreationException e) {
-      log.error("Unable to create handle for given annotations. ", e);
-      throw new FailedProcessingException();
-    }
-  }
 
-  private void indexElasticNewAnnotation(Annotation annotation, String id)
-      throws FailedProcessingException {
-    IndexResponse indexDocument = null;
-    try {
-      indexDocument = elasticRepository.indexAnnotation(annotation);
-    } catch (IOException | ElasticsearchException e) {
-      log.error("Rolling back, failed to insert records in elastic", e);
-      rollbackNewAnnotation(annotation, false);
-      throw new FailedProcessingException();
-    }
-    if (indexDocument.result().equals(Result.Created)) {
-      log.info("Annotation: {} has been successfully indexed", id);
-      try {
-        kafkaService.publishCreateEvent(annotation);
-      } catch (JsonProcessingException e) {
-        log.error("Unable to publish create event to kafka.");
-        rollbackNewAnnotation(annotation, true);
-        throw new FailedProcessingException();
-      }
-    } else {
-      log.error("Elasticsearch did not create annotations: {}", id);
-      rollbackNewAnnotation(annotation, false);
-      throw new FailedProcessingException();
-    }
-  }
-
-  private void rollbackNewAnnotation(Annotation annotation, boolean elasticRollback)
-      throws FailedProcessingException {
-    log.warn("Rolling back for annotations: {}", annotation);
-    if (elasticRollback) {
-      try {
-        elasticRepository.archiveAnnotation(annotation.getId());
-      } catch (IOException | ElasticsearchException e) {
-        log.info("Fatal exception, unable to rollback: {}", annotation.getId(), e);
-      }
-    }
-    repository.rollbackAnnotation(annotation.getId());
-    rollbackHandleCreation(annotation);
-    throw new FailedProcessingException();
-  }
-
-  private void rollbackHandleCreation(Annotation annotation) {
-    var requestBody = fdoRecordService.buildRollbackCreationRequest(annotation);
-    try {
-      handleComponent.rollbackHandleCreation(requestBody);
-    } catch (PidCreationException e) {
-      log.error("Unable to rollback creation for annotations {}", annotation.getId(), e);
-    }
-  }
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,
       Annotation annotation) throws PidCreationException {
@@ -222,7 +163,7 @@ public class ProcessingWebService extends AbstractProcessingService {
 
   private void indexElasticUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)
       throws FailedProcessingException {
-    IndexResponse indexDocument = null;
+    IndexResponse indexDocument;
     try {
       indexDocument = elasticRepository.indexAnnotation(annotation);
     } catch (IOException | ElasticsearchException e) {

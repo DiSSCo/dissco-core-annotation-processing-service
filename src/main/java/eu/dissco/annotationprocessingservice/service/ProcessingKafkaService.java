@@ -10,7 +10,6 @@ import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
@@ -25,6 +24,7 @@ import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
@@ -84,7 +84,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       var masJobRecord = masJobRecordService.getMasJobRecord(event.getJobId());
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
-      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(), event.getJobId(),
+      var updatedIds = updateExistingAnnotations(processResult.changedAnnotations(),
+          event.getJobId(),
           isBatchResult);
       var newAnnotations = persistNewAnnotation(processResult.newAnnotations(), event.getJobId(),
           isBatchResult, masJobRecord.batchingRequested(), event);
@@ -141,8 +142,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   private List<Annotation> persistNewAnnotation(
       List<HashedAnnotationRequest> hashedAnnotationsRequest, String jobId,
-      boolean isBatchResult,
-      boolean batchingRequested, AnnotationProcessingEvent event)
+      boolean isBatchResult, boolean batchingRequested, AnnotationProcessingEvent event)
       throws FailedProcessingException {
     if (hashedAnnotationsRequest.isEmpty()) {
       return Collections.emptyList();
@@ -193,8 +193,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private List<String> updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
-      String jobId, boolean isBatchResult)
-      throws FailedProcessingException {
+      String jobId, boolean isBatchResult) throws FailedProcessingException {
     if (updatedAnnotations.isEmpty()) {
       return Collections.emptyList();
     }

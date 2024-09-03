@@ -2,9 +2,11 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -18,6 +20,7 @@ import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
@@ -57,13 +60,15 @@ public abstract class AbstractProcessingService {
         .equals(annotation.getOaMotivatedBy()))
         || (currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null))
         && (currentAnnotation.getSchemaAggregateRating() != null
-        && currentAnnotation.getSchemaAggregateRating().equals(annotation.getSchemaAggregateRating())
+        && currentAnnotation.getSchemaAggregateRating()
+        .equals(annotation.getSchemaAggregateRating())
         || (currentAnnotation.getSchemaAggregateRating() == null
         && annotation.getSchemaAggregateRating() == null))
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
-  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id, int version, String jobId) {
+  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
+      int version, String jobId) {
     return new Annotation()
         .withId(id)
         .withOdsID(id)
@@ -91,15 +96,6 @@ public abstract class AbstractProcessingService {
     if (batchingRequested) {
       annotationBatchRecordService.mintBatchId(annotation);
       annotation.setOdsPlaceInBatch(1);
-    }
-    return annotation;
-  }
-
-  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
-      UUID batchId, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version, null);
-    if (batchId != null) {
-      annotation.setOdsBatchID(batchId);
     }
     return annotation;
   }
@@ -162,8 +158,7 @@ public abstract class AbstractProcessingService {
   }
 
   protected void applyBatchAnnotations(AnnotationProcessingEvent event,
-      List<Annotation> newAnnotations)
-      throws BatchingException, ConflictException {
+      List<Annotation> newAnnotations) throws BatchingException, ConflictException {
     if (newAnnotations.isEmpty()) {
       return;
     }
@@ -188,6 +183,67 @@ public abstract class AbstractProcessingService {
           "User requested batchingRequested, but MAS did not provide batch metadata. JobId: {}",
           event.getJobId());
     }
+  }
+
+  protected String postHandle(AnnotationProcessingRequest annotationRequest)
+      throws FailedProcessingException {
+    var requestBody = fdoRecordService.buildPostHandleRequest(annotationRequest);
+    try {
+      return handleComponent.postHandle(requestBody).get(0);
+    } catch (PidCreationException e) {
+      log.error("Unable to create handle for given annotations. ", e);
+      throw new FailedProcessingException();
+    }
+  }
+
+  protected void rollbackHandleCreation(Annotation annotation) {
+    var requestBody = fdoRecordService.buildRollbackCreationRequest(annotation);
+    try {
+      handleComponent.rollbackHandleCreation(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to rollback creation for annotations {}", annotation.getId(), e);
+    }
+  }
+
+  protected void indexElasticNewAnnotation(Annotation annotation, String id)
+      throws FailedProcessingException {
+    IndexResponse indexDocument;
+    try {
+      indexDocument = elasticRepository.indexAnnotation(annotation);
+    } catch (IOException | ElasticsearchException e) {
+      log.error("Rolling back, failed to insert records in elastic", e);
+      rollbackNewAnnotation(annotation, false);
+      throw new FailedProcessingException();
+    }
+    if (indexDocument.result().equals(Result.Created)) {
+      log.info("Annotation: {} has been successfully indexed", id);
+      try {
+        kafkaService.publishCreateEvent(annotation);
+      } catch (JsonProcessingException e) {
+        log.error("Unable to publish create event to kafka.");
+        rollbackNewAnnotation(annotation, true);
+        throw new FailedProcessingException();
+      }
+    } else {
+      log.error("Elasticsearch did not create annotations: {}", id);
+      rollbackNewAnnotation(annotation, false);
+      throw new FailedProcessingException();
+    }
+  }
+
+  private void rollbackNewAnnotation(Annotation annotation, boolean elasticRollback)
+      throws FailedProcessingException {
+    log.warn("Rolling back for annotations: {}", annotation);
+    if (elasticRollback) {
+      try {
+        elasticRepository.archiveAnnotation(annotation.getId());
+      } catch (IOException | ElasticsearchException e) {
+        log.info("Fatal exception, unable to rollback: {}", annotation.getId(), e);
+      }
+    }
+    repository.rollbackAnnotation(annotation.getId());
+    rollbackHandleCreation(annotation);
+    throw new FailedProcessingException();
   }
 
 }
