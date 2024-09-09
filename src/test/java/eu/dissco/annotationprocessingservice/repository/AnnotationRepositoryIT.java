@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import java.util.List;
@@ -156,13 +157,13 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
-  void testArchiveAnnotation() {
+  void testArchiveAnnotation() throws FailedProcessingException {
     // Given
     var annotation = givenAnnotationProcessed(BARE_ID);
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(ID);
+    repository.archiveAnnotation(givenAnnotationProcessed());
 
     // Then
     var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED_ON).from(ANNOTATION)

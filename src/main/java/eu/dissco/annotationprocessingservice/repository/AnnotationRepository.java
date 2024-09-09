@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
+import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -146,10 +147,11 @@ public class AnnotationRepository {
         .fetchOptional(Record1::value1);
   }
 
-  public void archiveAnnotation(String id) {
+  public void archiveAnnotation(Annotation annotation) throws FailedProcessingException {
     context.update(ANNOTATION)
         .set(ANNOTATION.TOMBSTONED_ON, Instant.now())
-        .where(ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, "")))
+        .set(ANNOTATION.DATA, mapToJSONB(annotation))
+        .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
         .execute();
   }
 
@@ -160,5 +162,15 @@ public class AnnotationRepository {
   public void rollbackAnnotations(List<String> idList) {
     var list = idList.stream().map(id -> id.replace(HANDLE_PROXY, "")).toList();
     context.delete(ANNOTATION).where(ANNOTATION.ID.in(list)).execute();
+  }
+
+  private JSONB mapToJSONB(Annotation annotation) throws FailedProcessingException {
+    try {
+      return JSONB.valueOf(mapper.writeValueAsString(annotation));
+    } catch (JsonProcessingException e) {
+      log.error("Unable to map data mapping to jsonb", e);
+      log.error("Need to archive annotation {} manually", annotation.getId());
+      throw new FailedProcessingException();
+    }
   }
 }

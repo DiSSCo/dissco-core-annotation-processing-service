@@ -26,6 +26,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBodySetType
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAgent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRequestOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
@@ -65,6 +67,7 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -72,6 +75,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -799,12 +803,19 @@ class ProcessingKafkaServiceTest {
     var deleteResponse = mock(DeleteResponse.class);
     given(deleteResponse.result()).willReturn(Result.Deleted);
     given(elasticRepository.archiveAnnotation(ID)).willReturn(deleteResponse);
+    var tombstonedAnnotation = givenAnnotationProcessed()
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withOdsTombstoneMetadata(
+            new TombstoneMetadata()
+                .withOdsTombstoneDate(Date.from(Instant.now()))
+                .withOdsTombstoneText("This annotation was archived")
+                .withOdsTombstonedByAgent(givenProcessingAgent()));
 
     // When
-    service.archiveAnnotation(ID);
+    service.archiveAnnotation(givenAnnotationProcessed(), givenProcessingAgent());
 
     // Then
-    then(repository).should().archiveAnnotation(ID);
+    then(repository).should().archiveAnnotation(tombstonedAnnotation);
     then(fdoRecordService).should().buildArchiveHandleRequest(ID);
     then(handleComponent).should().archiveHandle(any(), eq(ID));
     then(masJobRecordService).shouldHaveNoInteractions();
@@ -817,7 +828,8 @@ class ProcessingKafkaServiceTest {
     doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any(), eq(ID));
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.archiveAnnotation(ID));
+    assertThrows(FailedProcessingException.class,
+        () -> service.archiveAnnotation(givenAnnotationProcessed(), givenProcessingAgent()));
 
     // Then
     then(elasticRepository).shouldHaveNoInteractions();
@@ -830,7 +842,7 @@ class ProcessingKafkaServiceTest {
     given(repository.getAnnotationById(ID)).willReturn(Optional.empty());
 
     // When
-    service.archiveAnnotation(ID);
+    service.archiveAnnotation(givenAnnotationProcessed(), givenProcessingAgent());
 
     // Then
     then(repository).shouldHaveNoMoreInteractions();

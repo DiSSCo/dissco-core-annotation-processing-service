@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.controller;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -64,12 +65,16 @@ public class AnnotationController {
     return ResponseEntity.ok(result);
   }
 
-  @DeleteMapping(value = "/{prefix}/{postfix}")
+  @DeleteMapping(value = "/{prefix}/{suffix}")
   public ResponseEntity<Void> archiveAnnotation(@PathVariable("prefix") String prefix,
-      @PathVariable("postfix") String postfix) throws IOException, FailedProcessingException {
-    var id = prefix + '/' + postfix;
+      @PathVariable("suffix") String suffix, Annotation annotation, Agent deletingAgent) throws IOException, FailedProcessingException {
+    var id = prefix + '/' + suffix;
     log.info("Received an archive request for annotations: {}", id);
-    processingService.archiveAnnotation(id);
+    if (!annotation.getId().contains(id)){
+      log.error("Id in path {} does not match id in annotation {}", id, annotation.getId());
+      throw new FailedProcessingException();
+    }
+    processingService.archiveAnnotation(annotation, deletingAgent);
     return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
   }
 

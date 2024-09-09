@@ -1,16 +1,18 @@
 package eu.dissco.annotationprocessingservice.controller;
 
-import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAgent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
+import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -98,11 +100,23 @@ class AnnotationControllerTest {
     // Given
 
     // When
-    var result = controller.archiveAnnotation("20.5000.1025", "KZL-VC0-ZK2");
+    var result = controller.archiveAnnotation("20.5000.1025", "KZL-VC0-ZK2",
+        givenAnnotationProcessed(), givenProcessingAgent());
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    then(service).should().archiveAnnotation(BARE_ID);
+    then(service).should().archiveAnnotation(givenAnnotationProcessed(), givenProcessingAgent());
+  }
+
+  @Test
+  void testArchiveAnnotationBadID() {
+    // Given
+
+    // When / Then
+    assertThrowsExactly(FailedProcessingException.class,
+        () -> controller.archiveAnnotation("20.5000.1025", "INVALID-SUFFIX",
+            givenAnnotationProcessed(), givenProcessingAgent()));
+
   }
 
 }
