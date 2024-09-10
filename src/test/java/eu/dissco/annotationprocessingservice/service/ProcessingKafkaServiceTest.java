@@ -810,7 +810,7 @@ class ProcessingKafkaServiceTest {
     service.archiveAnnotation(givenAnnotationProcessed(), givenProcessingAgent());
 
     // Then
-    then(repository).should().archiveAnnotation(tombstonedAnnotation);
+    then(repository).should().archiveAnnotation(tombstonedAnnotation, UPDATED);
     then(fdoRecordService).should().buildArchiveHandleRequest(ID);
     then(handleComponent).should().archiveHandle(any(), eq(ID));
     then(masJobRecordService).shouldHaveNoInteractions();

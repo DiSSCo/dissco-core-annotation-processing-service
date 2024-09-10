@@ -150,6 +150,8 @@ public class AnnotationRepository {
   public void archiveAnnotation(Annotation annotation, Instant timestamp) throws FailedProcessingException {
     context.update(ANNOTATION)
         .set(ANNOTATION.TOMBSTONED_ON, timestamp)
+        .set(ANNOTATION.MODIFIED, timestamp)
+        .set(ANNOTATION.LAST_CHECKED, timestamp)
         .set(ANNOTATION.DATA, mapToJSONB(annotation))
         .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
         .execute();

@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.repository;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
@@ -163,7 +164,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(givenAnnotationProcessed());
+    repository.archiveAnnotation(givenAnnotationProcessed(), CREATED);
 
     // Then
     var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED_ON).from(ANNOTATION)
