@@ -153,6 +153,7 @@ public class AnnotationRepository {
         .set(ANNOTATION.MODIFIED, timestamp)
         .set(ANNOTATION.LAST_CHECKED, timestamp)
         .set(ANNOTATION.DATA, mapToJSONB(annotation))
+        .set(ANNOTATION.VERSION, annotation.getOdsVersion())
         .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
         .execute();
   }
