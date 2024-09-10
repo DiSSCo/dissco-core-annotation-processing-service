@@ -147,9 +147,9 @@ public class AnnotationRepository {
         .fetchOptional(Record1::value1);
   }
 
-  public void archiveAnnotation(Annotation annotation) throws FailedProcessingException {
+  public void archiveAnnotation(Annotation annotation, Instant timestamp) throws FailedProcessingException {
     context.update(ANNOTATION)
-        .set(ANNOTATION.TOMBSTONED_ON, Instant.now())
+        .set(ANNOTATION.TOMBSTONED_ON, timestamp)
         .set(ANNOTATION.DATA, mapToJSONB(annotation))
         .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
         .execute();

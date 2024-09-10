@@ -71,6 +71,7 @@ public abstract class AbstractProcessingService {
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       int version, String jobId) {
+    var timestamp = Instant.now();
     return new Annotation()
         .withId(id)
         .withOdsID(id)
@@ -85,8 +86,8 @@ public abstract class AbstractProcessingService {
         .withDctermsCreator(annotationRequest.getDctermsCreator())
         .withDctermsCreated(annotationRequest.getDctermsCreated())
         .withAsGenerator(createGenerator())
-        .withDctermsIssued(Date.from(Instant.now()))
-        .withDctermsModified(Date.from(Instant.now()))
+        .withDctermsIssued(Date.from(timestamp))
+        .withDctermsModified(Date.from(timestamp))
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationRequest.getOdsBatchID());
@@ -151,8 +152,9 @@ public abstract class AbstractProcessingService {
     var document = elasticRepository.archiveAnnotation(currentAnnotation.getId());
     if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
       log.info("Archive annotations: {} in database", currentAnnotation.getId());
-      var tombstoneAnnotation = buildTombstoneAnnotation(currentAnnotation, tombstoningAgent);
-      repository.archiveAnnotation(tombstoneAnnotation);
+      var timestamp = Instant.now();
+      var tombstoneAnnotation = buildTombstoneAnnotation(currentAnnotation, tombstoningAgent, timestamp);
+      repository.archiveAnnotation(tombstoneAnnotation, timestamp);
       log.info("Sending Tombstone event to provenance servie");
       kafkaService.publishTombstoneEvent(tombstoneAnnotation, currentAnnotation);
       log.info("Archived annotations: {}", currentAnnotation.getId());
@@ -162,7 +164,7 @@ public abstract class AbstractProcessingService {
   }
 
   private Annotation buildTombstoneAnnotation(Annotation annotation,
-      Agent tombstoningAgent) {
+      Agent tombstoningAgent, Instant timestamp) {
     return new Annotation()
         .withId(annotation.getId())
         .withType(annotation.getType())
@@ -177,18 +179,18 @@ public abstract class AbstractProcessingService {
         .withOaHasBody(annotation.getOaHasBody())
         .withDctermsCreator(annotation.getDctermsCreator())
         .withDctermsCreated(annotation.getDctermsCreated())
-        .withDctermsModified(Date.from(Instant.now()))
+        .withDctermsModified(Date.from(timestamp))
         .withDctermsIssued(annotation.getDctermsIssued())
         .withAsGenerator(annotation.getAsGenerator())
         .withSchemaAggregateRating(annotation.getSchemaAggregateRating())
         .withOdsBatchID(annotation.getOdsBatchID())
         .withOdsPlaceInBatch(annotation.getOdsPlaceInBatch())
         .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_REJECTED)
-        .withOdsMergingStateChangeDate(Date.from(Instant.now()))
+        .withOdsMergingStateChangeDate(Date.from(timestamp))
         .withOdsMergingStateChangedBy(tombstoningAgent)
         .withOdsTombstoneMetadata(new TombstoneMetadata()
             .withType("ods:Tombstone")
-            .withOdsTombstoneDate(Date.from(Instant.now()))
+            .withOdsTombstoneDate(Date.from(timestamp))
             .withOdsTombstoneText("This annotation was archived")
             .withOdsTombstonedByAgent(tombstoningAgent));
   }
