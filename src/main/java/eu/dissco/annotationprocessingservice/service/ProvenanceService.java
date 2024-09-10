@@ -9,6 +9,7 @@ import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.CreateUpdateTombstoneEvent;
 import eu.dissco.annotationprocessingservice.schema.OdsChangeValue;
 import eu.dissco.annotationprocessingservice.schema.ProvActivity;
+import eu.dissco.annotationprocessingservice.schema.ProvActivity.Type;
 import eu.dissco.annotationprocessingservice.schema.ProvEntity;
 import eu.dissco.annotationprocessingservice.schema.ProvValue;
 import eu.dissco.annotationprocessingservice.schema.ProvWasAssociatedWith;
@@ -80,6 +81,12 @@ public class ProvenanceService {
         jsonPatch);
   }
 
+  public CreateUpdateTombstoneEvent generateTombstoneEvent(Annotation tombstoneAnnotation,
+      Annotation currentAnnotation) {
+    var jsonPatch = createJsonPatch(tombstoneAnnotation, currentAnnotation);
+    return generateCreateUpdateTombStoneEvent(currentAnnotation, Type.ODS_TOMBSTONE, jsonPatch);
+  }
+
   private ProvValue mapEntityToProvValue(Annotation annotation) {
     var provValue = new ProvValue();
     var node = mapper.convertValue(annotation, new TypeReference<Map<String, Object>>() {
@@ -91,7 +98,6 @@ public class ProvenanceService {
   }
 
   private JsonNode createJsonPatch(Annotation annotation, Annotation currentAnnotation) {
-    return JsonDiff.asJson(mapper.valueToTree(annotation),
-        mapper.valueToTree(currentAnnotation));
+    return JsonDiff.asJson(mapper.valueToTree(currentAnnotation), mapper.valueToTree(annotation));
   }
 }

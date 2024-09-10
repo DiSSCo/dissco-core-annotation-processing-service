@@ -4,6 +4,7 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEventBatchEnabled;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneAnnotation;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -31,6 +32,7 @@ class KafkaPublisherServiceTest {
   private ProvenanceService provenanceService;
 
   private KafkaPublisherService service;
+  private static final String TOPIC = "createUpdateDeleteTopic";
 
 
   @BeforeEach
@@ -47,7 +49,7 @@ class KafkaPublisherServiceTest {
     service.publishCreateEvent(givenAnnotationProcessed());
 
     // Then
-    then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
+    then(kafkaTemplate).should().send(eq(TOPIC), anyString());
   }
 
   @Test
@@ -59,7 +61,7 @@ class KafkaPublisherServiceTest {
         givenAnnotationProcessed());
 
     // Then
-    then(kafkaTemplate).should().send(eq("createUpdateDeleteTopic"), anyString());
+    then(kafkaTemplate).should().send(eq(TOPIC), anyString());
   }
 
   @Test
@@ -74,5 +76,18 @@ class KafkaPublisherServiceTest {
     // Then
     then(kafkaTemplate).should(times(1)).send("topic", eventMessage);
   }
+
+  @Test
+  void testPublishTombstoneAnnotation() throws JsonProcessingException {
+    // Given
+
+    // When
+    service.publishTombstoneEvent(givenTombstoneAnnotation(), givenAnnotationProcessed());
+
+    // Then
+    then(kafkaTemplate).should().send(eq(TOPIC), anyString());
+  }
+
+
 
 }

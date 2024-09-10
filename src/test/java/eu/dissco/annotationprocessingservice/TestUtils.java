@@ -9,25 +9,26 @@ import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
-import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
-import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
-import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
-import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
-import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
+import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
+import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import eu.dissco.annotationprocessingservice.schema.SchemaAggregateRating;
 import eu.dissco.annotationprocessingservice.schema.SearchParam;
+import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -44,6 +45,7 @@ public class TestUtils {
   public static final String ID_ALT = "https://hdl.handle.net/20.5000.1025/ZZZ-YYY-XXX";
   public static final String TARGET_ID = "20.5000.1025/QRS-123-ABC";
   public static final Instant CREATED = Instant.parse("2023-02-17T09:50:27.391Z");
+  public static final Instant UPDATED = Instant.parse("2024-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
   public static final String PROCESSOR_HANDLE = "https://hdl.handle.net/anno-process-service-pid";
@@ -548,5 +550,26 @@ public class TestUtils {
   public static Map<String, UUID> givenBatchIdMap() {
     return Map.of(ID, BATCH_ID);
   }
+
+  public static Annotation givenTombstoneAnnotation(){
+    var original = givenAnnotationProcessed();
+    return givenAnnotationProcessed()
+        .withOdsVersion(original.getOdsVersion() + 1)
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withOdsTombstoneMetadata(givenTombstoneMetadata())
+        .withDctermsModified(Date.from(UPDATED))
+        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_REJECTED)
+        .withOdsMergingStateChangeDate(Date.from(UPDATED))
+        .withOdsMergingStateChangedBy(givenProcessingAgent());
+  }
+
+  public static TombstoneMetadata givenTombstoneMetadata(){
+    return new TombstoneMetadata()
+        .withType("ods:Tombstone")
+        .withOdsTombstoneDate(Date.from(UPDATED))
+        .withOdsTombstoneText("This annotation was archived")
+        .withOdsTombstonedByAgent(givenProcessingAgent());
+  }
+
 
 }
