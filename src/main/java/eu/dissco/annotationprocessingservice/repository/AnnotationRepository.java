@@ -101,7 +101,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
-          .set(ANNOTATION.DATA, JSONB.jsonb(mapper.writeValueAsString(annotation)));
+          .set(ANNOTATION.DATA, mapToJSONB(annotation));
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
@@ -123,7 +123,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
-          .set(ANNOTATION.DATA, JSONB.jsonb(mapper.writeValueAsString(annotation)));
+          .set(ANNOTATION.DATA, mapToJSONB(annotation));
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
@@ -146,11 +146,22 @@ public class AnnotationRepository {
         .fetchOptional(Record1::value1);
   }
 
-  public void archiveAnnotation(String id) {
-    context.update(ANNOTATION)
-        .set(ANNOTATION.TOMBSTONED_ON, Instant.now())
-        .where(ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, "")))
-        .execute();
+  public void archiveAnnotation(Annotation annotation) {
+    var timestamp = annotation.getOdsTombstoneMetadata().getOdsTombstoneDate().toInstant();
+    try {
+      context.update(ANNOTATION)
+          .set(ANNOTATION.TOMBSTONED_ON, timestamp)
+          .set(ANNOTATION.MODIFIED, timestamp)
+          .set(ANNOTATION.LAST_CHECKED, timestamp)
+          .set(ANNOTATION.DATA, mapToJSONB(annotation))
+          .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+          .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
+          .execute();
+    } catch (JsonProcessingException e) {
+      log.error("Unable to map data mapping to jsonb. Need to archive annotation {} manually",
+          annotation.getId(), e);
+      throw new DataBaseException(e.getMessage());
+    }
   }
 
   public void rollbackAnnotation(String id) {
@@ -160,5 +171,9 @@ public class AnnotationRepository {
   public void rollbackAnnotations(List<String> idList) {
     var list = idList.stream().map(id -> id.replace(HANDLE_PROXY, "")).toList();
     context.delete(ANNOTATION).where(ANNOTATION.ID.in(list)).execute();
+  }
+
+  private JSONB mapToJSONB(Annotation annotation) throws JsonProcessingException {
+    return JSONB.valueOf(mapper.writeValueAsString(annotation));
   }
 }

@@ -9,6 +9,7 @@ import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.CreateUpdateTombstoneEvent;
 import eu.dissco.annotationprocessingservice.schema.OdsChangeValue;
 import eu.dissco.annotationprocessingservice.schema.ProvActivity;
+import eu.dissco.annotationprocessingservice.schema.ProvActivity.Type;
 import eu.dissco.annotationprocessingservice.schema.ProvEntity;
 import eu.dissco.annotationprocessingservice.schema.ProvValue;
 import eu.dissco.annotationprocessingservice.schema.ProvWasAssociatedWith;
@@ -56,13 +57,23 @@ public class ProvenanceService {
                     .withId(annotation.getAsGenerator().getId())
                     .withProvHadRole(ProvHadRole.ODS_GENERATOR)))
             .withProvUsed(entityID)
-            .withRdfsComment("Annotation newly created"))
+            .withRdfsComment(getRdfsComment(activityType)))
         .withProvEntity(new ProvEntity()
             .withId(entityID)
             .withType(annotation.getType())
             .withProvValue(mapEntityToProvValue(annotation))
             .withProvWasGeneratedBy(activityID))
         .withOdsHasProvAgent(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
+  }
+
+  private static String getRdfsComment(ProvActivity.Type activityType) {
+    if (Type.ODS_CREATE.equals(activityType)){
+      return "Annotation newly created";
+    }
+    if (Type.ODS_UPDATE.equals(activityType)){
+      return "Annotation updated";
+    }
+    return "Annotation tombstoned";
   }
 
   private List<OdsChangeValue> mapJsonPatch(JsonNode jsonPatch) {
@@ -80,6 +91,12 @@ public class ProvenanceService {
         jsonPatch);
   }
 
+  public CreateUpdateTombstoneEvent generateTombstoneEvent(Annotation tombstoneAnnotation,
+      Annotation currentAnnotation) {
+    var jsonPatch = createJsonPatch(tombstoneAnnotation, currentAnnotation);
+    return generateCreateUpdateTombStoneEvent(tombstoneAnnotation, Type.ODS_TOMBSTONE, jsonPatch);
+  }
+
   private ProvValue mapEntityToProvValue(Annotation annotation) {
     var provValue = new ProvValue();
     var node = mapper.convertValue(annotation, new TypeReference<Map<String, Object>>() {
@@ -91,7 +108,6 @@ public class ProvenanceService {
   }
 
   private JsonNode createJsonPatch(Annotation annotation, Annotation currentAnnotation) {
-    return JsonDiff.asJson(mapper.valueToTree(annotation),
-        mapper.valueToTree(currentAnnotation));
+    return JsonDiff.asJson(mapper.valueToTree(currentAnnotation), mapper.valueToTree(annotation));
   }
 }

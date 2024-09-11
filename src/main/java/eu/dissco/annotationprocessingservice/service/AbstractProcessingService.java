@@ -22,6 +22,7 @@ import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
+import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
@@ -69,6 +70,7 @@ public abstract class AbstractProcessingService {
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       int version, String jobId) {
+    var timestamp = Instant.now();
     return new Annotation()
         .withId(id)
         .withOdsID(id)
@@ -83,8 +85,8 @@ public abstract class AbstractProcessingService {
         .withDctermsCreator(annotationRequest.getDctermsCreator())
         .withDctermsCreated(annotationRequest.getDctermsCreated())
         .withAsGenerator(createGenerator())
-        .withDctermsIssued(Date.from(Instant.now()))
-        .withDctermsModified(Date.from(Instant.now()))
+        .withDctermsIssued(Date.from(timestamp))
+        .withDctermsModified(Date.from(timestamp))
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationRequest.getOdsBatchID());
@@ -134,27 +136,59 @@ public abstract class AbstractProcessingService {
     return idList;
   }
 
-  public void archiveAnnotation(String id) throws IOException, FailedProcessingException {
-    if (repository.getAnnotationById(id).isPresent()) {
-      log.info("Archive annotations: {} in handle service", id);
-      var requestBody = fdoRecordService.buildArchiveHandleRequest(id);
-      try {
-        handleComponent.archiveHandle(requestBody, id);
-      } catch (PidCreationException e) {
-        log.error("Unable to archive annotations in handle system for annotations {}", id, e);
-        throw new FailedProcessingException();
-      }
-      log.info("Removing annotations: {} from indexing service", id);
-      var document = elasticRepository.archiveAnnotation(id);
-      if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
-        log.info("Archive annotations: {} in database", id);
-        repository.archiveAnnotation(id);
-        log.info("Archived annotations: {}", id);
-        log.info("Tombstoning PID record of annotations: {}", id);
-      }
-    } else {
-      log.info("Annotation with id: {} is already archived", id);
+  public void archiveAnnotation(Annotation currentAnnotation, Agent tombstoningAgent)
+      throws IOException, FailedProcessingException {
+    log.info("Archive annotations: {} in handle service", currentAnnotation.getId());
+    var requestBody = fdoRecordService.buildTombstoneHandleRequest(currentAnnotation.getId().replace(HANDLE_PROXY, ""));
+    try {
+      handleComponent.archiveHandle(requestBody, (currentAnnotation.getId().replace(HANDLE_PROXY, "")));
+    } catch (PidCreationException e) {
+      log.error("Unable to archive annotations in handle system for annotations {}",
+          currentAnnotation.getId(), e);
+      throw new FailedProcessingException();
     }
+    log.info("Removing annotations: {} from indexing service", currentAnnotation.getId());
+    var document = elasticRepository.archiveAnnotation(currentAnnotation.getId());
+    if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
+      log.info("Archive annotations: {} in database", currentAnnotation.getId());
+      var timestamp = Instant.now();
+      var tombstoneAnnotation = buildTombstoneAnnotation(currentAnnotation, tombstoningAgent, timestamp);
+      repository.archiveAnnotation(tombstoneAnnotation);
+      log.info("Sending Tombstone event to provenance servie");
+      kafkaService.publishTombstoneEvent(tombstoneAnnotation, currentAnnotation);
+      log.info("Archived annotations: {}", currentAnnotation.getId());
+    } else {
+      log.error("Unable to archive annotation in Elastic. Result is {}", document.result());
+    }
+  }
+
+  private Annotation buildTombstoneAnnotation(Annotation annotation,
+      Agent tombstoningAgent, Instant timestamp) {
+    return new Annotation()
+        .withId(annotation.getId())
+        .withType(annotation.getType())
+        .withOdsID(annotation.getOdsID())
+        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withOdsJobID(annotation.getOdsJobID())
+        .withRdfType(annotation.getRdfType())
+        .withOdsVersion(annotation.getOdsVersion() + 1)
+        .withOaMotivation(annotation.getOaMotivation())
+        .withOaMotivatedBy(annotation.getOaMotivatedBy())
+        .withOaHasTarget(annotation.getOaHasTarget())
+        .withOaHasBody(annotation.getOaHasBody())
+        .withDctermsCreator(annotation.getDctermsCreator())
+        .withDctermsCreated(annotation.getDctermsCreated())
+        .withDctermsModified(Date.from(timestamp))
+        .withDctermsIssued(annotation.getDctermsIssued())
+        .withAsGenerator(annotation.getAsGenerator())
+        .withSchemaAggregateRating(annotation.getSchemaAggregateRating())
+        .withOdsBatchID(annotation.getOdsBatchID())
+        .withOdsPlaceInBatch(annotation.getOdsPlaceInBatch())
+        .withOdsTombstoneMetadata(new TombstoneMetadata()
+            .withType("ods:Tombstone")
+            .withOdsTombstoneDate(Date.from(timestamp))
+            .withOdsTombstoneText("This annotation was archived")
+            .withOdsTombstonedByAgent(tombstoningAgent));
   }
 
   protected void applyBatchAnnotations(AnnotationProcessingEvent event,

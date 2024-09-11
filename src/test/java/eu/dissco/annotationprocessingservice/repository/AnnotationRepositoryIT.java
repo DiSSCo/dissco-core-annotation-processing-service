@@ -8,6 +8,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneAnnotation;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -162,7 +163,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(ID);
+    repository.archiveAnnotation(givenTombstoneAnnotation());
 
     // Then
     var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED_ON).from(ANNOTATION)
