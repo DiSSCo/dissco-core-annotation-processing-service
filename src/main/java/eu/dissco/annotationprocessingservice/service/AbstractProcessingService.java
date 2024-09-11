@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
@@ -139,9 +140,10 @@ public abstract class AbstractProcessingService {
   public void archiveAnnotation(Annotation currentAnnotation, Agent tombstoningAgent)
       throws IOException, FailedProcessingException {
     log.info("Archive annotations: {} in handle service", currentAnnotation.getId());
-    var requestBody = fdoRecordService.buildTombstoneHandleRequest(currentAnnotation.getId().replace(HANDLE_PROXY, ""));
+    var handle = removeProxy(currentAnnotation);
+    var requestBody = fdoRecordService.buildTombstoneHandleRequest(handle);
     try {
-      handleComponent.archiveHandle(requestBody, (currentAnnotation.getId().replace(HANDLE_PROXY, "")));
+      handleComponent.archiveHandle(requestBody, handle);
     } catch (PidCreationException e) {
       log.error("Unable to archive annotations in handle system for annotations {}",
           currentAnnotation.getId(), e);

@@ -1,7 +1,7 @@
 package eu.dissco.annotationprocessingservice.repository;
 
-import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
+import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +9,7 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.records.Annota
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.utils.HandleUtils;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,7 +25,6 @@ import org.jooq.InsertSetMoreStep;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record;
-import org.jooq.Record1;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -46,8 +46,8 @@ public class AnnotationRepository {
   public Optional<Annotation> getAnnotationForUser(String annotationId, String creatorId) {
     return context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotationId.replace(HANDLE_PROXY, "")))
-        .and(ANNOTATION.CREATOR_ID.eq(creatorId))
+        .where(ANNOTATION.ID.eq(removeProxy(annotationId))
+        .and(ANNOTATION.CREATOR_ID.eq(creatorId)))
         .fetchOptional()
         .map(this::mapAnnotation);
   }
@@ -90,7 +90,7 @@ public class AnnotationRepository {
   private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
     try {
       return context.insertInto(ANNOTATION)
-          .set(ANNOTATION.ID, annotation.getId().replace(HANDLE_PROXY, ""))
+          .set(ANNOTATION.ID, removeProxy(annotation))
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
           .set(ANNOTATION.TYPE, annotation.getRdfType())
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
@@ -131,19 +131,11 @@ public class AnnotationRepository {
   }
 
   public void updateLastChecked(List<String> idList) {
-    var list = idList.stream().map(id -> id.replace(HANDLE_PROXY, "")).toList();
+    var list = idList.stream().map(HandleUtils::removeProxy).toList();
     context.update(ANNOTATION)
         .set(ANNOTATION.LAST_CHECKED, Instant.now())
         .where(ANNOTATION.ID.in(list))
         .execute();
-  }
-
-  public Optional<String> getAnnotationById(String id) {
-    return context.select(ANNOTATION.ID)
-        .from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, "")))
-        .and(ANNOTATION.TOMBSTONED_ON.isNull())
-        .fetchOptional(Record1::value1);
   }
 
   public void archiveAnnotation(Annotation annotation) {
@@ -155,7 +147,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.LAST_CHECKED, timestamp)
           .set(ANNOTATION.DATA, mapToJSONB(annotation))
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
-          .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
+          .where(ANNOTATION.ID.eq(removeProxy(annotation)))
           .execute();
     } catch (JsonProcessingException e) {
       log.error("Unable to map data mapping to jsonb. Need to archive annotation {} manually",
@@ -165,11 +157,11 @@ public class AnnotationRepository {
   }
 
   public void rollbackAnnotation(String id) {
-    context.delete(ANNOTATION).where(ANNOTATION.ID.eq(id.replace(HANDLE_PROXY, ""))).execute();
+    context.delete(ANNOTATION).where(ANNOTATION.ID.eq(removeProxy(id))).execute();
   }
 
   public void rollbackAnnotations(List<String> idList) {
-    var list = idList.stream().map(id -> id.replace(HANDLE_PROXY, "")).toList();
+    var list = idList.stream().map(HandleUtils::removeProxy).toList();
     context.delete(ANNOTATION).where(ANNOTATION.ID.in(list)).execute();
   }
 
