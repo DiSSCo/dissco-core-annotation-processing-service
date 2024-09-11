@@ -8,6 +8,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneAnnotation;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,7 +16,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
-import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import java.util.List;
@@ -163,7 +163,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(annotation);
 
     // When
-    repository.archiveAnnotation(givenAnnotationProcessed());
+    repository.archiveAnnotation(givenTombstoneAnnotation());
 
     // Then
     var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED_ON).from(ANNOTATION)

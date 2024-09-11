@@ -811,15 +811,15 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(repository).should().archiveAnnotation(tombstonedAnnotation);
-    then(fdoRecordService).should().buildTombstoneHandleRequest(ID);
-    then(handleComponent).should().archiveHandle(any(), eq(ID));
+    then(fdoRecordService).should().buildTombstoneHandleRequest(BARE_ID);
+    then(handleComponent).should().archiveHandle(any(), eq(BARE_ID));
     then(masJobRecordService).shouldHaveNoInteractions();
   }
 
   @Test
   void testArchiveAnnotationHandleFailed() throws Exception {
     // Given
-    doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any(), eq(ID));
+    doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any(), eq(BARE_ID));
 
     // When
     assertThrows(FailedProcessingException.class,

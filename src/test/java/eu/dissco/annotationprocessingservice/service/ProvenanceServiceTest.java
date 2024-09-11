@@ -87,7 +87,7 @@ class ProvenanceServiceTest {
     var event = service.generateTombstoneEvent(tombstoneAnnotation, annotation);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(ID + "/" + 1);
+    assertThat(event.getOdsID()).isEqualTo(ID + "/" + 2);
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenTombstoneChangeValue());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation tombstoned");
