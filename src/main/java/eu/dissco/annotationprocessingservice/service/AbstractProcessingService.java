@@ -154,7 +154,7 @@ public abstract class AbstractProcessingService {
       log.info("Archive annotations: {} in database", currentAnnotation.getId());
       var timestamp = Instant.now();
       var tombstoneAnnotation = buildTombstoneAnnotation(currentAnnotation, tombstoningAgent, timestamp);
-      repository.archiveAnnotation(tombstoneAnnotation, timestamp);
+      repository.archiveAnnotation(tombstoneAnnotation);
       log.info("Sending Tombstone event to provenance servie");
       kafkaService.publishTombstoneEvent(tombstoneAnnotation, currentAnnotation);
       log.info("Archived annotations: {}", currentAnnotation.getId());
@@ -185,9 +185,6 @@ public abstract class AbstractProcessingService {
         .withSchemaAggregateRating(annotation.getSchemaAggregateRating())
         .withOdsBatchID(annotation.getOdsBatchID())
         .withOdsPlaceInBatch(annotation.getOdsPlaceInBatch())
-        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_REJECTED)
-        .withOdsMergingStateChangeDate(Date.from(timestamp))
-        .withOdsMergingStateChangedBy(tombstoningAgent)
         .withOdsTombstoneMetadata(new TombstoneMetadata()
             .withType("ods:Tombstone")
             .withOdsTombstoneDate(Date.from(timestamp))

@@ -7,7 +7,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.UPDATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenGenerator;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAgent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.schema.Agent;
-import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.OdsChangeValue;
 import java.util.List;
@@ -101,16 +99,11 @@ class ProvenanceServiceTest {
 
   private static List<OdsChangeValue> givenTombstoneChangeValue() {
     return List.of(
-        givenOdsChangeValue("add", "/ods:MergingStateChangedBy", givenProcessingAgent()),
         givenOdsChangeValue("add", "/ods:TombstoneMetadata", givenTombstoneMetadata()),
-        givenOdsChangeValue("add", "/ods:mergingStateChangeDate", UPDATED),
-        givenOdsChangeValue("add", "/ods:mergingDecisionStatus",
-            OdsMergingDecisionStatus.ODS_REJECTED),
         givenOdsChangeValue("replace", "/dcterms:modified", UPDATED),
         givenOdsChangeValue("replace", "/ods:version", 2),
         givenOdsChangeValue("replace", "/ods:status", OdsStatus.ODS_TOMBSTONE)
     );
-
   }
 
   private static OdsChangeValue givenOdsChangeValue(String op, String path, Object value) {

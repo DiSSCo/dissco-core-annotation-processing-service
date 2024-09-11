@@ -557,10 +557,7 @@ public class TestUtils {
         .withOdsVersion(original.getOdsVersion() + 1)
         .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
         .withOdsTombstoneMetadata(givenTombstoneMetadata())
-        .withDctermsModified(Date.from(UPDATED))
-        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_REJECTED)
-        .withOdsMergingStateChangeDate(Date.from(UPDATED))
-        .withOdsMergingStateChangedBy(givenProcessingAgent());
+        .withDctermsModified(Date.from(UPDATED));
   }
 
   public static TombstoneMetadata givenTombstoneMetadata(){
