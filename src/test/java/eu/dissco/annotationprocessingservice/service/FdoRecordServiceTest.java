@@ -100,7 +100,7 @@ class FdoRecordServiceTest {
         """);
 
     // When
-    var result = fdoRecordService.buildArchiveHandleRequest(ID);
+    var result = fdoRecordService.buildTombstoneHandleRequest(ID);
 
     // Then
     assertThat(result).isEqualTo(expected);

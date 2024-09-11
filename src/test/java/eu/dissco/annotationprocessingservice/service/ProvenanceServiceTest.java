@@ -55,6 +55,7 @@ class ProvenanceServiceTest {
     assertThat(event.getOdsID()).isEqualTo(ID + "/" + 1);
     assertThat(event.getProvActivity().getOdsChangeValue()).isNull();
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
+    assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation newly created");
     assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
   }
 
@@ -72,6 +73,7 @@ class ProvenanceServiceTest {
     assertThat(event.getOdsID()).isEqualTo(ID + "/" + 1);
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenChangeValue());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
+    assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation updated");
     assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
   }
 
@@ -88,6 +90,7 @@ class ProvenanceServiceTest {
     assertThat(event.getOdsID()).isEqualTo(ID + "/" + 1);
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenTombstoneChangeValue());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
+    assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation tombstoned");
     assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
   }
 

@@ -94,7 +94,7 @@ public class ProvenanceService {
   public CreateUpdateTombstoneEvent generateTombstoneEvent(Annotation tombstoneAnnotation,
       Annotation currentAnnotation) {
     var jsonPatch = createJsonPatch(tombstoneAnnotation, currentAnnotation);
-    return generateCreateUpdateTombStoneEvent(currentAnnotation, Type.ODS_TOMBSTONE, jsonPatch);
+    return generateCreateUpdateTombStoneEvent(tombstoneAnnotation, Type.ODS_TOMBSTONE, jsonPatch);
   }
 
   private ProvValue mapEntityToProvValue(Annotation annotation) {

@@ -84,7 +84,7 @@ public class FdoRecordService {
     return request;
   }
 
-  public JsonNode buildArchiveHandleRequest(String id) {
+  public JsonNode buildTombstoneHandleRequest(String id) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = mapper.createObjectNode()
