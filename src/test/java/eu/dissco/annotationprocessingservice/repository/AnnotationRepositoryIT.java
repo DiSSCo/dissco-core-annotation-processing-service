@@ -76,7 +76,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.createAnnotationRecord(altAnnotation);
 
     // When
-    var result = repository.getAnnotationForUser(ID, CREATOR);
+    var result = repository.getAnnotationForUser(BARE_ID, CREATOR);
 
     // Then
     assertThat(result).isPresent().contains(expected);
@@ -116,18 +116,6 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     assertThat(updatedTimestamp).isAfter(initInstant);
   }
 
-  @Test
-  void testGetAnnotationById() {
-    // Given
-    var annotation = givenAnnotationProcessed(BARE_ID);
-    repository.createAnnotationRecord(annotation);
-
-    // When
-    var result = repository.getAnnotationById(ID);
-
-    // Then
-    assertThat(result).hasValue(annotation.getId());
-  }
 
   @Test
   void testGetAnnotationFromHash() {
@@ -181,7 +169,10 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.rollbackAnnotation(annotation.getId());
 
     // Then
-    var result = repository.getAnnotationById(annotation.getId());
+    var result = context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
+        .fetchOptional();
     assertThat(result).isEmpty();
   }
 
@@ -195,7 +186,10 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.rollbackAnnotations(List.of(annotation.getId()));
 
     // Then
-    var result = repository.getAnnotationById(annotation.getId());
+    var result = context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
+        .fetchOptional();
     assertThat(result).isEmpty();
   }
 
