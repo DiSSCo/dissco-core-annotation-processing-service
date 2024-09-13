@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils.validateEvent;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -8,7 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
@@ -55,7 +56,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
-      SchemaValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
+      AnnotationValidationUtils schemaValidator, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
@@ -80,7 +81,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       log.info("MAS job completed without any annotations");
       masJobRecordService.markEmptyMasJobRecordAsComplete(event.getJobId(), isBatchResult);
     } else {
-      schemaValidator.validateEvent(event);
+      validateEvent(event);
       var masJobRecord = masJobRecordService.getMasJobRecord(event.getJobId());
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());

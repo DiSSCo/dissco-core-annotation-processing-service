@@ -52,7 +52,7 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
@@ -102,7 +102,7 @@ class ProcessingKafkaServiceTest {
   @Mock
   AnnotationHasher annotationHasher;
   @Mock
-  SchemaValidatorComponent schemaValidator;
+  AnnotationValidationUtils schemaValidator;
   @Mock
   BatchAnnotationService batchAnnotationService;
   @Mock

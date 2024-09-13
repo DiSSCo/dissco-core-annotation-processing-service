@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mockStatic;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -57,7 +57,7 @@ class ProcessingAutoAcceptedServiceTest {
   @Mock
   private ApplicationProperties applicationProperties;
   @Mock
-  private SchemaValidatorComponent schemaValidator;
+  private AnnotationValidationUtils schemaValidator;
   @Mock
   private MasJobRecordService masJobRecordService;
   @Mock

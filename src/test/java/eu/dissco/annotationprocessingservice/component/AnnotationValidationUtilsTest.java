@@ -3,12 +3,15 @@ package eu.dissco.annotationprocessingservice.component;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils.validateAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils.validateEvent;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
+import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,14 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SchemaValidatorComponentTest {
-
-  private SchemaValidatorComponent schemaValidator;
-
-  @BeforeEach
-  void setup() {
-    schemaValidator = new SchemaValidatorComponent();
-  }
+class AnnotationValidationUtilsTest {
 
   @Test
   void testValidateProcessResults() {
@@ -39,7 +35,7 @@ class SchemaValidatorComponentTest {
         .withJobId(JOB_ID);
 
     // Then
-    assertDoesNotThrow(() -> schemaValidator.validateEvent(event));
+    assertDoesNotThrow(() -> validateEvent(event));
   }
 
   @ParameterizedTest
@@ -47,7 +43,7 @@ class SchemaValidatorComponentTest {
   void testInvalidAnnotations(AnnotationProcessingRequest annotationRequest) {
     // Then
     assertThrows(AnnotationValidationException.class,
-        () -> schemaValidator.validateAnnotationRequest(annotationRequest,
+        () -> validateAnnotationRequest(annotationRequest,
             true));
   }
 
@@ -58,7 +54,7 @@ class SchemaValidatorComponentTest {
 
     // Then
     assertThrows(AnnotationValidationException.class,
-        () -> schemaValidator.validateAnnotationRequest(annotationRequest,
+        () -> validateAnnotationRequest(annotationRequest,
             false));
   }
 
@@ -69,7 +65,7 @@ class SchemaValidatorComponentTest {
 
     // Then
     assertThrows(AnnotationValidationException.class,
-        () -> schemaValidator.validateAnnotationRequest(annotationRequest,
+        () -> validateAnnotationRequest(annotationRequest,
             false));
   }
 
@@ -79,7 +75,7 @@ class SchemaValidatorComponentTest {
 
     // Then
     assertDoesNotThrow(() ->
-        schemaValidator.validateAnnotationRequest(annotationRequest, isNew));
+        validateAnnotationRequest(annotationRequest, isNew));
   }
 
   private static Stream<Arguments> validAnnotations() {

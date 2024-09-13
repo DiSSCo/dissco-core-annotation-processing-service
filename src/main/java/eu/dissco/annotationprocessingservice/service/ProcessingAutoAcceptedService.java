@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -30,7 +30,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent,
       ApplicationProperties applicationProperties,
-      SchemaValidatorComponent schemaValidator,
+      AnnotationValidationUtils schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
