@@ -7,7 +7,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
+import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -48,7 +48,7 @@ public abstract class AbstractProcessingService {
   protected final FdoRecordService fdoRecordService;
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
-  protected final AnnotationValidationUtils schemaValidator;
+  protected final AnnotationValidatorComponent schemaValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;

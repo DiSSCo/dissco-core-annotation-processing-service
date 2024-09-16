@@ -1,29 +1,30 @@
-package eu.dissco.annotationprocessingservice.utils;
+package eu.dissco.annotationprocessingservice.component;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
+import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class AnnotationValidationUtils {
-  private AnnotationValidationUtils(){
-    // Utility
-  }
+@RequiredArgsConstructor
+public class AnnotationValidatorComponent {
 
-  public static void validateEvent(AnnotationProcessingEvent event) throws AnnotationValidationException {
+  private final Pattern blockNotationPattern = Pattern.compile("^\\$((\\['[a-zA-Z:]++'\\])++|(\\[[\\d]++\\]))++");
+
+  public void validateEvent(AnnotationProcessingEvent event) throws AnnotationValidationException {
     for (var annotation : event.getAnnotations()) {
-      validateAnnotationRequest(annotation, true);
+      validateAnnotationTargetPath(annotation.getOaHasTarget());
     }
   }
 
   public static void validateAnnotationRequest(AnnotationProcessingRequest annotation,
       boolean isNewAnnotation)
       throws AnnotationValidationException {
-    targetPathIsInBlockNotation(annotation.getOaHasTarget());
     validateId(annotation, isNewAnnotation);
     if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getDctermsCreated() == null
     || Boolean.TRUE.equals(isNewAnnotation && annotation.getDctermsCreator() == null)) {
@@ -44,20 +45,30 @@ public class AnnotationValidationUtils {
     }
   }
 
-  private static void targetPathIsInBlockNotation(AnnotationTarget target)
+  private void validateAnnotationTargetPath(AnnotationTarget target)
       throws AnnotationValidationException {
     var type = target.getOaHasSelector().getAdditionalProperties().get("@type");
     if (type.equals("oa:FragmentSelector")) {
       return;
     }
     String path =
-        type.equals("oa:FragmentSelector") ? target.getOaHasSelector().getAdditionalProperties()
+        type.equals("ods:FieldSelector") ? target.getOaHasSelector().getAdditionalProperties()
             .get("ods:field").toString() :
             target.getOaHasSelector().getAdditionalProperties().get("ods:class").toString();
-    if (path.contains(".")) {
-      log.error("Selector target Path {} is invalid. Path must be in block notation", path);
-      throw new AnnotationValidationException();
+    targetPathIsInBlockNotation(path);
+  }
+
+  public void targetPathIsInBlockNotation(String path) throws AnnotationValidationException {
+    var matcher = blockNotationPattern.matcher(path);
+    if (matcher.find()){
+      var result = matcher.group();
+      if (!result.equals(path)){
+        log.error("Path {} is not valid annotation target path", path);
+        throw new AnnotationValidationException();
+      }
     }
+
+
   }
 
 }

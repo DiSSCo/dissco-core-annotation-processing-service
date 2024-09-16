@@ -3,15 +3,13 @@ package eu.dissco.annotationprocessingservice.component;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils.validateAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils.validateEvent;
+import static eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent.validateAnnotationRequest;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
-import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +21,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AnnotationValidationUtilsTest {
+class AnnotationValidatorComponentTest {
+
+  AnnotationValidatorComponent annotationValidatorComponent;
+
+  @BeforeEach
+  void setup(){
+    annotationValidatorComponent = new AnnotationValidatorComponent();
+  }
 
   @Test
   void testValidateProcessResults() {
@@ -35,7 +40,7 @@ class AnnotationValidationUtilsTest {
         .withJobId(JOB_ID);
 
     // Then
-    assertDoesNotThrow(() -> validateEvent(event));
+    assertDoesNotThrow(() -> annotationValidatorComponent.validateEvent(event));
   }
 
   @ParameterizedTest

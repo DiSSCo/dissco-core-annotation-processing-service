@@ -1,6 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import static eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils.validateAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent.validateAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
@@ -9,7 +9,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.utils.AnnotationValidationUtils;
+import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -39,7 +39,7 @@ public class ProcessingWebService extends AbstractProcessingService {
   public ProcessingWebService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository, KafkaPublisherService kafkaService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
-      ApplicationProperties applicationProperties, AnnotationValidationUtils schemaValidator,
+      ApplicationProperties applicationProperties, AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,

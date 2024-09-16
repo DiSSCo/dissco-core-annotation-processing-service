@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.Filter;
+import com.jayway.jsonpath.InvalidPathException;
 import eu.dissco.annotationprocessingservice.domain.SelectorType;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.BatchingRuntimeException;
@@ -43,32 +44,8 @@ public class JsonPathComponent {
   private final ObjectMapper mapper;
   private final Configuration jsonPathConfig;
 
-  // Identifies the last field in a dot notation pattern (everything before the last period)
-  private final Pattern lastKeyPattern = Pattern.compile("[^.]+(?=\\.$)|([^.]+$)");
-  // Identifies array fields in a mixed notation pattern
-  private final Pattern arrayFieldPattern = Pattern.compile("(\\w+\\.\\d+)");
-  private final Pattern dotIndexPatternFirst = Pattern.compile("\\.\\d");
-  private final Pattern dotIndexPatternLast = Pattern.compile("\\d\\.");
-  private final Pattern digitPattern = Pattern.compile("\\d");
-
-  private static String toDotNotation(String jsonPath) {
-    // We use dot notation to split jsonPaths, but our jsonPath library will only output in bracket notation
-    // From: "[fields][1][otherField]" or "fields[1].otherfield"
-    // To: "fields.1.otherField"
-    jsonPath = jsonPath
-        .replace("$", "")
-        .replaceAll("\\[(?=[*|\\d])", ".") // Captures [ next to * or 1-9, replace with .
-        .replaceAll("\\[(?![*|\\d])", "")  // Captures [ next to all other characters, removes
-        .replace("]", ".")
-        .replace("..", ".")
-        .replace("'", "");
-    return removeTrailingPeriod(jsonPath);
-  }
-
-  private static String removeTrailingPeriod(String jsonPath) {
-    var jsonPathArray = jsonPath.split("\\.");
-    return String.join(".", jsonPathArray);
-  }
+  private final Pattern lastKeyPattern = Pattern.compile("\\[(?!.*\\[')(.*)");
+  private final Pattern arrayFieldPattern = Pattern.compile("\\[([^]]+)]\\[\\d+]");
 
   public List<AnnotationTarget> getAnnotationTargets(AnnotationBatchMetadata batchMetadata,
       JsonNode annotatedObject, AnnotationTarget baseTarget) throws BatchingException {
@@ -76,17 +53,17 @@ public class JsonPathComponent {
     DocumentContext context;
     try {
       context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
-    } catch (JsonProcessingException e) {
+      if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
+        log.warn("False positive detected");
+        log.info("{} does not comply to batch metadata {}", annotatedObject, batchMetadata);
+        return Collections.emptyList();
+      }
+      var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
+      return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("@id").asText());
+    } catch (JsonProcessingException | InvalidPathException e) {
       log.error("Unable to read jsonPath", e);
       throw new BatchingException();
     }
-    if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
-      log.warn("False positive detected");
-      log.info("{} does not comply to batch metadata {}", annotatedObject, batchMetadata);
-      return Collections.emptyList();
-    }
-    var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
-    return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("@id").asText());
   }
 
   private List<String> getAnnotationTargetPaths(
@@ -97,18 +74,19 @@ public class JsonPathComponent {
     var arrayFields = new ArrayList<String>();
     while (matcher.find()) {
       var match = matcher.group();
-      arrayFields.add(match.replaceAll("\\P{L}+", ""));
+      var bareField = match
+          .replaceAll("[\\[\\]\\d+]", "")
+          .replace("'", "");
+      arrayFields.add(bareField); // remove square
     }
     // If there are no arrays are in the target field, we can use what is in the base hashedAnnotation
     if (arrayFields.isEmpty()) {
-      return List.of(toMixedNotation(baseTargetPath));
+      return List.of(baseTargetPath);
     }
-    var readablePath = "$." + baseTargetPath.replaceAll("\\d+", "*");
+    var readablePath = baseTargetPath.replaceAll("\\d+", "*");
     ArrayList<String> jsonPaths = context.read(readablePath);
     removeInvalidPaths(jsonPaths, arrayFields, commonIndexes);
-    return jsonPaths.stream()
-        .map(this::toMixedNotation)
-        .toList();
+    return jsonPaths;
   }
 
   private void removeInvalidPaths(ArrayList<String> jsonPaths, List<String> arrayFields,
@@ -120,7 +98,7 @@ public class JsonPathComponent {
     var indexedPathOptional = findTargetPathIndexes(arrayFields, commonIndexes);
     if (indexedPathOptional.isPresent()) {
       for (var jsonPath : jsonPaths) {
-        if (!isValidJsonPath(toDotNotation(jsonPath), indexedPathOptional.get())) {
+        if (!isValidJsonPath(jsonPath, indexedPathOptional.get())) {
           invalidPaths.add(jsonPath);
         }
       }
@@ -189,7 +167,8 @@ public class JsonPathComponent {
     return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
-  private List<AnnotationTarget> buildOaTargets(List<String> targetPaths, AnnotationTarget baseTarget,
+  private List<AnnotationTarget> buildOaTargets(List<String> targetPaths,
+      AnnotationTarget baseTarget,
       String newTargetId) {
     boolean isClassSelector = baseTarget.getOaHasSelector().getAdditionalProperties().get(TYPE)
         .equals(SelectorType.CLASS_SELECTOR.toString());
@@ -218,10 +197,10 @@ public class JsonPathComponent {
     var selectorType = SelectorType.fromString((String) selector.get(TYPE));
     switch (selectorType) {
       case CLASS_SELECTOR -> {
-        return toDotNotation((String) selector.get("ods:class"));
+        return selector.get("ods:class").toString();
       }
       case FIELD_SELECTOR -> {
-        return toDotNotation((String) selector.get("ods:field"));
+        return selector.get("ods:field").toString();
       }
       default -> {
         log.error("Unable to batch annotations with selector type {}", selectorType);
@@ -237,7 +216,7 @@ public class JsonPathComponent {
   }
 
   private String getLastKey(String jsonPath) {
-    if (jsonPath.contains(".") || jsonPath.contains("[")) {
+    if (jsonPath.contains("[")) {
       var lastKeyMatcher = lastKeyPattern.matcher(jsonPath);
       lastKeyMatcher.find();
       var lastKey = lastKeyMatcher.group()
@@ -255,8 +234,7 @@ public class JsonPathComponent {
   }
 
   String removeLastKey(String jsonPath) {
-    jsonPath = jsonPath.replaceAll(lastKeyPattern.pattern(), "");
-    return removeTrailingPeriod(jsonPath) + "[?]";
+    return jsonPath.replaceAll(lastKeyPattern.pattern(), "[?]");
   }
 
   /*
@@ -271,9 +249,7 @@ public class JsonPathComponent {
     HashMap<List<String>, HashMap<SearchParam, ArrayList<List<Integer>>>> indexedPaths = new HashMap<>();
     for (var param : batchMetadata.getSearchParams()) {
       var validPaths = new HashSet<String>(
-          context.read(removeLastKey(param.getInputField()), generateFilter(param)))
-          .stream().map(JsonPathComponent::toDotNotation)
-          .collect(Collectors.toCollection(HashSet::new));
+          context.read(removeLastKey(param.getInputField()), generateFilter(param)));
       var newIndexedPaths = indexArrayPaths(validPaths);
       mergePathMaps(indexedPaths, newIndexedPaths, param);
     }
@@ -302,7 +278,7 @@ public class JsonPathComponent {
       var matcher = arrayFieldPattern.matcher(jsonPath);
       while (matcher.find()) {
         var match = matcher.group();
-        var fieldName = match.replaceAll("\\P{L}+", "");
+        var fieldName = match.replaceAll("\\[|]|\\d+|'|\\*", "");
         var idx = Integer.valueOf(match.replaceAll("\\D", ""));
         indexListForThisPath.add(new FieldIndex(List.of(fieldName), List.of(idx)));
       }
@@ -399,31 +375,6 @@ public class JsonPathComponent {
     compoundedIndex.addAll(currentFieldIndex.indexes());
     previousCompound.add(new FieldIndex(compoundedField, compoundedIndex));
     return previousCompound;
-  }
-
-  // From: "fields.1.otherField"
-  // To: "fields[1].otherField"
-  private String toMixedNotation(String jsonPath) {
-    jsonPath = toDotNotation(jsonPath);
-    var matcherStart = dotIndexPatternFirst.matcher(jsonPath);
-    var matcherEnd = dotIndexPatternLast.matcher(jsonPath);
-    while (matcherStart.find()) {
-      var match = matcherStart.group();
-      var digitMatcher = digitPattern.matcher(match);
-      digitMatcher.find();
-      jsonPath = jsonPath.replace(match, "[" + digitMatcher.group());
-    }
-    while (matcherEnd.find()) {
-      var match = matcherEnd.group();
-      var indexMatcher = digitPattern.matcher(match);
-      indexMatcher.find();
-      jsonPath = jsonPath.replace(match, indexMatcher.group() + "].");
-    }
-    jsonPath = removeTrailingPeriod(jsonPath);
-    if (isDigit(jsonPath.charAt(jsonPath.length() - 1))) {
-      jsonPath = jsonPath + "]";
-    }
-    return jsonPath;
   }
 
   /*
