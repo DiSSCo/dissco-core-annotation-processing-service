@@ -54,8 +54,7 @@ public class JsonPathComponent {
     try {
       context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
       if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
-        log.warn("False positive detected");
-        log.info("{} does not comply to batch metadata {}", annotatedObject, batchMetadata);
+        log.info("False positive detected: {} does not comply to batch metadata {}", annotatedObject, batchMetadata);
         return Collections.emptyList();
       }
       var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
