@@ -70,7 +70,13 @@ public class ElasticSearchRepository {
   private List<Query> generateBatchQueryExtended(AnnotationBatchMetadata ame) {
     var qList = new ArrayList<Query>();
     for (var searchParam : ame.getSearchParams()) {
-      var key = searchParam.getInputField().replaceAll("\\[[^]]*]", "") + ".keyword";
+      var key = searchParam.getInputField()
+          .replace("'", "")
+          .replace("[*]", "")
+          .replace("$", "")
+          .replace("[", "")
+          .replace("]", ".")
+          + "keyword";
       var val = searchParam.getInputValue();
       if (val.isEmpty()) {
         qList.add(

@@ -52,13 +52,12 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
-import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -102,7 +101,7 @@ class ProcessingKafkaServiceTest {
   @Mock
   AnnotationHasher annotationHasher;
   @Mock
-  SchemaValidatorComponent schemaValidator;
+  AnnotationValidatorComponent schemaValidator;
   @Mock
   BatchAnnotationService batchAnnotationService;
   @Mock
@@ -535,7 +534,6 @@ class ProcessingKafkaServiceTest {
     then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
     then(masJobRecordService).should()
         .markMasJobRecordAsComplete(JOB_ID, List.of(equalId, ID, ID), false);
-    then(schemaValidator).should().validateEvent(event);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
   }
 
@@ -602,7 +600,6 @@ class ProcessingKafkaServiceTest {
         .publishCreateEvent(newAnnotation.withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should()
         .markMasJobRecordAsComplete(JOB_ID, List.of(equalId, ID, ID), false);
-    then(schemaValidator).should().validateEvent(event);
     then(batchAnnotationService).should().applyBatchAnnotations(processedEvent);
   }
 
@@ -828,16 +825,6 @@ class ProcessingKafkaServiceTest {
     // Then
     then(elasticRepository).shouldHaveNoInteractions();
     then(repository).shouldHaveNoMoreInteractions();
-  }
-
-  @Test
-  void testSchemaValidationFailed() throws Exception {
-    //Given
-    doThrow(AnnotationValidationException.class).when(schemaValidator).validateEvent(any());
-
-    // Then
-    assertThrows(AnnotationValidationException.class,
-        () -> service.handleMessage(givenAnnotationEvent()));
   }
 
   private void givenBulkResponse() {

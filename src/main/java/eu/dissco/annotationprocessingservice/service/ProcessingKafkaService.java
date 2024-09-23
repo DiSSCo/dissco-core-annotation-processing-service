@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
@@ -55,7 +55,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
-      SchemaValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
+      AnnotationValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,

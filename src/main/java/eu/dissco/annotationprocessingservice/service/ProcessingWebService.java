@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent.validateAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
@@ -8,7 +9,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -38,7 +39,7 @@ public class ProcessingWebService extends AbstractProcessingService {
   public ProcessingWebService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository, KafkaPublisherService kafkaService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
-      ApplicationProperties applicationProperties, SchemaValidatorComponent schemaValidator,
+      ApplicationProperties applicationProperties, AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
@@ -48,7 +49,7 @@ public class ProcessingWebService extends AbstractProcessingService {
 
   public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,
       boolean batchingRequested) throws FailedProcessingException, AnnotationValidationException {
-    schemaValidator.validateAnnotationRequest(annotationRequest, true);
+    validateAnnotationRequest(annotationRequest, true);
     var id = postHandle(annotationRequest);
     var annotation = buildAnnotation(annotationRequest, HANDLE_PROXY + id, batchingRequested, 1);
     if (batchingRequested) {
@@ -80,7 +81,7 @@ public class ProcessingWebService extends AbstractProcessingService {
 
   public Annotation updateAnnotation(AnnotationProcessingRequest annotationRequest)
       throws FailedProcessingException, NotFoundException, AnnotationValidationException {
-    schemaValidator.validateAnnotationRequest(annotationRequest, false);
+    validateAnnotationRequest(annotationRequest, false);
     var currentAnnotationOptional = repository.getAnnotationForUser(annotationRequest.getId(),
         annotationRequest.getDctermsCreator().getId());
     if (currentAnnotationOptional.isEmpty()) {

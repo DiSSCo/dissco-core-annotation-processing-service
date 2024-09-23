@@ -221,7 +221,7 @@ public class TestUtils {
 
   public static OaHasSelector givenRequestSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
+        .withAdditionalProperty("ods:field", "$['ods:hasEvent'][1]['ods:Location']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
@@ -246,7 +246,7 @@ public class TestUtils {
 
   public static OaHasSelector givenSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field", "ods:hasEvent[1].ods:Location.dwc:locality")
+        .withAdditionalProperty("ods:field", "$['ods:hasEvent'][1]['ods:Location']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
@@ -409,7 +409,7 @@ public class TestUtils {
 
   public static SearchParam givenSearchParamCountry() {
     return new SearchParam(
-        "ods:hasEvent[*].ods:Location.dwc:country",
+        "$['ods:hasEvent'][*]['ods:Location']['dwc:country']",
         "Netherlands");
   }
 
@@ -424,7 +424,7 @@ public class TestUtils {
     return new AnnotationBatchMetadata(1, List.of(
         givenSearchParamCountry(),
         new SearchParam(
-            "ods:hasEvent[*].dwc:occurrenceRemarks",
+            "$['ods:hasEvent'][*]['dwc:occurrenceRemarks']",
             "Correct"
         )));
   }

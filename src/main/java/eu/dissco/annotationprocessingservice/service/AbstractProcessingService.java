@@ -7,7 +7,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import eu.dissco.annotationprocessingservice.component.SchemaValidatorComponent;
+import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -48,7 +48,7 @@ public abstract class AbstractProcessingService {
   protected final FdoRecordService fdoRecordService;
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
-  protected final SchemaValidatorComponent schemaValidator;
+  protected final AnnotationValidatorComponent schemaValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;
@@ -154,7 +154,8 @@ public abstract class AbstractProcessingService {
     if (document.result().equals(Result.Deleted) || document.result().equals(Result.NotFound)) {
       log.info("Archive annotations: {} in database", currentAnnotation.getId());
       var timestamp = Instant.now();
-      var tombstoneAnnotation = buildTombstoneAnnotation(currentAnnotation, tombstoningAgent, timestamp);
+      var tombstoneAnnotation = buildTombstoneAnnotation(currentAnnotation, tombstoningAgent,
+          timestamp);
       repository.archiveAnnotation(tombstoneAnnotation);
       log.info("Sending Tombstone event to provenance servie");
       kafkaService.publishTombstoneEvent(tombstoneAnnotation, currentAnnotation);
