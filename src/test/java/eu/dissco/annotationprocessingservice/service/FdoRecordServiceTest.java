@@ -1,22 +1,20 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationRequestAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequestBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequestBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
@@ -52,9 +50,16 @@ class FdoRecordServiceTest {
 
   @Test
   void testBuildPostRequestBatch() throws Exception {
-    assertThat(fdoRecordService.buildPostHandleRequest(
-        List.of(givenHashedAnnotationRequest(), givenHashedAnnotationRequestAlt())))
-        .isEqualTo(givenPostRequestBatch());
+    // Given
+    var expected = givenPostRequest().get(0);
+    ((ObjectNode)expected.get("data").get("attributes"))
+        .put("annotationHash", ANNOTATION_HASH.toString());
+
+    // When
+    var result = fdoRecordService.buildPostHandleRequest(List.of(givenHashedAnnotationRequest()));
+
+    // Then
+    assertThat(result).isEqualTo(List.of(expected));
   }
 
   @Test
@@ -67,16 +72,16 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testPatchRequestList() throws Exception {
+  void testPatchRequestBatch() throws Exception {
     // Given
-    var expected = givenPatchRequestBatch();
-
+    var expected = givenPatchRequest().get(0);
+    ((ObjectNode)expected.get("data").get("attributes"))
+        .put("annotationHash", ANNOTATION_HASH.toString());
     // When
-    var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenHashedAnnotation(),
-        givenHashedAnnotationAlt()));
+    var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenHashedAnnotation()));
 
     // Then
-    assertThat(result).isEqualTo(expected);
+    assertThat(result).isEqualTo(List.of(expected));
   }
 
   @Test

@@ -1,11 +1,8 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ANNOTATION_HASH;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.ISSUED_FOR_AGENT;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.MOTIVATION;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TARGET_PID;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TARGET_TYPE;
-import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TYPE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class FdoRecordService {
 
   private static final String ATTRIBUTES = "attributes";
+  private static final String TYPE = "type";
   private static final String DATA = "data";
   private static final String ID = "id";
   private final ObjectMapper mapper;
@@ -46,15 +44,12 @@ public class FdoRecordService {
 
   private JsonNode buildSinglePostHandleRequest(AnnotationProcessingRequest annotation,
       UUID annotationHash) {
-    var request = mapper.createObjectNode();
-    var data = mapper.createObjectNode();
-    var attributes = generateAttributes(annotation.getOaHasTarget().getId(),
-        annotation.getOaHasTarget().getOdsType(), annotation.getOaMotivation().value(),
-        annotationHash);
-    data.put(TYPE.getAttribute(), fdoProperties.getType());
-    data.set(ATTRIBUTES, attributes);
-    request.set(DATA, data);
-    return request;
+    return mapper.createObjectNode()
+        .set("data", mapper.createObjectNode()
+            .put(TYPE, fdoProperties.getType())
+            .set(ATTRIBUTES, generateAttributes(annotation.getOaHasTarget().getId(),
+                annotation.getOaHasTarget().getOdsType(),
+                annotationHash)));
   }
 
   public List<JsonNode> buildPatchRollbackHandleRequest(Annotation annotation) {
@@ -76,8 +71,8 @@ public class FdoRecordService {
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation.getOaHasTarget().getId(),
         annotation.getOaHasTarget().getOdsType(),
-        annotation.getOaMotivation().value(), annotationHash);
-    data.put(TYPE.getAttribute(), fdoProperties.getType());
+        annotationHash);
+    data.put(TYPE, fdoProperties.getType());
     data.set(ATTRIBUTES, attributes);
     data.put(ID, annotation.getId());
     request.set(DATA, data);
@@ -95,13 +90,11 @@ public class FdoRecordService {
     return request;
   }
 
-  private JsonNode generateAttributes(String targetPid, String targetType, String motivation,
+  private JsonNode generateAttributes(String targetPid, String targetType,
       UUID annotationHash) {
-    var attributes = mapper.createObjectNode();
-    attributes.put(ISSUED_FOR_AGENT.getAttribute(), fdoProperties.getIssuedForAgent());
-    attributes.put(TARGET_PID.getAttribute(), targetPid);
-    attributes.put(TARGET_TYPE.getAttribute(), targetType);
-    attributes.put(MOTIVATION.getAttribute(), motivation);
+    var attributes = mapper.createObjectNode()
+        .put(TARGET_PID.getAttribute(), targetPid)
+        .put(TARGET_TYPE.getAttribute(), targetType);
     if (annotationHash != null) {
       attributes.put(ANNOTATION_HASH.getAttribute(), annotationHash.toString());
     }
@@ -129,5 +122,4 @@ public class FdoRecordService {
             (newAnnotation.getOaHasTarget().getId())) ||
             !currentAnnotation.getOaMotivation().equals(newAnnotation.getOaMotivation()));
   }
-
 }
