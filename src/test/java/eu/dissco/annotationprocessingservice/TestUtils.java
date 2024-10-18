@@ -304,46 +304,12 @@ public class TestUtils {
             "data": {
               "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-               "issuedForAgent": "https://ror.org/0566bfb96",
                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
-               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
-               "motivation":"oa:commenting"
+               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e"
               }
             }
           }
         """));
-  }
-
-  public static List<JsonNode> givenPostRequestBatch() throws Exception {
-    var jsonNode = MAPPER.readTree("""
-        {
-            "data": {
-              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
-              "attributes": {
-               "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
-               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
-               "motivation":"oa:commenting",
-               "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
-              }
-            }
-          }
-        """);
-    var jsonNode2 = MAPPER.readTree("""
-        {
-            "data": {
-              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
-              "attributes": {
-               "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
-               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
-               "motivation":"oa:editing",
-               "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
-              }
-            }
-          }
-        """);
-    return List.of(jsonNode, jsonNode2);
   }
 
   public static List<JsonNode> givenPatchRequest() throws Exception {
@@ -352,49 +318,13 @@ public class TestUtils {
             "data": {
               "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
               "attributes": {
-                "issuedForAgent": "https://ror.org/0566bfb96",
                 "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
-                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
-                "motivation":"oa:commenting"
+                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e"
             },
             "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
           }
         }
         """));
-  }
-
-  public static List<JsonNode> givenPatchRequestBatch() throws Exception {
-    var node1 = MAPPER.readTree("""
-        {
-            "data": {
-              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
-              "attributes": {
-                "issuedForAgent": "https://ror.org/0566bfb96",
-                "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
-                "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
-                "motivation":"oa:commenting",
-                "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
-              },
-            "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
-          }
-          }
-        """);
-    var node2 = MAPPER.readTree("""
-          {
-            "data": {
-              "type": "https://doi.org/21.T11148/cf458ca9ee1d44a5608f",
-              "attributes": {
-               "issuedForAgent": "https://ror.org/0566bfb96",
-               "targetPid":"https://doi.org/20.5000.1025/QRS-123-ABC",
-               "targetType":"https://doi.org/21.T11148/894b1e6cad57e921764e",
-               "motivation":"oa:editing",
-                "annotationHash":"3a36d684-deb8-8779-2753-caef497e9ed8"
-              },
-              "id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"
-          }
-          }
-        """);
-    return List.of(node1, node2);
   }
 
   public static JsonNode givenRollbackCreationRequest() throws Exception {
