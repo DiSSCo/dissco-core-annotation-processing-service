@@ -45,7 +45,7 @@ class AnnotationHasherTest {
     map.put("ac:heightFrac", 0.1);
     var selector = new OaHasSelector()
         .withAdditionalProperty("@type", "oa:FragmentSelector")
-        .withAdditionalProperty("ac:hasRoi", map);
+        .withAdditionalProperty("ac:hasROI", map);
 
     var expected = UUID.fromString("bff30f04-e1ca-ed30-4841-d0138dfab477");
 
