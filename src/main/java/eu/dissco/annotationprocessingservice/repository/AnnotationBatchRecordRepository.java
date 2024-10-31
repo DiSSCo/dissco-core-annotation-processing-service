@@ -28,11 +28,11 @@ public class AnnotationBatchRecordRepository {
 
   private Query createAnnotationBatchRecordQuery(AnnotationBatchRecord annotationBatchRecord) {
     return context.insertInto(ANNOTATION_BATCH_RECORD)
-        .set(ANNOTATION_BATCH_RECORD.BATCH_ID, annotationBatchRecord.batchId())
-        .set(ANNOTATION_BATCH_RECORD.CREATOR_ID, annotationBatchRecord.creatorId())
+        .set(ANNOTATION_BATCH_RECORD.ID, annotationBatchRecord.batchId())
+        .set(ANNOTATION_BATCH_RECORD.CREATOR, annotationBatchRecord.creatorId())
         .set(ANNOTATION_BATCH_RECORD.PARENT_ANNOTATION_ID,
             annotationBatchRecord.parentAnnotationId())
-        .set(ANNOTATION_BATCH_RECORD.CREATED_ON, annotationBatchRecord.createdOn())
+        .set(ANNOTATION_BATCH_RECORD.CREATED, annotationBatchRecord.createdOn())
         .set(ANNOTATION_BATCH_RECORD.LAST_UPDATED, annotationBatchRecord.createdOn())
         .set(ANNOTATION_BATCH_RECORD.JOB_ID, annotationBatchRecord.jobId())
         .set(ANNOTATION_BATCH_RECORD.BATCH_QUANTITY, 1L);
@@ -43,14 +43,14 @@ public class AnnotationBatchRecordRepository {
         .set(ANNOTATION_BATCH_RECORD.BATCH_QUANTITY,
             ANNOTATION_BATCH_RECORD.BATCH_QUANTITY.plus(qty))
         .set(ANNOTATION_BATCH_RECORD.LAST_UPDATED, Instant.now())
-        .where(ANNOTATION_BATCH_RECORD.BATCH_ID.eq(batchId))
+        .where(ANNOTATION_BATCH_RECORD.ID.eq(batchId))
         .execute();
   }
 
   // To be used only if the parent hashedAnnotation fails
   public void rollbackAnnotationBatchRecord(Set<UUID> batchIds) {
     context.deleteFrom(ANNOTATION_BATCH_RECORD)
-        .where(ANNOTATION_BATCH_RECORD.BATCH_ID.in(batchIds))
+        .where(ANNOTATION_BATCH_RECORD.ID.in(batchIds))
         .and(ANNOTATION_BATCH_RECORD.BATCH_QUANTITY.eq(1L))
         .execute();
   }

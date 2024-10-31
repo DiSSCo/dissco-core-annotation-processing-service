@@ -29,6 +29,6 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AnnotationRecord> ANNOTATION_PK = Internal.createUniqueKey(Annotation.ANNOTATION, DSL.name("annotation_pk"), new TableField[] { Annotation.ANNOTATION.ID }, true);
-    public static final UniqueKey<AnnotationBatchRecordRecord> ANNOTATION_BATCH_PK = Internal.createUniqueKey(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD, DSL.name("annotation_batch_pk"), new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.BATCH_ID }, true);
+    public static final UniqueKey<AnnotationBatchRecordRecord> ANNOTATION_BATCH_PK = Internal.createUniqueKey(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD, DSL.name("annotation_batch_pk"), new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.ID }, true);
     public static final UniqueKey<MasJobRecordRecord> MAS_JOB_RECORD_PK = Internal.createUniqueKey(MasJobRecord.MAS_JOB_RECORD, DSL.name("mas_job_record_pk"), new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 }

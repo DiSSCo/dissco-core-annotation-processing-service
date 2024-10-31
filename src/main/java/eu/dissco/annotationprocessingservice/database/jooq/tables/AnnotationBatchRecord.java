@@ -52,19 +52,19 @@ public class AnnotationBatchRecord extends TableImpl<AnnotationBatchRecordRecord
     }
 
     /**
-     * The column <code>public.annotation_batch_record.batch_id</code>.
+     * The column <code>public.annotation_batch_record.id</code>.
      */
-    public final TableField<AnnotationBatchRecordRecord, UUID> BATCH_ID = createField(DSL.name("batch_id"), SQLDataType.UUID.nullable(false), this, "");
+    public final TableField<AnnotationBatchRecordRecord, UUID> ID = createField(DSL.name("id"), SQLDataType.UUID.nullable(false), this, "");
 
     /**
-     * The column <code>public.annotation_batch_record.creator_id</code>.
+     * The column <code>public.annotation_batch_record.creator</code>.
      */
-    public final TableField<AnnotationBatchRecordRecord, String> CREATOR_ID = createField(DSL.name("creator_id"), SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<AnnotationBatchRecordRecord, String> CREATOR = createField(DSL.name("creator"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
-     * The column <code>public.annotation_batch_record.created_on</code>.
+     * The column <code>public.annotation_batch_record.created</code>.
      */
-    public final TableField<AnnotationBatchRecordRecord, Instant> CREATED_ON = createField(DSL.name("created_on"), SQLDataType.INSTANT.nullable(false), this, "");
+    public final TableField<AnnotationBatchRecordRecord, Instant> CREATED = createField(DSL.name("created"), SQLDataType.INSTANT.nullable(false), this, "");
 
     /**
      * The column <code>public.annotation_batch_record.last_updated</code>.
