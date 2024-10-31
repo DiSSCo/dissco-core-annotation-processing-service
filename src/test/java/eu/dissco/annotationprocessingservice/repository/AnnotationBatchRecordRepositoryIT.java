@@ -113,10 +113,10 @@ class AnnotationBatchRecordRepositoryIT extends BaseRepositoryIT {
 
   private AnnotationBatchRecord toAnnotationBatchRecord(Record dbRecord) {
     return new AnnotationBatchRecord(
-        dbRecord.get(ANNOTATION_BATCH_RECORD.BATCH_ID),
-        dbRecord.get(ANNOTATION_BATCH_RECORD.CREATOR_ID),
+        dbRecord.get(ANNOTATION_BATCH_RECORD.ID),
+        dbRecord.get(ANNOTATION_BATCH_RECORD.CREATOR),
         dbRecord.get(ANNOTATION_BATCH_RECORD.PARENT_ANNOTATION_ID),
-        dbRecord.get(ANNOTATION_BATCH_RECORD.CREATED_ON),
+        dbRecord.get(ANNOTATION_BATCH_RECORD.CREATED),
         dbRecord.get(ANNOTATION_BATCH_RECORD.JOB_ID));
   }
 

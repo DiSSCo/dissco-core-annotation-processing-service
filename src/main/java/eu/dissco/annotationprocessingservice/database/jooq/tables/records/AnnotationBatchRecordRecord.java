@@ -22,44 +22,44 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
     private static final long serialVersionUID = 1L;
 
     /**
-     * Setter for <code>public.annotation_batch_record.batch_id</code>.
+     * Setter for <code>public.annotation_batch_record.id</code>.
      */
-    public void setBatchId(UUID value) {
+    public void setId(UUID value) {
         set(0, value);
     }
 
     /**
-     * Getter for <code>public.annotation_batch_record.batch_id</code>.
+     * Getter for <code>public.annotation_batch_record.id</code>.
      */
-    public UUID getBatchId() {
+    public UUID getId() {
         return (UUID) get(0);
     }
 
     /**
-     * Setter for <code>public.annotation_batch_record.creator_id</code>.
+     * Setter for <code>public.annotation_batch_record.creator</code>.
      */
-    public void setCreatorId(String value) {
+    public void setCreator(String value) {
         set(1, value);
     }
 
     /**
-     * Getter for <code>public.annotation_batch_record.creator_id</code>.
+     * Getter for <code>public.annotation_batch_record.creator</code>.
      */
-    public String getCreatorId() {
+    public String getCreator() {
         return (String) get(1);
     }
 
     /**
-     * Setter for <code>public.annotation_batch_record.created_on</code>.
+     * Setter for <code>public.annotation_batch_record.created</code>.
      */
-    public void setCreatedOn(Instant value) {
+    public void setCreated(Instant value) {
         set(2, value);
     }
 
     /**
-     * Getter for <code>public.annotation_batch_record.created_on</code>.
+     * Getter for <code>public.annotation_batch_record.created</code>.
      */
-    public Instant getCreatedOn() {
+    public Instant getCreated() {
         return (Instant) get(2);
     }
 
@@ -144,12 +144,12 @@ public class AnnotationBatchRecordRecord extends UpdatableRecordImpl<AnnotationB
     /**
      * Create a detached, initialised AnnotationBatchRecordRecord
      */
-    public AnnotationBatchRecordRecord(UUID batchId, String creatorId, Instant createdOn, Instant lastUpdated, String jobId, Long batchQuantity, String parentAnnotationId) {
+    public AnnotationBatchRecordRecord(UUID id, String creator, Instant created, Instant lastUpdated, String jobId, Long batchQuantity, String parentAnnotationId) {
         super(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD);
 
-        setBatchId(batchId);
-        setCreatorId(creatorId);
-        setCreatedOn(createdOn);
+        setId(id);
+        setCreator(creator);
+        setCreated(created);
         setLastUpdated(lastUpdated);
         setJobId(jobId);
         setBatchQuantity(batchQuantity);

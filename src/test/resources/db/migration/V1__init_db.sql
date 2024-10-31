@@ -9,11 +9,11 @@ create table annotation
     motivation      text                     not null,
     mjr_job_id      text,
     batch_id        uuid,
-    creator      text                     not null,
+    creator         text                     not null,
     created         timestamp with time zone not null,
     modified        timestamp with time zone not null,
     last_checked    timestamp with time zone not null,
-    tombstoned   timestamp with time zone,
+    tombstoned      timestamp with time zone,
     target_id       text                     not null,
     data            jsonb
 );
@@ -42,11 +42,11 @@ create table mas_job_record
 
 create table annotation_batch_record
 (
-    batch_id             uuid                     not null
+    id                   uuid                     not null
         constraint annotation_batch_pk
             primary key,
-    creator_id           text                     not null,
-    created_on           timestamp with time zone not null,
+    creator              text                     not null,
+    created              timestamp with time zone not null,
     last_updated         timestamp with time zone,
     job_id               text,
     batch_quantity       bigint,
