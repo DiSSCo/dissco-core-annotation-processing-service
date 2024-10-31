@@ -47,7 +47,7 @@ public class AnnotationRepository {
     return context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
         .where(ANNOTATION.ID.eq(removeProxy(annotationId))
-        .and(ANNOTATION.CREATOR_ID.eq(creatorId)))
+        .and(ANNOTATION.CREATOR.eq(creatorId)))
         .fetchOptional()
         .map(this::mapAnnotation);
   }
@@ -96,7 +96,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
           .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
           .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
-          .set(ANNOTATION.CREATOR_ID, annotation.getDctermsCreator().getId())
+          .set(ANNOTATION.CREATOR, annotation.getDctermsCreator().getId())
           .set(ANNOTATION.CREATED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
@@ -118,7 +118,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
           .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
           .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
-          .set(ANNOTATION.CREATOR_ID, annotation.getDctermsCreator().getId())
+          .set(ANNOTATION.CREATOR, annotation.getDctermsCreator().getId())
           .set(ANNOTATION.CREATED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
@@ -142,7 +142,7 @@ public class AnnotationRepository {
     var timestamp = annotation.getOdsTombstoneMetadata().getOdsTombstoneDate().toInstant();
     try {
       context.update(ANNOTATION)
-          .set(ANNOTATION.TOMBSTONED_ON, timestamp)
+          .set(ANNOTATION.TOMBSTONED, timestamp)
           .set(ANNOTATION.MODIFIED, timestamp)
           .set(ANNOTATION.LAST_CHECKED, timestamp)
           .set(ANNOTATION.DATA, mapToJSONB(annotation))

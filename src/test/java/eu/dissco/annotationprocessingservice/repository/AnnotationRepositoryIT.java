@@ -154,7 +154,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     repository.archiveAnnotation(givenTombstoneAnnotation());
 
     // Then
-    var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED_ON).from(ANNOTATION)
+    var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED).from(ANNOTATION)
         .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
     assertThat(deletedTimestamp).isNotNull();
   }
