@@ -4,14 +4,13 @@ import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProx
 
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTombstoneWrapper;
-
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import java.io.IOException;
@@ -39,7 +38,8 @@ public class AnnotationController {
   private final ProcessingWebService processingService;
 
   @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Annotation> createAnnotation(@RequestBody AnnotationProcessingRequest annotation)
+  public ResponseEntity<Annotation> createAnnotation(
+      @RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received hashedAnnotation creation request");
     var result = processingService.persistNewAnnotation(annotation, false);
@@ -47,7 +47,8 @@ public class AnnotationController {
   }
 
   @PostMapping(value = "batch", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Annotation> createAnnotationBatch(@RequestBody AnnotationProcessingEvent event)
+  public ResponseEntity<Annotation> createAnnotationBatch(
+      @RequestBody AnnotationProcessingEvent event)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received batch hashedAnnotation creation request");
     var result = processingService.persistNewAnnotation(event.getAnnotations().get(0), true);
@@ -61,19 +62,22 @@ public class AnnotationController {
       @PathVariable("suffix") String suffix, @RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException, AnnotationValidationException {
     checkId(prefix, suffix, annotation);
-    log.info("Received hashedAnnotation update request for annotations {}", annotation.getDctermsIdentifier());
+    log.info("Received hashedAnnotation update request for annotations {}",
+        annotation.getDctermsIdentifier());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
 
   @DeleteMapping(value = "/{prefix}/{suffix}")
   public ResponseEntity<Void> tombstoneAnnotation(@PathVariable("prefix") String prefix,
-      @PathVariable("suffix") String suffix, @RequestBody AnnotationTombstoneWrapper annotationTombstoneWrapper) throws IOException, FailedProcessingException {
+      @PathVariable("suffix") String suffix,
+      @RequestBody AnnotationTombstoneWrapper annotationTombstoneWrapper)
+      throws IOException, FailedProcessingException {
     var id = prefix + '/' + suffix;
     log.info("Received an archive request for annotations: {}", id);
     var annotation = annotationTombstoneWrapper.annotation();
     var tombstoningAgent = annotationTombstoneWrapper.tombstoningAgent();
-    if (!annotation.getId().contains(id)){
+    if (!annotation.getId().contains(id)) {
       log.error("Id in path {} does not match id in annotation {}", id, annotation.getId());
       throw new FailedProcessingException();
     }

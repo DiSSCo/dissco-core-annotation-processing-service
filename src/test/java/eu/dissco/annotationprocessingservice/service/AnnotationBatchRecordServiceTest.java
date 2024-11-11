@@ -15,8 +15,8 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mockStatic;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;

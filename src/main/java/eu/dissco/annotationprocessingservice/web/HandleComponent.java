@@ -44,7 +44,7 @@ public class HandleComponent {
     return getHandleMap(responseJson);
   }
 
-  private JsonNode sendRequest(List<JsonNode> request) throws PidCreationException{
+  private JsonNode sendRequest(List<JsonNode> request) throws PidCreationException {
     var requestBody = BodyInserters.fromValue(request);
     var response = sendRequest(HttpMethod.POST, requestBody, "batch");
     return validateResponse(response);
@@ -117,8 +117,9 @@ public class HandleComponent {
     try {
       var handleNames = new ArrayList<String>();
       var dataNodeArray = jsonResponse.get("data");
-      if (!dataNodeArray.isArray()){
-        throw new PidCreationException("UNEXPECTED_MSG + \" Response: {}\", jsonResponse.toPrettyString()");
+      if (!dataNodeArray.isArray()) {
+        throw new PidCreationException(
+            "UNEXPECTED_MSG + \" Response: {}\", jsonResponse.toPrettyString()");
       }
       for (var dataNode : dataNodeArray) {
         handleNames.add(dataNode.get("id").asText());
@@ -134,8 +135,9 @@ public class HandleComponent {
     try {
       var handleNames = new HashMap<UUID, String>();
       var dataNodeArray = jsonResponse.get("data");
-      if (!dataNodeArray.isArray()){
-        throw new PidCreationException("Unexpected response from handle API. Response: {}\", jsonResponse.toPrettyString()");
+      if (!dataNodeArray.isArray()) {
+        throw new PidCreationException(
+            "Unexpected response from handle API. Response: {}\", jsonResponse.toPrettyString()");
       }
       for (var dataNode : dataNodeArray) {
         handleNames.put(

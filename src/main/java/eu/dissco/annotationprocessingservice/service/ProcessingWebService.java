@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent.validateAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
@@ -116,7 +115,6 @@ public class ProcessingWebService extends AbstractProcessingService {
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
     return annotation;
   }
-
 
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,

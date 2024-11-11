@@ -9,13 +9,8 @@ public enum SelectorType {
 
   private final String state;
 
-  SelectorType(String s){
+  SelectorType(String s) {
     this.state = s;
-  }
-
-  @Override
-  public String toString() {
-    return state;
   }
 
   public static SelectorType fromString(String name) {
@@ -25,6 +20,11 @@ public enum SelectorType {
       }
     }
     return null;
+  }
+
+  @Override
+  public String toString() {
+    return state;
   }
 
 }

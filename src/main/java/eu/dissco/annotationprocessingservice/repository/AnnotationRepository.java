@@ -47,7 +47,7 @@ public class AnnotationRepository {
     return context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
         .where(ANNOTATION.ID.eq(removeProxy(annotationId))
-        .and(ANNOTATION.CREATOR.eq(creatorId)))
+            .and(ANNOTATION.CREATOR.eq(creatorId)))
         .fetchOptional()
         .map(this::mapAnnotation);
   }

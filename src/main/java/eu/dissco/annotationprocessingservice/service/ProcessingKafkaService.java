@@ -151,7 +151,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     var idMap = postHandles(hashedAnnotationsRequest, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
     var hashedAnnotations = hashedAnnotationsRequest.stream().map(
-        p -> new HashedAnnotation(buildAnnotation(p.annotation(), HANDLE_PROXY + idMap.get(p.hash()), event, 1),
+        p -> new HashedAnnotation(
+            buildAnnotation(p.annotation(), HANDLE_PROXY + idMap.get(p.hash()), event, 1),
             p.hash())).toList();
     var batchIds = annotationBatchRecordService.mintBatchIds(
         hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),

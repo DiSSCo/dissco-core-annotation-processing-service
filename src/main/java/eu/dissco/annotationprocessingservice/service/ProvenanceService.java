@@ -29,6 +29,16 @@ public class ProvenanceService {
   private final ObjectMapper mapper;
   private final ApplicationProperties properties;
 
+  private static String getRdfsComment(ProvActivity.Type activityType) {
+    if (Type.ODS_CREATE.equals(activityType)) {
+      return "Annotation newly created";
+    }
+    if (Type.ODS_UPDATE.equals(activityType)) {
+      return "Annotation updated";
+    }
+    return "Annotation tombstoned";
+  }
+
   public CreateUpdateTombstoneEvent generateCreateEvent(Annotation annotation) {
     return generateCreateUpdateTombStoneEvent(annotation, ProvActivity.Type.ODS_CREATE,
         null);
@@ -64,16 +74,6 @@ public class ProvenanceService {
             .withProvValue(mapEntityToProvValue(annotation))
             .withProvWasGeneratedBy(activityID))
         .withOdsHasAgents(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
-  }
-
-  private static String getRdfsComment(ProvActivity.Type activityType) {
-    if (Type.ODS_CREATE.equals(activityType)){
-      return "Annotation newly created";
-    }
-    if (Type.ODS_UPDATE.equals(activityType)){
-      return "Annotation updated";
-    }
-    return "Annotation tombstoned";
   }
 
   private List<OdsChangeValue> mapJsonPatch(JsonNode jsonPatch) {
