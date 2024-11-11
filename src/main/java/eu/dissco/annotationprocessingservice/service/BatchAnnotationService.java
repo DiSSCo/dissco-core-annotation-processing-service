@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.component.JsonPathComponent;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
@@ -27,58 +28,61 @@ public class BatchAnnotationService {
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
   private final JsonPathComponent jsonPathComponent;
+  protected static final String ID_FIELD = "ods:ID";
 
   public void applyBatchAnnotations(ProcessedAnnotationBatch batchmetadata)
       throws IOException, ConflictException, BatchingException {
-    int pageSizePlusOne = applicationProperties.getBatchPageSize() + 1;
     for (var batchMetadata : batchmetadata.annotationBatchMetadata()) {
       var baseAnnotations = getBaseAnnotation(batchMetadata.getOdsPlaceInBatch(),
           batchmetadata.annotations());
-      runBatchForMetadata(baseAnnotations, batchMetadata, batchmetadata.jobId(), pageSizePlusOne);
+      runBatchForMetadata(baseAnnotations, batchMetadata, batchmetadata.jobId());
     }
   }
 
   private void runBatchForMetadata(List<Annotation> baseAnnotations,
-      AnnotationBatchMetadata batchMetadata, String jobId, int pageSizePlusOne)
+      AnnotationBatchMetadata batchMetadata, String jobId)
       throws IOException, ConflictException, BatchingException {
-    int pageNumber = 1;
     boolean moreBatching = true;
     int errorCount = 0;
+    String lastId = null;
     while (moreBatching) {
       try {
         var targetType = getTargetTypeFromList(baseAnnotations);
-        var annotatedObjects = elasticRepository.searchByBatchMetadataExtended(
-            batchMetadata, targetType, pageNumber, pageSizePlusOne);
+        var annotatedObjects = elasticRepository.searchByBatchMetadata(
+            batchMetadata, targetType, lastId);
         if (annotatedObjects.isEmpty()) {
-          log.info("No annotated objects found. Page number: {}", pageNumber);
-          return;
-        }
-        if (annotatedObjects.size() <= applicationProperties.getBatchPageSize()) {
           moreBatching = false;
+        } else {
+          log.info("Successfully identified {} {}s to apply batch annotations to",
+              annotatedObjects.size(), targetType);
+          lastId = annotatedObjects.get(annotatedObjects.size() - 1).get(ID_FIELD).asText();
+          publishAnnotationsFromBaseAnnotations(baseAnnotations, batchMetadata, jobId, annotatedObjects);
         }
-        log.info("Successfully identified {} {}s to apply batch annotations to",
-            annotatedObjects.size(), targetType);
-        for (var baseAnnotation : baseAnnotations) {
-          // Find our batch id based on the parent hashedAnnotation
-          var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
-              annotatedObjects);
-          if (!annotations.isEmpty()) {
-            kafkaService.publishBatchAnnotation(new ProcessedAnnotationBatch(
-                annotations,
-                jobId,
-                null,
-                baseAnnotation.getOdsBatchID()
-            ));
-            log.info("Successfully published {} batch annotations to queue",
-                annotatedObjects.size());
-          }
-        }
-        pageNumber = pageNumber + 1;
       } catch (BatchingException e) {
         errorCount = errorCount + 1;
         if (errorCount >= applicationProperties.getMaxBatchRetries()) {
           throw e;
         }
+      }
+    }
+  }
+
+  private void publishAnnotationsFromBaseAnnotations(List<Annotation> baseAnnotations,
+      AnnotationBatchMetadata batchMetadata, String jobId, List<JsonNode> annotatedObjects)
+      throws JsonProcessingException, BatchingException {
+    for (var baseAnnotation : baseAnnotations) {
+      // Find our batch id based on the parent hashedAnnotation
+      var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
+          annotatedObjects);
+      if (!annotations.isEmpty()) {
+        kafkaService.publishBatchAnnotation(new ProcessedAnnotationBatch(
+            annotations,
+            jobId,
+            null,
+            baseAnnotation.getOdsBatchID()
+        ));
+        log.info("Successfully published {} batch annotations to queue",
+            annotatedObjects.size());
       }
     }
 

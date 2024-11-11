@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.repository;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -27,6 +28,7 @@ public class ElasticSearchRepository {
 
   private final ElasticsearchClient client;
   private final ElasticSearchProperties properties;
+  private static final String SORT_BY = "ods:ID.keyword";
 
   public IndexResponse indexAnnotation(Annotation annotation) throws IOException {
     return client.index(
@@ -89,34 +91,31 @@ public class ElasticSearchRepository {
     return qList;
   }
 
-  public List<JsonNode> searchByBatchMetadataExtended(AnnotationBatchMetadata batchMetadata,
-      AnnotationTargetType targetType, int pageNumber, int pageSize) throws IOException {
+  public List<JsonNode> searchByBatchMetadata(AnnotationBatchMetadata batchMetadata,
+      AnnotationTargetType targetType, String lastId) throws IOException {
     var query = generateBatchQueryExtended(batchMetadata);
     var index =
         targetType == AnnotationTargetType.DIGITAL_SPECIMEN ? properties.getDigitalSpecimenIndex()
             : properties.getDigitalMediaObjectIndex();
-    var searchRequest = new SearchRequest.Builder()
+    var searchRequestBuilder = new SearchRequest.Builder()
         .index(index)
         .query(
             q -> q.bool(b -> b.must(query)))
+        .size(properties.getBatchPageSize())
         .trackTotalHits(t -> t.enabled(Boolean.TRUE))
-        .from(getOffset(pageNumber, pageSize))
-        .size(pageSize).build();
-    var searchResult = client.search(searchRequest, ObjectNode.class);
+        .sort(s -> s.field(f -> f.field(SORT_BY).order(SortOrder.Desc)));
+
+    if (lastId != null) {
+      searchRequestBuilder
+          .searchAfter(sa -> sa.stringValue(lastId));
+    }
+    var searchResult = client.search(searchRequestBuilder.build(), ObjectNode.class);
 
     return searchResult.hits().hits().stream()
         .map(Hit::source)
         .filter(Objects::nonNull)
         .map(JsonNode.class::cast)
         .toList();
-  }
-
-  private int getOffset(int pageNumber, int pageSize) {
-    int offset = 0;
-    if (pageNumber > 1) {
-      offset = offset + (pageSize * (pageNumber - 1));
-    }
-    return offset;
   }
 
 }

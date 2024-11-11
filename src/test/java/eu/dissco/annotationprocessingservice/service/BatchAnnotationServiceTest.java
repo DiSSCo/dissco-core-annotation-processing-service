@@ -19,7 +19,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenOaBody;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -73,8 +73,6 @@ class BatchAnnotationServiceTest {
     // Given
     var event = givenAnnotationEventBatchEnabled();
     var annotatableIds = List.of("0", "1", "2");
-    int pageSize = annotatableIds.size();
-    int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
     var batchAnnotations = annotatableIds.stream().map(id ->
         new Annotation()
@@ -87,10 +85,9 @@ class BatchAnnotationServiceTest {
     ).toList();
     var batchEvent = new ProcessedAnnotationBatch(batchAnnotations, JOB_ID, null, BATCH_ID);
     givenJsonPathResponse(annotatableIds);
-    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
-        pageSizePlusOne)).willReturn(elasticDocuments);
+    given(elasticRepository.searchByBatchMetadata(
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,
+        null)).willReturn(elasticDocuments);
 
     // When
     batchAnnotationService.applyBatchAnnotations(event);
@@ -104,15 +101,15 @@ class BatchAnnotationServiceTest {
     // Given
     var event = givenAnnotationEventBatchEnabled();
     var annotatableIds = List.of("0", "1", "2");
-    int pageSize = annotatableIds.size();
-    int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
     given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
         Collections.emptyList());
-    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
-        pageSizePlusOne)).willReturn(elasticDocuments);
+    given(elasticRepository.searchByBatchMetadata(
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,
+        null)).willReturn(elasticDocuments);
+    given(elasticRepository.searchByBatchMetadata(
+        eq(givenAnnotationBatchMetadataLatitudeSearch()), eq(AnnotationTargetType.DIGITAL_SPECIMEN),
+        anyString())).willReturn(List.of());
 
     // When
     batchAnnotationService.applyBatchAnnotations(event);
@@ -133,8 +130,6 @@ class BatchAnnotationServiceTest {
     var event = new ProcessedAnnotationBatch(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
     var annotatableIds = List.of("0", "1", "2");
-    int pageSize = annotatableIds.size();
-    int pageSizePlusOne = pageSize + 1;
     var elasticDocuments = annotatableIds.stream().map(TestUtils::givenElasticDocument).toList();
     var batchAnnotationsA = annotatableIds.stream().map(id ->
         new Annotation()
@@ -158,10 +153,9 @@ class BatchAnnotationServiceTest {
     var batchEventB = new ProcessedAnnotationBatch(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
 
     givenJsonPathResponse(annotatableIds);
-    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
-        pageSizePlusOne)).willReturn(elasticDocuments);
+    given(elasticRepository.searchByBatchMetadata(
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,
+        null)).willReturn(elasticDocuments);
 
     // When
     batchAnnotationService.applyBatchAnnotations(event);
@@ -210,8 +204,6 @@ class BatchAnnotationServiceTest {
         .withOaHasTarget(annotationTargetB);
     var event = new ProcessedAnnotationBatch(List.of(baseAnnotationA, baseAnnotationB), JOB_ID,
         batchMetadataList, null);
-    int pageSize = annotatableIdsA.size();
-    int pageSizePlusOne = pageSize + 1;
     var elasticDocumentsA = annotatableIdsA.stream().map(TestUtils::givenElasticDocument).toList();
     var elasticDocumentsB = annotatableIdsB.stream().map(TestUtils::givenElasticDocument).toList();
     var batchAnnotationsA = annotatableIdsA.stream().map(id ->
@@ -236,13 +228,13 @@ class BatchAnnotationServiceTest {
     var batchEventB = new ProcessedAnnotationBatch(batchAnnotationsB, JOB_ID, null, BATCH_ID_ALT);
     givenJsonPathResponse(annotatableIdsA);
     givenJsonPathResponse(annotatableIdsB, annotationTargetB);
-    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        batchMetadataA, AnnotationTargetType.DIGITAL_SPECIMEN, 1, pageSizePlusOne)).willReturn(
+    given(elasticRepository.searchByBatchMetadata(
+        batchMetadataA, AnnotationTargetType.DIGITAL_SPECIMEN, null)).willReturn(
         elasticDocumentsA);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        batchMetadataB, AnnotationTargetType.MEDIA_OBJECT, 1, pageSizePlusOne)).willReturn(
+    given(elasticRepository.searchByBatchMetadata(
+        batchMetadataB, AnnotationTargetType.MEDIA_OBJECT, null)).willReturn(
         elasticDocumentsB);
+    given(elasticRepository.searchByBatchMetadata(any(), any(), anyString())).willReturn(List.of());
 
     // When
     batchAnnotationService.applyBatchAnnotations(event);
@@ -267,13 +259,13 @@ class BatchAnnotationServiceTest {
   void testNewMessageErrorCount() throws Exception {
     // Given
     var maxRetries = 3;
-    int pageSize = 5;
-    var elasticResults = Collections.nCopies(pageSize + 1, givenElasticDocument());
+    var elasticResults = Collections.nCopies(6, givenElasticDocument());
     var event = givenAnnotationEventBatchEnabled();
-    given(applicationProperties.getBatchPageSize()).willReturn(5);
     given(applicationProperties.getMaxBatchRetries()).willReturn(maxRetries);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        any(), any(), anyInt(), anyInt())).willReturn(elasticResults);
+    given(elasticRepository.searchByBatchMetadata(
+        any(), any(), eq(null))).willReturn(elasticResults);
+    given(elasticRepository.searchByBatchMetadata(any(), any(), anyString())).willReturn(
+        elasticResults);
     doThrow(BatchingException.class).when(jsonPathComponent)
         .getAnnotationTargets(any(), any(), any());
 
@@ -282,24 +274,21 @@ class BatchAnnotationServiceTest {
         () -> batchAnnotationService.applyBatchAnnotations(event));
 
     then(elasticRepository).should(times(maxRetries))
-        .searchByBatchMetadataExtended(any(), any(), anyInt(), anyInt());
+        .searchByBatchMetadata(any(), any(), any());
   }
 
   @Test
   void testNewMessageBatchEnabledTwoPages() throws Exception {
     // Given
     var event = givenAnnotationEventBatchEnabled();
-    int pageSize = 3;
-    int pageSizePlusOne = pageSize + 1;
-    var elasticPageOne = Collections.nCopies(pageSizePlusOne, givenElasticDocument());
+    var elasticPageOne = Collections.nCopies(5, givenElasticDocument());
     var elasticPageTwo = List.of(givenElasticDocument());
-    given(applicationProperties.getBatchPageSize()).willReturn(pageSize);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 1,
-        pageSizePlusOne)).willReturn(elasticPageOne);
-    given(elasticRepository.searchByBatchMetadataExtended(
-        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN, 2,
-        pageSizePlusOne)).willReturn(elasticPageTwo);
+    given(elasticRepository.searchByBatchMetadata(
+        givenAnnotationBatchMetadataLatitudeSearch(), AnnotationTargetType.DIGITAL_SPECIMEN,
+        null)).willReturn(elasticPageOne);
+    given(elasticRepository.searchByBatchMetadata(
+        eq(givenAnnotationBatchMetadataLatitudeSearch()), eq(AnnotationTargetType.DIGITAL_SPECIMEN),
+        anyString())).willReturn(elasticPageTwo).willReturn(List.of());
     given(jsonPathComponent.getAnnotationTargets(any(), any(), any())).willReturn(
         List.of(givenOaTarget(ID)));
 
@@ -314,9 +303,7 @@ class BatchAnnotationServiceTest {
   void testApplyBatchAnnotationsNoElasticMatch() throws Exception {
     // Given
     var event = givenAnnotationEventBatchEnabled();
-    given(applicationProperties.getBatchPageSize()).willReturn(10);
-    given(elasticRepository.searchByBatchMetadataExtended(any(), any(), anyInt(),
-        anyInt())).willReturn(
+    given(elasticRepository.searchByBatchMetadata(any(), any(), eq(null))).willReturn(
         Collections.emptyList());
 
     // When
