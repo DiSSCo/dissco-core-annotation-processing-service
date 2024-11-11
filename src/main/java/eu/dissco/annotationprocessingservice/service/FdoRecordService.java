@@ -48,7 +48,7 @@ public class FdoRecordService {
         .set("data", mapper.createObjectNode()
             .put(TYPE, fdoProperties.getType())
             .set(ATTRIBUTES, generateAttributes(annotation.getOaHasTarget().getId(),
-                annotation.getOaHasTarget().getOdsType(),
+                annotation.getOaHasTarget().getOdsFdoType(),
                 annotationHash)));
   }
 
@@ -70,7 +70,7 @@ public class FdoRecordService {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();
     var attributes = generateAttributes(annotation.getOaHasTarget().getId(),
-        annotation.getOaHasTarget().getOdsType(),
+        annotation.getOaHasTarget().getOdsFdoType(),
         annotationHash);
     data.put(TYPE, fdoProperties.getType());
     data.set(ATTRIBUTES, attributes);

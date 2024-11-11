@@ -182,9 +182,9 @@ public class JsonPathComponent {
         selector.setAdditionalProperty("ods:field", targetPath);
       }
       newTargets.add(new AnnotationTarget()
-          .withOdsType(baseTarget.getOdsType())
+          .withOdsFdoType(baseTarget.getOdsFdoType())
           .withType(baseTarget.getType())
-          .withOdsID(newTargetId)
+          .withDctermsIdentifier(newTargetId)
           .withId(newTargetId)
           .withOaHasSelector(selector));
     }

@@ -61,7 +61,7 @@ public class AnnotationController {
       @PathVariable("suffix") String suffix, @RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException, AnnotationValidationException {
     checkId(prefix, suffix, annotation);
-    log.info("Received hashedAnnotation update request for annotations {}", annotation.getOdsID());
+    log.info("Received hashedAnnotation update request for annotations {}", annotation.getDctermsIdentifier());
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
