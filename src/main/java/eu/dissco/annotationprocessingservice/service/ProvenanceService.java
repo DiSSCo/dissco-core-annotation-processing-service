@@ -29,6 +29,16 @@ public class ProvenanceService {
   private final ObjectMapper mapper;
   private final ApplicationProperties properties;
 
+  private static String getRdfsComment(ProvActivity.Type activityType) {
+    if (Type.ODS_CREATE.equals(activityType)) {
+      return "Annotation newly created";
+    }
+    if (Type.ODS_UPDATE.equals(activityType)) {
+      return "Annotation updated";
+    }
+    return "Annotation tombstoned";
+  }
+
   public CreateUpdateTombstoneEvent generateCreateEvent(Annotation annotation) {
     return generateCreateUpdateTombStoneEvent(annotation, ProvActivity.Type.ODS_CREATE,
         null);
@@ -42,8 +52,8 @@ public class ProvenanceService {
     return new CreateUpdateTombstoneEvent()
         .withId(entityID)
         .withType("ods:CreateUpdateTombstoneEvent")
-        .withOdsID(entityID)
-        .withOdsType(properties.getCreateUpdateTombstoneEventType())
+        .withDctermsIdentifier(entityID)
+        .withOdsFdoType(properties.getCreateUpdateTombstoneEventType())
         .withProvActivity(new ProvActivity()
             .withId(activityID)
             .withType(activityType)
@@ -52,10 +62,10 @@ public class ProvenanceService {
             .withProvWasAssociatedWith(List.of(
                 new ProvWasAssociatedWith()
                     .withId(annotation.getDctermsCreator().getId())
-                    .withProvHadRole(ProvHadRole.ODS_REQUESTOR),
+                    .withProvHadRole(ProvHadRole.REQUESTOR),
                 new ProvWasAssociatedWith()
                     .withId(annotation.getAsGenerator().getId())
-                    .withProvHadRole(ProvHadRole.ODS_GENERATOR)))
+                    .withProvHadRole(ProvHadRole.GENERATOR)))
             .withProvUsed(entityID)
             .withRdfsComment(getRdfsComment(activityType)))
         .withProvEntity(new ProvEntity()
@@ -63,17 +73,7 @@ public class ProvenanceService {
             .withType(annotation.getType())
             .withProvValue(mapEntityToProvValue(annotation))
             .withProvWasGeneratedBy(activityID))
-        .withOdsHasProvAgent(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
-  }
-
-  private static String getRdfsComment(ProvActivity.Type activityType) {
-    if (Type.ODS_CREATE.equals(activityType)){
-      return "Annotation newly created";
-    }
-    if (Type.ODS_UPDATE.equals(activityType)){
-      return "Annotation updated";
-    }
-    return "Annotation tombstoned";
+        .withOdsHasAgents(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
   }
 
   private List<OdsChangeValue> mapJsonPatch(JsonNode jsonPatch) {

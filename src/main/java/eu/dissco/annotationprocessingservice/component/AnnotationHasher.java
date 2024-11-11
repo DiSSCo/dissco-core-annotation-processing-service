@@ -32,7 +32,8 @@ public class AnnotationHasher {
     }
 
     return annotationRequest.getOaHasTarget().getId() + "-" + targetString + "-" +
-        annotationRequest.getDctermsCreator().getId() + "-" + annotationRequest.getOaMotivation().value();
+        annotationRequest.getDctermsCreator().getId() + "-" + annotationRequest.getOaMotivation()
+        .value();
   }
 
   public UUID getAnnotationHash(AnnotationProcessingRequest annotationRequest) {

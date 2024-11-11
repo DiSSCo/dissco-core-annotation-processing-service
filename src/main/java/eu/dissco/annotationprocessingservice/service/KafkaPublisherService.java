@@ -13,11 +13,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class KafkaPublisherService {
 
+  private static final String TOPIC = "createUpdateDeleteTopic";
   private final ObjectMapper mapper;
   private final KafkaTemplate<String, String> kafkaTemplate;
   private final KafkaConsumerProperties consumerProperties;
   private final ProvenanceService provenanceService;
-  private static final String TOPIC = "createUpdateDeleteTopic";
 
   public void publishCreateEvent(Annotation annotation) throws JsonProcessingException {
     var event = provenanceService.generateCreateEvent(annotation);

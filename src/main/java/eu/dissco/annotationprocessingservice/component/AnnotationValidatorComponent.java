@@ -14,21 +14,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AnnotationValidatorComponent {
 
-  private final Pattern blockNotationPattern = Pattern.compile("^\\$((\\['[a-zA-Z:]++'\\])++|(\\[[\\d]++\\]))++");
-
-  public void validateEvent(AnnotationProcessingEvent event) throws AnnotationValidationException {
-    for (var annotation : event.getAnnotations()) {
-      validateAnnotationTargetPath(annotation.getOaHasTarget());
-    }
-  }
+  private final Pattern blockNotationPattern = Pattern.compile(
+      "^\\$((\\['[a-zA-Z:]++'\\])++|(\\[[\\d]++\\]))++");
 
   public static void validateAnnotationRequest(AnnotationProcessingRequest annotation,
       boolean isNewAnnotation)
       throws AnnotationValidationException {
     validateId(annotation, isNewAnnotation);
     if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getDctermsCreated() == null
-    || Boolean.TRUE.equals(isNewAnnotation && annotation.getDctermsCreator() == null)) {
-      log.error("Invalid hashedAnnotation received. dcterms:creator and dcterms:created are required for new annotations");
+        || Boolean.TRUE.equals(isNewAnnotation && annotation.getDctermsCreator() == null)) {
+      log.error(
+          "Invalid hashedAnnotation received. dcterms:creator and dcterms:created are required for new annotations");
       throw new AnnotationValidationException();
     }
   }
@@ -42,6 +38,12 @@ public class AnnotationValidatorComponent {
     if (Boolean.FALSE.equals(isNewAnnotation) && annotation.getId() == null) {
       log.error("\"@id\" not provided for hashedAnnotation update");
       throw new AnnotationValidationException();
+    }
+  }
+
+  public void validateEvent(AnnotationProcessingEvent event) throws AnnotationValidationException {
+    for (var annotation : event.getAnnotations()) {
+      validateAnnotationTargetPath(annotation.getOaHasTarget());
     }
   }
 
@@ -60,9 +62,9 @@ public class AnnotationValidatorComponent {
 
   public void targetPathIsInBlockNotation(String path) throws AnnotationValidationException {
     var matcher = blockNotationPattern.matcher(path);
-    if (matcher.find()){
+    if (matcher.find()) {
       var result = matcher.group();
-      if (!result.equals(path)){
+      if (!result.equals(path)) {
         log.error("Path {} is not valid annotation target path", path);
         throw new AnnotationValidationException();
       }

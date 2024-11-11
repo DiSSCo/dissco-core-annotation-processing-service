@@ -52,11 +52,11 @@ class ProvenanceServiceTest {
     var event = service.generateCreateEvent(annotation);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(ID + "/" + 1);
+    assertThat(event.getDctermsIdentifier()).isEqualTo(ID + "/" + 1);
     assertThat(event.getProvActivity().getOdsChangeValue()).isNull();
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation newly created");
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   @Test
@@ -70,11 +70,11 @@ class ProvenanceServiceTest {
     var event = service.generateUpdateEvent(annotation, currentAnnotation);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(ID + "/" + 1);
+    assertThat(event.getDctermsIdentifier()).isEqualTo(ID + "/" + 1);
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenChangeValue());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation updated");
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   @Test
@@ -87,11 +87,11 @@ class ProvenanceServiceTest {
     var event = service.generateTombstoneEvent(tombstoneAnnotation, annotation);
 
     // Then
-    assertThat(event.getOdsID()).isEqualTo(ID + "/" + 2);
+    assertThat(event.getDctermsIdentifier()).isEqualTo(ID + "/" + 2);
     assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenTombstoneChangeValue());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation tombstoned");
-    assertThat(event.getOdsHasProvAgent()).isEqualTo(givenExpectedAgents());
+    assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
   }
 
   private static List<OdsChangeValue> givenChangeValue() {
@@ -102,10 +102,10 @@ class ProvenanceServiceTest {
 
   private static List<OdsChangeValue> givenTombstoneChangeValue() {
     return List.of(
-        givenOdsChangeValue("add", "/ods:TombstoneMetadata", givenTombstoneMetadata()),
+        givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata()),
         givenOdsChangeValue("replace", "/dcterms:modified", UPDATED),
         givenOdsChangeValue("replace", "/ods:version", 2),
-        givenOdsChangeValue("replace", "/ods:status", OdsStatus.ODS_TOMBSTONE)
+        givenOdsChangeValue("replace", "/ods:status", OdsStatus.TOMBSTONE)
     );
   }
 

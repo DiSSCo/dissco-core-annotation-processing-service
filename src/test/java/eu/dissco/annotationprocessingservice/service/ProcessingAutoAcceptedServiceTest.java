@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAcceptedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAutoAcceptedRequest;
@@ -20,6 +21,7 @@ import eu.dissco.annotationprocessingservice.component.AnnotationValidatorCompon
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
@@ -64,6 +66,8 @@ class ProcessingAutoAcceptedServiceTest {
   private BatchAnnotationService batchAnnotationService;
   @Mock
   private AnnotationBatchRecordService annotationBatchRecordService;
+  @Mock
+  private FdoProperties fdoProperties;
   private MockedStatic<Instant> mockedStatic;
   private ProcessingAutoAcceptedService service;
 
@@ -71,7 +75,7 @@ class ProcessingAutoAcceptedServiceTest {
   void setup() {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService);
+        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService, fdoProperties);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -93,6 +97,9 @@ class ProcessingAutoAcceptedServiceTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(annotationRequest);
@@ -125,6 +132,9 @@ class ProcessingAutoAcceptedServiceTest {
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -150,6 +160,9 @@ class ProcessingAutoAcceptedServiceTest {
         indexResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
@@ -175,6 +188,9 @@ class ProcessingAutoAcceptedServiceTest {
     doThrow(PidCreationException.class).when(handleComponent).rollbackHandleCreation(any());
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
@@ -198,6 +214,9 @@ class ProcessingAutoAcceptedServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
         .publishCreateEvent(givenAcceptedAnnotation());
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));

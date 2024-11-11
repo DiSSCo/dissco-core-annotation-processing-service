@@ -90,7 +90,7 @@ public class BatchAnnotationService {
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)
       throws ConflictException {
-    var types = baseAnnotations.stream().map(p -> p.getOaHasTarget().getOdsType()).distinct()
+    var types = baseAnnotations.stream().map(p -> p.getOaHasTarget().getOdsFdoType()).distinct()
         .toList();
     if (types.size() != 1) {
       log.error("Annotations corresponding to the same batch metadata have different types: {}",
@@ -135,7 +135,7 @@ public class BatchAnnotationService {
           .withDctermsCreated(baseAnnotation.getDctermsCreated())
           .withDctermsCreator(baseAnnotation.getDctermsCreator())
           .withOaHasBody(baseAnnotation.getOaHasBody())
-          .withSchemaAggregateRating(baseAnnotation.getSchemaAggregateRating())
+          .withOdsHasAggregateRating(baseAnnotation.getOdsHasAggregateRating())
           .withOaHasTarget(target)
           .withOdsBatchID(baseAnnotation.getOdsBatchID()));
     }

@@ -3,7 +3,6 @@ package eu.dissco.annotationprocessingservice.component;
 import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.JsonPath.using;
-import static java.lang.Character.isDigit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -54,7 +52,8 @@ public class JsonPathComponent {
     try {
       context = using(jsonPathConfig).parse(mapper.writeValueAsString(annotatedObject));
       if (!isTrueMatch(batchMetadata, commonIndexes, context)) {
-        log.info("False positive detected: {} does not comply to batch metadata {}", annotatedObject, batchMetadata);
+        log.info("False positive detected: {} does not comply to batch metadata {}",
+            annotatedObject, batchMetadata);
         return Collections.emptyList();
       }
       var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
@@ -182,9 +181,9 @@ public class JsonPathComponent {
         selector.setAdditionalProperty("ods:field", targetPath);
       }
       newTargets.add(new AnnotationTarget()
-          .withOdsType(baseTarget.getOdsType())
+          .withOdsFdoType(baseTarget.getOdsFdoType())
           .withType(baseTarget.getType())
-          .withOdsID(newTargetId)
+          .withDctermsIdentifier(newTargetId)
           .withId(newTargetId)
           .withOaHasSelector(selector));
     }

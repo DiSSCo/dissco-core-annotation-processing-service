@@ -36,9 +36,9 @@ class JsonPathComponentTest {
     return MAPPER.readTree("""
         {
           "@id": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
-            "ods:hasEvent": [
+            "ods:hasEvents": [
               {
-                "ods:hasAssertion": [
+                "ods:hasAssertions": [
                   {
                     "dwc:measurementType": "length",
                     "dwc:measurementValue": "10cm"
@@ -47,7 +47,7 @@ class JsonPathComponentTest {
                 "dwc:eventDate" :"2001-01-01"
               },
               {
-                "ods:hasAssertion": [
+                "ods:hasAssertions": [
                  {
                     "dwc:measurementType": "weight",
                     "dwc:measurementValue": "10kilos"
@@ -72,9 +72,9 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtended() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvent'][0]['ods:Location']"));
+    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']"));
     var expected = List.of(
-        givenOaTarget(givenSelector("$['ods:hasEvent'][0]['ods:Location']")));
+        givenOaTarget(givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")));
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(
@@ -89,10 +89,10 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtendedOneBatchMetadata() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvent'][1]['ods:Location']"));
+    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvents'][1]['ods:hasLocation']"));
     var expected = List.of(
-        givenOaTarget(givenSelector("$['ods:hasEvent'][0]['ods:Location']")),
-        givenOaTarget(givenSelector("$['ods:hasEvent'][2]['ods:Location']")));
+        givenOaTarget(givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")),
+        givenOaTarget(givenSelector("$['ods:hasEvents'][2]['ods:hasLocation']")));
 
     // When
     var result = jsonPathComponent.getAnnotationTargets(
@@ -108,12 +108,12 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsClassSelector() throws Exception {
     // Given
     var classSelector = new OaHasSelector().withAdditionalProperty("ods:class",
-            "$['ods:hasEvent'][0]")
+            "$['ods:hasEvents'][0]")
         .withAdditionalProperty("@type", "ods:ClassSelector");
     var baseTarget = givenOaTarget(classSelector);
     var expected = List.of(
         givenOaTarget(classSelector),
-        givenOaTarget(new OaHasSelector().withAdditionalProperty("ods:class", "$['ods:hasEvent'][2]")
+        givenOaTarget(new OaHasSelector().withAdditionalProperty("ods:class", "$['ods:hasEvents'][2]")
             .withAdditionalProperty("@type", "ods:ClassSelector")));
 
     // When
@@ -142,10 +142,10 @@ class JsonPathComponentTest {
   @Test
   void testBadTargetPath() {
     var baseTarget = givenOaTarget(
-        givenSelector("$[['ods:hasEvent'][1]['ods:Location']"));
+        givenSelector("$[['ods:hasEvents'][1]['ods:hasLocation']"));
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:Location']['dwc:country']",
+            "$['ods:hasEvents'][*]['ods:hasLocation']['dwc:country']",
             "Netherlands")));
     var doc = givenElasticDocument();
 
@@ -158,13 +158,13 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtendedFalsePositive() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvent'][1]['ods:Location']"));
+    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvents'][1]['ods:hasLocation']"));
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:Location']['dwc:country']",
+            "$['ods:hasEvents'][*]['ods:hasLocation']['dwc:country']",
             "Netherlands"),
         new SearchParam(
-            "$['ods:hasEvent'][*]['dwc:occurrenceRemarks']",
+            "$['ods:hasEvents'][*]['dwc:eventRemarks']",
             "Incorrect"
         )
     ));
@@ -181,10 +181,10 @@ class JsonPathComponentTest {
   @Test
   void testGetAnnotationTargetsExtendedOneSharedIndexWithTarget() throws Exception {
     // Given
-    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvent'][1]['ods:Location']"));
+    var baseTarget = givenOaTarget(givenSelector("$['ods:hasEvents'][1]['ods:hasLocation']"));
     var expected = List.of(
-        givenOaTarget(givenSelector("$['ods:hasEvent'][0]['ods:Location']")),
-        givenOaTarget(givenSelector("$['ods:hasEvent'][2]['ods:Location']")));
+        givenOaTarget(givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")),
+        givenOaTarget(givenSelector("$['ods:hasEvents'][2]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         givenSearchParamCountry()));
 
@@ -201,18 +201,18 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsExtendedNestedFields() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:hasAssertion'][5]['dwc:measurementValue']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasAssertions'][5]['dwc:measurementValue']"));
     var expected = List.of(
         givenOaTarget(
-            givenSelector("$['ods:hasEvent'][1]['ods:hasAssertion'][0]['dwc:measurementValue']")),
+            givenSelector("$['ods:hasEvents'][1]['ods:hasAssertions'][0]['dwc:measurementValue']")),
         givenOaTarget(
-            givenSelector("$['ods:hasEvent'][1]['ods:hasAssertion'][1]['dwc:measurementValue']")));
+            givenSelector("$['ods:hasEvents'][1]['ods:hasAssertions'][1]['dwc:measurementValue']")));
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:hasAssertion'][*]['dwc:measurementType']",
+            "$['ods:hasEvents'][*]['ods:hasAssertions'][*]['dwc:measurementType']",
             "weight"),
         new SearchParam(
-            "$['ods:hasEvent'][*]['dwc:eventDate']",
+            "$['ods:hasEvents'][*]['dwc:eventDate']",
             "2001-01-01"
         )));
 
@@ -229,13 +229,13 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsExtendedNestedFieldsFalsePositive() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:hasAssertion'][5]['dwc:measurementValue']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasAssertions'][5]['dwc:measurementValue']"));
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:hasAssertion'][*]['dwc:measurementType']",
+            "$['ods:hasEvents'][*]['ods:hasAssertions'][*]['dwc:measurementType']",
             "weight"),
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:hasAssertion'][*]['dwc:measurementValue']",
+            "$['ods:hasEvents'][*]['ods:hasAssertions'][*]['dwc:measurementValue']",
             "10cm"
         )));
 
@@ -252,16 +252,16 @@ class JsonPathComponentTest {
   void testGetAnnotationTargetsExtendedNestedFieldsBothValid() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:hasAssertion'][5]['dwc:measurementValue']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasAssertions'][5]['dwc:measurementValue']"));
     var expected = List.of(
         givenOaTarget(
-            givenSelector("$['ods:hasEvent'][1]['ods:hasAssertion'][1]['dwc:measurementValue']")));
+            givenSelector("$['ods:hasEvents'][1]['ods:hasAssertions'][1]['dwc:measurementValue']")));
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:hasAssertion'][*]['dwc:measurementType']",
+            "$['ods:hasEvents'][*]['ods:hasAssertions'][*]['dwc:measurementType']",
             "weight"),
         new SearchParam(
-            "$['ods:hasEvent'][*]['ods:hasAssertion'][*]['dwc:measurementValue']",
+            "$['ods:hasEvents'][*]['ods:hasAssertions'][*]['dwc:measurementValue']",
             "10.1kilos"
         )));
 
@@ -279,9 +279,9 @@ class JsonPathComponentTest {
   void testCase0() throws Exception {
     // Given
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
-        new SearchParam("$['ods:hasEvent'][*]['ods:Location']['dwc:city']",
+        new SearchParam("$['ods:hasEvents'][*]['ods:hasLocation']['dwc:city']",
             "Paris"),
-        new SearchParam("$['ods:hasEvent'][*]['remarks']['weather']",
+        new SearchParam("$['ods:hasEvents'][*]['remarks']['weather']",
             "bad"))
     );
 
@@ -301,7 +301,7 @@ class JsonPathComponentTest {
         givenSelector("$['ods:livingOrPreserved']"));
     var expected = List.of(baseTarget);
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
-        new SearchParam("$['ods:hasEvent'][*]['ods:Location']['dwc:city']",
+        new SearchParam("$['ods:hasEvents'][*]['ods:hasLocation']['dwc:city']",
             "Paris"))
     );
 
@@ -320,9 +320,9 @@ class JsonPathComponentTest {
         givenSelector("$['ods:livingOrPreserved']"));
     var expected = List.of(baseTarget);
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
-        new SearchParam("$['ods:hasEvent'][*]['ods:Location']['dwc:city']",
+        new SearchParam("$['ods:hasEvents'][*]['ods:hasLocation']['dwc:city']",
             "Paris"),
-        new SearchParam("$['ods:hasEvent'][*]['remarks']['weather']", "good"))
+        new SearchParam("$['ods:hasEvents'][*]['remarks']['weather']", "good"))
     );
 
     // When
@@ -338,11 +338,11 @@ class JsonPathComponentTest {
   void testCase2a() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:Location']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasLocation']"));
     var expected = List.of(givenOaTarget(
-            givenSelector("$['ods:hasEvent'][0]['ods:Location']")),
+            givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")),
         givenOaTarget(
-            givenSelector("$['ods:hasEvent'][1]['ods:Location']")));
+            givenSelector("$['ods:hasEvents'][1]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam("$['ods:livingOrPreserved']", "Preserved"))
     );
@@ -360,14 +360,14 @@ class JsonPathComponentTest {
   void testCase2b() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:Location']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasLocation']"));
     var expected = List.of(givenOaTarget(
-            givenSelector("$['ods:hasEvent'][0]['ods:Location']")),
+            givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")),
         givenOaTarget(
-            givenSelector("$['ods:hasEvent'][1]['ods:Location']")));
+            givenSelector("$['ods:hasEvents'][1]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasCitation'][*]['dcterms:identifier']",
+            "$['ods:hasIdentifications'][*]['ods:hasCitations'][*]['dcterms:identifier']",
             "Miller 1888"))
     );
 
@@ -384,17 +384,17 @@ class JsonPathComponentTest {
   void testCase2c() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:Location']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasLocation']"));
     var expected = List.of(givenOaTarget(
-            givenSelector("$['ods:hasEvent'][0]['ods:Location']")),
+            givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")),
         givenOaTarget(
-            givenSelector("$['ods:hasEvent'][1]['ods:Location']")));
+            givenSelector("$['ods:hasEvents'][1]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasCitation'][*]['dcterms:identifier']",
+            "$['ods:hasIdentifications'][*]['ods:hasCitations'][*]['dcterms:identifier']",
             "Miller 1888"),
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasTaxonIdentification'][*]['dwc:scientificName']",
+            "$['ods:hasIdentifications'][*]['ods:hasTaxonIdentifications'][*]['dwc:scientificName']",
             "bombus bombus"))
     );
 
@@ -411,11 +411,11 @@ class JsonPathComponentTest {
   void testCase3a() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:Location']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasLocation']"));
     var expected = List.of(givenOaTarget(
-        givenSelector("$['ods:hasEvent'][0]['ods:Location']")));
+        givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
-        new SearchParam("$['ods:hasEvent'][*]['ods:Location']['dwc:city']",
+        new SearchParam("$['ods:hasEvents'][*]['ods:hasLocation']['dwc:city']",
             "Paris"))
     );
 
@@ -432,13 +432,13 @@ class JsonPathComponentTest {
   void testCase3b() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:Location']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasLocation']"));
     var expected = List.of(givenOaTarget(
-        givenSelector("$['ods:hasEvent'][0]['ods:Location']")));
+        givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
-        new SearchParam("$['ods:hasEvent'][*]['ods:Location']['dwc:city']",
+        new SearchParam("$['ods:hasEvents'][*]['ods:hasLocation']['dwc:city']",
             "Paris"),
-        new SearchParam("$['ods:hasEvent'][*]['remarks']['weather']",
+        new SearchParam("$['ods:hasEvents'][*]['remarks']['weather']",
             "good"))
     );
 
@@ -455,15 +455,15 @@ class JsonPathComponentTest {
   void testCase4() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasIdentification'][5]['ods:hasCitation'][0]['dcterms:identifier']"));
+        givenSelector("$['ods:hasIdentifications'][5]['ods:hasCitations'][0]['dcterms:identifier']"));
     var expected = List.of(givenOaTarget(
-        givenSelector("$['ods:hasIdentification'][0]['ods:hasCitation'][0]['dcterms:identifier']")));
+        givenSelector("$['ods:hasIdentifications'][0]['ods:hasCitations'][0]['dcterms:identifier']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasTaxonIdentification'][*]['dwc:scientificName']",
+            "$['ods:hasIdentifications'][*]['ods:hasTaxonIdentifications'][*]['dwc:scientificName']",
             "bombus bombus"),
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasTaxonIdentification'][*]['dwc:class']", "insecta"))
+            "$['ods:hasIdentifications'][*]['ods:hasTaxonIdentifications'][*]['dwc:class']", "insecta"))
     );
 
     // When
@@ -479,14 +479,14 @@ class JsonPathComponentTest {
   void testCase5() throws Exception {
     // Given
     var baseTarget = givenOaTarget(
-        givenSelector("$['ods:hasEvent'][5]['ods:Location']"));
+        givenSelector("$['ods:hasEvents'][5]['ods:hasLocation']"));
     var expected = List.of(givenOaTarget(
-        givenSelector("$['ods:hasEvent'][0]['ods:Location']")));
+        givenSelector("$['ods:hasEvents'][0]['ods:hasLocation']")));
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasCitation'][*]['dcterms:identifier']",
+            "$['ods:hasIdentifications'][*]['ods:hasCitations'][*]['dcterms:identifier']",
             "Miller 1888"),
-        new SearchParam("$['ods:hasEvent'][*]['ods:Location']['remarks']['weather']",
+        new SearchParam("$['ods:hasEvents'][*]['ods:hasLocation']['remarks']['weather']",
             "good"))
     );
 
@@ -506,19 +506,19 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "$['ods:hasIdentification'][5]['ods:hasTaxonIdentification'][5]['dwc:scientificName']"));
+            "$['ods:hasIdentifications'][5]['ods:hasTaxonIdentifications'][5]['dwc:scientificName']"));
     var expected = List.of(givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][0]['ods:hasTaxonIdentification'][0]['dwc:scientificName']")),
+                "$['ods:hasIdentifications'][0]['ods:hasTaxonIdentifications'][0]['dwc:scientificName']")),
         givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][0]['ods:hasTaxonIdentification'][1]['dwc:scientificName']")),
+                "$['ods:hasIdentifications'][0]['ods:hasTaxonIdentifications'][1]['dwc:scientificName']")),
         givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][1]['ods:hasTaxonIdentification'][0]['dwc:scientificName']")),
+                "$['ods:hasIdentifications'][1]['ods:hasTaxonIdentifications'][0]['dwc:scientificName']")),
         givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][1]['ods:hasTaxonIdentification'][1]['dwc:scientificName']"))
+                "$['ods:hasIdentifications'][1]['ods:hasTaxonIdentifications'][1]['dwc:scientificName']"))
     );
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam("$['ods:livingOrPreserved']", "Preserved"))
@@ -539,17 +539,17 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "$['ods:hasIdentification'][5]['ods:hasTaxonIdentification'][5]['dwc:scientificName']"));
+            "$['ods:hasIdentifications'][5]['ods:hasTaxonIdentifications'][5]['dwc:scientificName']"));
     var expected = List.of(givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][0]['ods:hasTaxonIdentification'][0]['dwc:scientificName']")),
+                "$['ods:hasIdentifications'][0]['ods:hasTaxonIdentifications'][0]['dwc:scientificName']")),
         givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][1]['ods:hasTaxonIdentification'][0]['dwc:scientificName']"))
+                "$['ods:hasIdentifications'][1]['ods:hasTaxonIdentifications'][0]['dwc:scientificName']"))
     );
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasTaxonIdentification'][*]['dwc:scientificName']",
+            "$['ods:hasIdentifications'][*]['ods:hasTaxonIdentifications'][*]['dwc:scientificName']",
             "bombus bombus"))
     );
 
@@ -566,17 +566,17 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "$['ods:hasIdentification'][5]['ods:hasTaxonIdentification'][5]['dwc:scientificName']"));
+            "$['ods:hasIdentifications'][5]['ods:hasTaxonIdentifications'][5]['dwc:scientificName']"));
     var expected = List.of(givenOaTarget(
         givenSelector(
-            "$['ods:hasIdentification'][0]['ods:hasTaxonIdentification'][0]['dwc:scientificName']"))
+            "$['ods:hasIdentifications'][0]['ods:hasTaxonIdentifications'][0]['dwc:scientificName']"))
     );
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasTaxonIdentification'][*]['dwc:scientificName']",
+            "$['ods:hasIdentifications'][*]['ods:hasTaxonIdentifications'][*]['dwc:scientificName']",
             "bombus bombus"),
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasTaxonIdentification'][*]['dwc:class']", "insecta"))
+            "$['ods:hasIdentifications'][*]['ods:hasTaxonIdentifications'][*]['dwc:class']", "insecta"))
     );
 
     // When
@@ -593,17 +593,17 @@ class JsonPathComponentTest {
     // Given
     var baseTarget = givenOaTarget(
         givenSelector(
-            "$['ods:hasIdentification'][5]['ods:hasTaxonIdentification'][5]['dwc:scientificName']"));
+            "$['ods:hasIdentifications'][5]['ods:hasTaxonIdentifications'][5]['dwc:scientificName']"));
     var expected = List.of(givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][0]['ods:hasTaxonIdentification'][0]['dwc:scientificName']")),
+                "$['ods:hasIdentifications'][0]['ods:hasTaxonIdentifications'][0]['dwc:scientificName']")),
         givenOaTarget(
             givenSelector(
-                "$['ods:hasIdentification'][0]['ods:hasTaxonIdentification'][1]['dwc:scientificName']"))
+                "$['ods:hasIdentifications'][0]['ods:hasTaxonIdentifications'][1]['dwc:scientificName']"))
     );
     var batchMetadata = new AnnotationBatchMetadata(0, List.of(
         new SearchParam(
-            "$['ods:hasIdentification'][*]['ods:hasCitation'][*]['dcterms:identifier']",
+            "$['ods:hasIdentifications'][*]['ods:hasCitations'][*]['dcterms:identifier']",
             "Miller 1888"))
     );
 
@@ -621,8 +621,8 @@ class JsonPathComponentTest {
         {
           "@id": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
           "@type": "ods:DigitalSpecimen",
-          "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
-          "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+          "dcterms:identifier": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+          "ods:fdoType": "https://doi.org/21.T11148/894b1e6cad57e921764e",
           "ods:midsLevel": 0,
           "ods:version": 4,
           "dcterms:created": "2022-11-01T09:59:24.000Z",
@@ -639,9 +639,9 @@ class JsonPathComponentTest {
           "ods:organisationID": "https://ror.org/0349vqz63",
           "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
           "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
-          "ods:hasEvent": [
+          "ods:hasEvents": [
             {
-              "ods:Location": {
+              "ods:hasLocation": {
                 "dwc:city": "Paris",
                 "remarks": {
                   "weather": "good"
@@ -649,7 +649,7 @@ class JsonPathComponentTest {
               }
             },
             {
-              "ods:Location": {
+              "ods:hasLocation": {
                 "dwc:city": "Marseille",
                 "remarks": {
                   "weather": "bad"
@@ -657,14 +657,14 @@ class JsonPathComponentTest {
               }
             }
           ],
-          "ods:hasIdentification": [
+          "ods:hasIdentifications": [
             {
-              "ods:hasCitation": [
+              "ods:hasCitations": [
                 {
                   "dcterms:identifier": "Miller 1888"
                 }
               ],
-              "ods:hasTaxonIdentification": [
+              "ods:hasTaxonIdentifications": [
                 {
                   "dwc:scientificName": "bombus bombus",
                   "dwc:class": "insecta"
@@ -676,12 +676,12 @@ class JsonPathComponentTest {
               ]
             },
             {
-              "ods:hasCitation": [
+              "ods:hasCitations": [
                 {
                   "dcterms:identifier": "Frank 1900"
                 }
               ],
-              "ods:hasTaxonIdentification": [
+              "ods:hasTaxonIdentifications": [
                 {
                   "dwc:scientificName": "bombus bombus"
                 },

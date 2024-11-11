@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("fdo")
 public class FdoProperties {
+
   @NotBlank
   private String type = "https://doi.org/21.T11148/cf458ca9ee1d44a5608f";
 

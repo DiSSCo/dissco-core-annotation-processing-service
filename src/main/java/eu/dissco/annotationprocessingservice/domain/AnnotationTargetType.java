@@ -16,11 +16,6 @@ public enum AnnotationTargetType {
     this.name = name;
   }
 
-  @Override
-  public String toString() {
-    return this.name;
-  }
-
   public static AnnotationTargetType fromString(String name) {
     for (AnnotationTargetType type : AnnotationTargetType.values()) {
       if (type.name.equals(name)) {
@@ -29,5 +24,10 @@ public enum AnnotationTargetType {
     }
     log.error("Invalid annotation target type: {}", name);
     throw new IllegalStateException();
+  }
+
+  @Override
+  public String toString() {
+    return this.name;
   }
 }

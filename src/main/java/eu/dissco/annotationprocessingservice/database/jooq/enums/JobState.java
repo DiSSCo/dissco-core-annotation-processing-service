@@ -25,7 +25,9 @@ public enum JobState implements EnumType {
 
     COMPLETED("COMPLETED"),
 
-    NOTIFICATION_FAILED("NOTIFICATION_FAILED");
+    NOTIFICATION_FAILED("NOTIFICATION_FAILED"),
+
+    QUEUED("QUEUED");
 
     private final String literal;
 

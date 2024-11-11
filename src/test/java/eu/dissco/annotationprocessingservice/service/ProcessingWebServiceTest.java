@@ -4,6 +4,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
+import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationBatchMetadataTwoParam;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
@@ -26,15 +27,16 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -77,6 +79,8 @@ class ProcessingWebServiceTest {
   private BatchAnnotationService batchAnnotationService;
   @Mock
   private AnnotationBatchRecordService annotationBatchRecordService;
+  @Mock
+  private FdoProperties fdoProperties;
   private MockedStatic<Instant> mockedStatic;
   private ProcessingWebService service;
 
@@ -84,7 +88,7 @@ class ProcessingWebServiceTest {
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService);
+        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService, fdoProperties);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -106,6 +110,9 @@ class ProcessingWebServiceTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     var result = service.persistNewAnnotation(annotationRequest, false);
@@ -132,6 +139,9 @@ class ProcessingWebServiceTest {
       ((Annotation) args[0]).withOdsBatchID(BATCH_ID);
       return null;
     }).when(annotationBatchRecordService).mintBatchId(any());
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     var result = service.persistNewAnnotation(annotationRequest, true);
@@ -168,6 +178,9 @@ class ProcessingWebServiceTest {
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -193,6 +206,9 @@ class ProcessingWebServiceTest {
         indexResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -219,6 +235,9 @@ class ProcessingWebServiceTest {
     doThrow(PidCreationException.class).when(handleComponent).rollbackHandleCreation(any());
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -243,6 +262,9 @@ class ProcessingWebServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
         .publishCreateEvent(givenAnnotationProcessedWeb());
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -285,6 +307,9 @@ class ProcessingWebServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     var result = service.updateAnnotation(annotationRequest);
@@ -408,6 +433,9 @@ class ProcessingWebServiceTest {
             givenAnnotationProcessedWeb().withOdsVersion(2));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThrows(FailedProcessingException.class,

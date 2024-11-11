@@ -1,5 +1,7 @@
 package eu.dissco.annotationprocessingservice;
 
+import static eu.dissco.annotationprocessingservice.domain.AgentRoleType.PROCESSING_SERVICE;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,10 +27,12 @@ import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
+import eu.dissco.annotationprocessingservice.schema.Identifier.DctermsType;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
-import eu.dissco.annotationprocessingservice.schema.SchemaAggregateRating;
+import eu.dissco.annotationprocessingservice.schema.OdsHasAggregateRating;
 import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
+import eu.dissco.annotationprocessingservice.utils.AgentUtils;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -48,7 +52,9 @@ public class TestUtils {
   public static final Instant UPDATED = Instant.parse("2024-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
+  public static final String PROCESSOR_NAME = "annotation-processing-service";
   public static final String PROCESSOR_HANDLE = "https://hdl.handle.net/anno-process-service-pid";
+  public static final String FDO_TYPE = "https://doi.org/21.T11148/cf458ca9ee1d44a5608f";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
       "3a36d684-deb8-8779-2753-caef497e9ed8");
 
@@ -98,11 +104,6 @@ public class TestUtils {
         ANNOTATION_HASH);
   }
 
-  public static HashedAnnotationRequest givenHashedAnnotationRequestAlt() {
-    return new HashedAnnotationRequest(givenAnnotationRequest().withOaMotivation(
-        AnnotationProcessingRequest.OaMotivation.OA_EDITING), ANNOTATION_HASH);
-  }
-
   public static HashedAnnotation givenHashedAnnotationAlt() {
     return new HashedAnnotation(givenAnnotationProcessedAlt(), ANNOTATION_HASH);
   }
@@ -129,11 +130,11 @@ public class TestUtils {
       String targetId) {
     return new Annotation()
         .withId(annotationId)
-        .withOdsID(annotationId)
+        .withDctermsIdentifier(annotationId)
         .withType("ods:Annotation")
-        .withRdfType("ods:Annotation")
+        .withOdsFdoType(FDO_TYPE)
         .withOdsVersion(1)
-        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOdsStatus(OdsStatus.ACTIVE)
         .withOaHasBody(givenOaBody())
         .withOaMotivation(OaMotivation.OA_COMMENTING)
         .withOaHasTarget(givenOaTarget(targetId))
@@ -205,23 +206,26 @@ public class TestUtils {
     return givenRequestOaTarget(targetId, AnnotationTargetType.DIGITAL_SPECIMEN);
   }
 
-  public static AnnotationTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType) {
+  public static AnnotationTarget givenRequestOaTarget(String targetId,
+      AnnotationTargetType targetType) {
     return givenRequestOaTarget(targetId, targetType, givenRequestSelector());
   }
 
-  public static AnnotationTarget givenRequestOaTarget(String targetId, AnnotationTargetType targetType,
+  public static AnnotationTarget givenRequestOaTarget(String targetId,
+      AnnotationTargetType targetType,
       OaHasSelector selector) {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
-        .withOdsType(targetType.toString())
-        .withOdsID(DOI_PROXY + targetId)
+        .withOdsFdoType(targetType.toString())
+        .withDctermsIdentifier(DOI_PROXY + targetId)
         .withOaHasSelector(selector);
   }
 
   public static OaHasSelector givenRequestSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field", "$['ods:hasEvent'][1]['ods:Location']['dwc:locality']")
+        .withAdditionalProperty("ods:field",
+            "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
@@ -229,8 +233,8 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
-        .withOdsType(targetType.toString())
-        .withOdsID(DOI_PROXY + targetId)
+        .withOdsFdoType(targetType.toString())
+        .withDctermsIdentifier(DOI_PROXY + targetId)
         .withOaHasSelector(givenSelector());
   }
 
@@ -238,15 +242,16 @@ public class TestUtils {
       OaHasSelector selector) {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
-        .withOdsID(DOI_PROXY + targetId)
-        .withOdsType(targetType.toString())
+        .withDctermsIdentifier(DOI_PROXY + targetId)
+        .withOdsFdoType(targetType.toString())
         .withOaHasSelector(selector)
         .withType("ods:DigitalSpecimen");
   }
 
   public static OaHasSelector givenSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field", "$['ods:hasEvent'][1]['ods:Location']['dwc:locality']")
+        .withAdditionalProperty("ods:field",
+            "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:FieldSelector");
   }
 
@@ -269,18 +274,16 @@ public class TestUtils {
   }
 
   public static Agent givenGenerator() {
-    return new Agent()
-        .withSchemaName("Annotation Processing Service")
-        .withId(PROCESSOR_HANDLE)
-        .withType(Type.AS_APPLICATION);
+    return AgentUtils.createMachineAgent(PROCESSOR_NAME, PROCESSOR_HANDLE, PROCESSING_SERVICE,
+        DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
-  public static SchemaAggregateRating givenAggregationRating() {
+  public static OdsHasAggregateRating givenAggregationRating() {
     return givenAggregationRating(0.1);
   }
 
-  public static SchemaAggregateRating givenAggregationRating(double ratingValue) {
-    return new SchemaAggregateRating()
+  public static OdsHasAggregateRating givenAggregationRating(double ratingValue) {
+    return new OdsHasAggregateRating()
         .withSchemaRatingValue(ratingValue)
         .withType("schema:AggregateRating")
         .withSchemaRatingCount(2);
@@ -339,14 +342,14 @@ public class TestUtils {
 
   public static SearchParam givenSearchParamCountry() {
     return new SearchParam(
-        "$['ods:hasEvent'][*]['ods:Location']['dwc:country']",
+        "$['ods:hasEvents'][*]['ods:hasLocation']['dwc:country']",
         "Netherlands");
   }
 
   public static AnnotationBatchMetadata givenAnnotationBatchMetadataLatitudeSearch() {
     return new AnnotationBatchMetadata(1,
         List.of(new SearchParam(
-            "ods:hasEvent[*].ods:Location.ods:GeoReference.dwc:decimalLatitude",
+            "ods:hasEvents[*].ods:hasLocation.ods:hasGeoreference.dwc:decimalLatitude",
             "52.123")));
   }
 
@@ -354,7 +357,7 @@ public class TestUtils {
     return new AnnotationBatchMetadata(1, List.of(
         givenSearchParamCountry(),
         new SearchParam(
-            "$['ods:hasEvent'][*]['dwc:occurrenceRemarks']",
+            "$['ods:hasEvents'][*]['dwc:eventRemarks']",
             "Correct"
         )));
   }
@@ -373,8 +376,8 @@ public class TestUtils {
   public static Annotation givenAcceptedAnnotation() {
     var annotation = givenAnnotationProcessedWeb();
     annotation.setOdsMergingStateChangeDate(Date.from(CREATED));
-    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_APPROVED);
-    annotation.setOdsMergingStateChangedBy(givenProcessingAgent());
+    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+    annotation.setOdsHasMergingStateChangedBy(givenProcessingAgent());
     return annotation;
   }
 
@@ -383,10 +386,8 @@ public class TestUtils {
   }
 
   public static Agent givenProcessingAgent() {
-    return new Agent()
-        .withType(Type.AS_APPLICATION)
-        .withId(ID)
-        .withSchemaName("A processing service");
+    return AgentUtils.createMachineAgent("processing-service", ID, PROCESSING_SERVICE,
+        DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
   public static JsonNode givenElasticDocument() {
@@ -405,9 +406,9 @@ public class TestUtils {
                "@id":  \"""" + id + """
               ",
                "@type": "ods:DigitalSpecimen",
-               "ods:ID": \"""" + id + """
+               "dcterms:identifier": \"""" + id + """
                ",
-               "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+               "ods:fdoType": "https://doi.org/21.T11148/894b1e6cad57e921764e",
                "ods:midsLevel": 0,
                "ods:version": 4,
                "dcterms:created": "2022-11-01T09:59:24.000Z",
@@ -423,15 +424,15 @@ public class TestUtils {
                "ods:organisationID": "https://ror.org/0349vqz63",
                "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
                "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
-               "ods:hasEvent": [
+               "ods:hasEvents": [
                  {
-                   "dwc:occurrenceRemarks": "Correct",
+                   "dwc:eventRemarks": "Correct",
                    "annotateTarget": "this",
-                   "ods:Location": {
+                   "ods:hasLocation": {
                      "dwc:country": \"""" + country + """
               ",
                   "dwc:continent": "Europe",
-                  "ods:GeoReference": {
+                  "ods:hasGeoreference": {
                     "dwc:decimalLatitude": "52.123",
                     "dwc:decimalLongitude": 10.1233,
                     "dwc": [
@@ -442,12 +443,12 @@ public class TestUtils {
                 }
               },
               {
-                "dwc:occurrenceRemarks": "Incorrect",
+                "dwc:eventRemarks": "Incorrect",
                 "annotateTarget": "this",
-                "ods:Location": {
+                "ods:hasLocation": {
                   "dwc:country": "Unknown",
                   "dwc:continent": "Error",
-                  "ods:GeoReference": {
+                  "ods:hasGeoreference": {
                     "dwc:decimalLatitude": "51.123",
                     "dwc:decimalLongitude": 10.5233
                   },
@@ -455,13 +456,13 @@ public class TestUtils {
                 }
               },
               {
-                "dwc:occurrenceRemarks": "Half Correct",
+                "dwc:eventRemarks": "Half Correct",
                 "annotateTarget": "this",
-                "ods:Location": {
+                "ods:hasLocation": {
                   "dwc:country": \"""" + country + """
               ",
                             "dwc:continent": "Unknown",
-                            "ods:GeoReference": {
+                            "ods:hasGeoreference": {
                               "dwc:decimalLatitude": "52.123",
                               "dwc:decimalLongitude": 10.1233,
                               "test": "hello"
@@ -482,21 +483,21 @@ public class TestUtils {
     return Map.of(ID, BATCH_ID);
   }
 
-  public static Annotation givenTombstoneAnnotation(){
+  public static Annotation givenTombstoneAnnotation() {
     var original = givenAnnotationProcessed();
     return givenAnnotationProcessed()
         .withOdsVersion(original.getOdsVersion() + 1)
-        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
-        .withOdsTombstoneMetadata(givenTombstoneMetadata())
+        .withOdsStatus(OdsStatus.TOMBSTONE)
+        .withOdsHasTombstoneMetadata(givenTombstoneMetadata())
         .withDctermsModified(Date.from(UPDATED));
   }
 
-  public static TombstoneMetadata givenTombstoneMetadata(){
+  public static TombstoneMetadata givenTombstoneMetadata() {
     return new TombstoneMetadata()
         .withType("ods:Tombstone")
         .withOdsTombstoneDate(Date.from(UPDATED))
         .withOdsTombstoneText("This annotation was archived")
-        .withOdsTombstonedByAgent(givenProcessingAgent());
+        .withOdsHasAgents(List.of(givenProcessingAgent()));
   }
 
 

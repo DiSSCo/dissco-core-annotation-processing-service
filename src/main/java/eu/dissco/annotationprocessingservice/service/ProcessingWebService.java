@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent.validateAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
@@ -17,6 +16,7 @@ import eu.dissco.annotationprocessingservice.exception.FailedProcessingException
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
@@ -41,10 +41,10 @@ public class ProcessingWebService extends AbstractProcessingService {
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
       ApplicationProperties applicationProperties, AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordService annotationBatchRecordService) {
+      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService);
+        annotationBatchRecordService, fdoProperties);
   }
 
   public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,
@@ -115,7 +115,6 @@ public class ProcessingWebService extends AbstractProcessingService {
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
     return annotation;
   }
-
 
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,
