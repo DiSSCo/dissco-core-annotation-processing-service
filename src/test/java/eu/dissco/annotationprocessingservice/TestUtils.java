@@ -405,7 +405,8 @@ public class TestUtils {
                "@id":  \"""" + id + """
               ",
                "@type": "ods:DigitalSpecimen",
-               "ods:ID": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+               "ods:ID": \"""" + id + """
+               ",
                "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
                "ods:midsLevel": 0,
                "ods:version": 4,

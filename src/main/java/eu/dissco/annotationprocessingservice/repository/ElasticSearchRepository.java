@@ -102,7 +102,7 @@ public class ElasticSearchRepository {
         .query(
             q -> q.bool(b -> b.must(query)))
         .trackTotalHits(t -> t.enabled(Boolean.TRUE))
-        .sort(s -> s.field(f -> f.field(SORT_BY).order(SortOrder.Desc)));
+        .sort(s -> s.field(f -> f.field(SORT_BY).order(SortOrder.Asc)));
 
     if (lastId != null) {
       searchRequestBuilder

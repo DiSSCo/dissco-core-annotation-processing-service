@@ -178,6 +178,22 @@ class ElasticSearchRepositoryIT {
   }
 
   @Test
+  void searchByBatchMetadataNextPage() throws Exception {
+    // Given
+    var targetDocument = givenElasticDocument("Netherlands", "BB");
+    var altDocument = givenElasticDocument("Netherlands", "AA");
+    postDocuments(List.of(targetDocument, altDocument), DIGITAL_SPECIMEN_INDEX);
+    var batchMetadata = givenAnnotationBatchMetadataTwoParam();
+
+    // When
+    var result = repository.searchByBatchMetadata(batchMetadata,
+        AnnotationTargetType.DIGITAL_SPECIMEN, "AA");
+
+    // Then
+    assertThat(result).isEqualTo(List.of(targetDocument));
+  }
+
+  @Test
   void searchByBatchMetadataMustNotExist() throws Exception {
     // Given
     var targetDocument = givenElasticDocument("Netherlands", TARGET_ID);
