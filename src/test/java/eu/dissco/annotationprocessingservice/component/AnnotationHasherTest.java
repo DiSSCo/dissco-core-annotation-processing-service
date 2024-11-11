@@ -32,7 +32,7 @@ class AnnotationHasherTest {
     var result = annotationHasher.getAnnotationHash(givenAnnotationRequest());
 
     // Then
-    assertThat(result).isEqualTo(UUID.fromString("2b942a03-2aad-2e4c-4671-ecbd58fd05a4"));
+    assertThat(result).isEqualTo(UUID.fromString("a738fa25-5709-06e7-6a0e-4232deb8c928"));
   }
 
   @Test

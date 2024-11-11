@@ -42,8 +42,8 @@ public class ProvenanceService {
     return new CreateUpdateTombstoneEvent()
         .withId(entityID)
         .withType("ods:CreateUpdateTombstoneEvent")
-        .withOdsID(entityID)
-        .withOdsType(properties.getCreateUpdateTombstoneEventType())
+        .withDctermsIdentifier(entityID)
+        .withOdsFdoType(properties.getCreateUpdateTombstoneEventType())
         .withProvActivity(new ProvActivity()
             .withId(activityID)
             .withType(activityType)
@@ -52,10 +52,10 @@ public class ProvenanceService {
             .withProvWasAssociatedWith(List.of(
                 new ProvWasAssociatedWith()
                     .withId(annotation.getDctermsCreator().getId())
-                    .withProvHadRole(ProvHadRole.ODS_REQUESTOR),
+                    .withProvHadRole(ProvHadRole.REQUESTOR),
                 new ProvWasAssociatedWith()
                     .withId(annotation.getAsGenerator().getId())
-                    .withProvHadRole(ProvHadRole.ODS_GENERATOR)))
+                    .withProvHadRole(ProvHadRole.GENERATOR)))
             .withProvUsed(entityID)
             .withRdfsComment(getRdfsComment(activityType)))
         .withProvEntity(new ProvEntity()
@@ -63,7 +63,7 @@ public class ProvenanceService {
             .withType(annotation.getType())
             .withProvValue(mapEntityToProvValue(annotation))
             .withProvWasGeneratedBy(activityID))
-        .withOdsHasProvAgent(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
+        .withOdsHasAgents(List.of(annotation.getDctermsCreator(), annotation.getAsGenerator()));
   }
 
   private static String getRdfsComment(ProvActivity.Type activityType) {

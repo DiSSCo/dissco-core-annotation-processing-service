@@ -6,6 +6,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_3;
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.BATCH_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
@@ -61,6 +62,7 @@ import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
@@ -128,6 +130,8 @@ class ProcessingKafkaServiceTest {
   private ApplicationProperties applicationProperties;
   @Mock
   private BulkResponse bulkResponse;
+  @Mock
+  private FdoProperties fdoProperties;
   private MockedStatic<Instant> mockedStatic;
   private ProcessingKafkaService service;
 
@@ -139,7 +143,7 @@ class ProcessingKafkaServiceTest {
             givenAnnotationProcessed().withDctermsCreator(givenCreator("different creator"))),
         Arguments.of(givenAnnotationProcessed().withOaHasTarget(givenOaTarget("different target"))),
         Arguments.of(givenAnnotationProcessed().withOaMotivatedBy("different motivated by")),
-        Arguments.of(givenAnnotationProcessed().withSchemaAggregateRating(
+        Arguments.of(givenAnnotationProcessed().withOdsHasAggregateRating(
             givenAggregationRating(0.99))),
         Arguments.of(givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING))
     );
@@ -150,7 +154,7 @@ class ProcessingKafkaServiceTest {
     service = new ProcessingKafkaService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
         masJobRecordService, annotationHasher, schemaValidator, batchAnnotationService,
-        annotationBatchRecordService);
+        annotationBatchRecordService, fdoProperties);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -178,13 +182,14 @@ class ProcessingKafkaServiceTest {
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(
         annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested), any())).willReturn(
         Optional.empty());
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(givenAnnotationEvent(annotationRequest));
@@ -215,6 +220,9 @@ class ProcessingKafkaServiceTest {
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(Optional.empty());
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(event);
@@ -517,6 +525,9 @@ class ProcessingKafkaServiceTest {
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(annotationBatchRecordService.mintBatchIds(anyList(),
         eq(batchingRequested), any())).willReturn(Optional.empty());
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     var event = new AnnotationProcessingEvent(JOB_ID,
         List.of(newAnnotationRequest, changedAnnotationRequest, equalAnnotation),
@@ -586,6 +597,9 @@ class ProcessingKafkaServiceTest {
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(annotationBatchRecordService.mintBatchIds(eq(List.of(newAnnotation)),
         eq(batchingRequested), any())).willReturn(Optional.of(givenBatchIdMap()));
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(event);
@@ -689,7 +703,7 @@ class ProcessingKafkaServiceTest {
         .withOaHasTarget(givenRequestOaTarget("alt target"));
     var secondAnnotationCurrent = givenAnnotationProcessed()
         .withId(ID_ALT)
-        .withOdsID(ID_ALT)
+        .withDctermsIdentifier(ID_ALT)
         .withOaMotivatedBy("science")
         .withOaHasTarget(givenOaTarget("alt target"));
     var secondAnnotationCurrentHashed = new HashedAnnotation(secondAnnotationCurrent,
@@ -709,6 +723,9 @@ class ProcessingKafkaServiceTest {
         new MasJobRecord(JOB_ID, false, null));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     assertThatThrownBy(() -> service.handleMessage(event)).isInstanceOf(
@@ -862,6 +879,9 @@ class ProcessingKafkaServiceTest {
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(event);
@@ -896,6 +916,9 @@ class ProcessingKafkaServiceTest {
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(event);
@@ -981,6 +1004,9 @@ class ProcessingKafkaServiceTest {
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
     service.handleMessage(event);
