@@ -101,7 +101,6 @@ public class ElasticSearchRepository {
         .index(index)
         .query(
             q -> q.bool(b -> b.must(query)))
-        .size(properties.getBatchPageSize())
         .trackTotalHits(t -> t.enabled(Boolean.TRUE))
         .sort(s -> s.field(f -> f.field(SORT_BY).order(SortOrder.Desc)));
 
