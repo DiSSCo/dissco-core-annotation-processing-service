@@ -28,7 +28,7 @@ public class BatchAnnotationService {
   private final ElasticSearchRepository elasticRepository;
   private final KafkaPublisherService kafkaService;
   private final JsonPathComponent jsonPathComponent;
-  protected static final String ID_FIELD = "ods:ID";
+  protected static final String ID_FIELD = "dcterms:identifier";
 
   public void applyBatchAnnotations(ProcessedAnnotationBatch batchmetadata)
       throws IOException, ConflictException, BatchingException {

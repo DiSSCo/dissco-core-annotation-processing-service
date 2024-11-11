@@ -28,7 +28,7 @@ public class ElasticSearchRepository {
 
   private final ElasticsearchClient client;
   private final ElasticSearchProperties properties;
-  private static final String SORT_BY = "ods:ID.keyword";
+  private static final String SORT_BY = "dcterms:identifier.keyword";
 
   public IndexResponse indexAnnotation(Annotation annotation) throws IOException {
     return client.index(
