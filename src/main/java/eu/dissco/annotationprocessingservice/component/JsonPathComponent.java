@@ -177,8 +177,8 @@ public class JsonPathComponent {
         selector.setAdditionalProperty(TYPE, "ods:ClassSelector");
         selector.setAdditionalProperty("ods:class", targetPath);
       } else {
-        selector.setAdditionalProperty(TYPE, "ods:FieldSelector");
-        selector.setAdditionalProperty("ods:field", targetPath);
+        selector.setAdditionalProperty(TYPE, "ods:TermSelector");
+        selector.setAdditionalProperty("ods:term", targetPath);
       }
       newTargets.add(new AnnotationTarget()
           .withOdsFdoType(baseTarget.getOdsFdoType())
@@ -198,7 +198,7 @@ public class JsonPathComponent {
         return selector.get("ods:class").toString();
       }
       case FIELD_SELECTOR -> {
-        return selector.get("ods:field").toString();
+        return selector.get("ods:term").toString();
       }
       default -> {
         log.error("Unable to batch annotations with selector type {}", selectorType);

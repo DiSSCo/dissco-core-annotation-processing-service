@@ -54,8 +54,8 @@ public class AnnotationValidatorComponent {
       return;
     }
     String path =
-        type.equals("ods:FieldSelector") ? target.getOaHasSelector().getAdditionalProperties()
-            .get("ods:field").toString() :
+        type.equals("ods:TermSelector") ? target.getOaHasSelector().getAdditionalProperties()
+            .get("ods:term").toString() :
             target.getOaHasSelector().getAdditionalProperties().get("ods:class").toString();
     targetPathIsInBlockNotation(path);
   }
