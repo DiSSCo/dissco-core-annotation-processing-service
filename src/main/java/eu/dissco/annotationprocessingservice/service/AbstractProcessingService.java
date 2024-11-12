@@ -126,7 +126,7 @@ public abstract class AbstractProcessingService {
   }
 
   private Agent createGenerator() {
-    return AgentUtils.createMachineAgent(applicationProperties.getProcessorName(),
+    return AgentUtils.createAgent(applicationProperties.getProcessorName(),
         applicationProperties.getProcessorHandle(), PROCESSING_SERVICE,
         DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }

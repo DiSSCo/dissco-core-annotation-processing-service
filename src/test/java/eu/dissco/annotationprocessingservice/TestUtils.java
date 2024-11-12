@@ -224,9 +224,9 @@ public class TestUtils {
 
   public static OaHasSelector givenRequestSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field",
+        .withAdditionalProperty("ods:term",
             "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
-        .withAdditionalProperty("@type", "ods:FieldSelector");
+        .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
   public static AnnotationTarget givenOaTarget(String targetId, AnnotationTargetType targetType) {
@@ -250,9 +250,9 @@ public class TestUtils {
 
   public static OaHasSelector givenSelector() {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field",
+        .withAdditionalProperty("ods:term",
             "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
-        .withAdditionalProperty("@type", "ods:FieldSelector");
+        .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
   public static AnnotationTarget givenOaTarget(OaHasSelector selector) {
@@ -261,8 +261,8 @@ public class TestUtils {
 
   public static OaHasSelector givenSelector(String field) {
     return new OaHasSelector()
-        .withAdditionalProperty("ods:field", field)
-        .withAdditionalProperty("@type", "ods:FieldSelector");
+        .withAdditionalProperty("ods:term", field)
+        .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
 
@@ -274,7 +274,7 @@ public class TestUtils {
   }
 
   public static Agent givenGenerator() {
-    return AgentUtils.createMachineAgent(PROCESSOR_NAME, PROCESSOR_HANDLE, PROCESSING_SERVICE,
+    return AgentUtils.createAgent(PROCESSOR_NAME, PROCESSOR_HANDLE, PROCESSING_SERVICE,
         DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
@@ -386,7 +386,7 @@ public class TestUtils {
   }
 
   public static Agent givenProcessingAgent() {
-    return AgentUtils.createMachineAgent("processing-service", ID, PROCESSING_SERVICE,
+    return AgentUtils.createAgent("processing-service", ID, PROCESSING_SERVICE,
         DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
