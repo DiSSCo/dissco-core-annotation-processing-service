@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
+import static eu.dissco.annotationprocessingservice.domain.AgentRoleType.PROCESSING_SERVICE;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -14,6 +15,7 @@ import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Agent;
@@ -23,7 +25,9 @@ import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
+import eu.dissco.annotationprocessingservice.schema.Identifier.DctermsType;
 import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
+import eu.dissco.annotationprocessingservice.utils.AgentUtils;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
@@ -52,6 +56,7 @@ public abstract class AbstractProcessingService {
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;
+  protected final FdoProperties fdoProperties;
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {
@@ -61,11 +66,11 @@ public abstract class AbstractProcessingService {
         && (currentAnnotation.getOaMotivatedBy() != null && (currentAnnotation.getOaMotivatedBy()
         .equals(annotation.getOaMotivatedBy()))
         || (currentAnnotation.getOaMotivatedBy() == null && annotation.getOaMotivatedBy() == null))
-        && (currentAnnotation.getSchemaAggregateRating() != null
-        && currentAnnotation.getSchemaAggregateRating()
-        .equals(annotation.getSchemaAggregateRating())
-        || (currentAnnotation.getSchemaAggregateRating() == null
-        && annotation.getSchemaAggregateRating() == null))
+        && (currentAnnotation.getOdsHasAggregateRating() != null
+        && currentAnnotation.getOdsHasAggregateRating()
+        .equals(annotation.getOdsHasAggregateRating())
+        || (currentAnnotation.getOdsHasAggregateRating() == null
+        && annotation.getOdsHasAggregateRating() == null))
         && currentAnnotation.getOaMotivation().equals(annotation.getOaMotivation());
   }
 
@@ -74,11 +79,11 @@ public abstract class AbstractProcessingService {
     var timestamp = Instant.now();
     return new Annotation()
         .withId(id)
-        .withOdsID(id)
+        .withDctermsIdentifier(id)
         .withType("ods:Annotation")
-        .withRdfType("ods:Annotation")
+        .withOdsFdoType(fdoProperties.getType())
         .withOdsVersion(version)
-        .withOdsStatus(OdsStatus.ODS_ACTIVE)
+        .withOdsStatus(OdsStatus.ACTIVE)
         .withOaMotivation(OaMotivation.fromValue(annotationRequest.getOaMotivation().value()))
         .withOaMotivatedBy(annotationRequest.getOaMotivatedBy())
         .withOaHasTarget(annotationRequest.getOaHasTarget())
@@ -121,10 +126,9 @@ public abstract class AbstractProcessingService {
   }
 
   private Agent createGenerator() {
-    return new Agent()
-        .withId(applicationProperties.getProcessorHandle())
-        .withType(Type.AS_APPLICATION)
-        .withSchemaName("Annotation Processing Service");
+    return AgentUtils.createMachineAgent(applicationProperties.getProcessorName(),
+        applicationProperties.getProcessorHandle(), PROCESSING_SERVICE,
+        DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
   protected List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {
@@ -170,10 +174,10 @@ public abstract class AbstractProcessingService {
     return new Annotation()
         .withId(annotation.getId())
         .withType(annotation.getType())
-        .withOdsID(annotation.getOdsID())
-        .withOdsStatus(OdsStatus.ODS_TOMBSTONE)
+        .withDctermsIdentifier(annotation.getDctermsIdentifier())
+        .withOdsStatus(OdsStatus.TOMBSTONE)
         .withOdsJobID(annotation.getOdsJobID())
-        .withRdfType(annotation.getRdfType())
+        .withOdsFdoType(annotation.getOdsFdoType())
         .withOdsVersion(annotation.getOdsVersion() + 1)
         .withOaMotivation(annotation.getOaMotivation())
         .withOaMotivatedBy(annotation.getOaMotivatedBy())
@@ -184,14 +188,14 @@ public abstract class AbstractProcessingService {
         .withDctermsModified(Date.from(timestamp))
         .withDctermsIssued(annotation.getDctermsIssued())
         .withAsGenerator(annotation.getAsGenerator())
-        .withSchemaAggregateRating(annotation.getSchemaAggregateRating())
+        .withOdsHasAggregateRating(annotation.getOdsHasAggregateRating())
         .withOdsBatchID(annotation.getOdsBatchID())
         .withOdsPlaceInBatch(annotation.getOdsPlaceInBatch())
-        .withOdsTombstoneMetadata(new TombstoneMetadata()
+        .withOdsHasTombstoneMetadata(new TombstoneMetadata()
             .withType("ods:Tombstone")
             .withOdsTombstoneDate(Date.from(timestamp))
             .withOdsTombstoneText("This annotation was archived")
-            .withOdsTombstonedByAgent(tombstoningAgent));
+            .withOdsHasAgents(List.of(tombstoningAgent)));
   }
 
   protected void applyBatchAnnotations(AnnotationProcessingEvent event,

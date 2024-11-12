@@ -7,6 +7,7 @@ import eu.dissco.annotationprocessingservice.component.AnnotationValidatorCompon
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
@@ -32,24 +33,25 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       ApplicationProperties applicationProperties,
       AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordService annotationBatchRecordService) {
+      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService);
+        annotationBatchRecordService, fdoProperties);
   }
 
   private static void addMergingInformation(AutoAcceptedAnnotation autoAcceptedAnnotation,
       Annotation annotation) {
-    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.ODS_APPROVED);
+    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
     annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
-    annotation.setOdsMergingStateChangedBy(autoAcceptedAnnotation.acceptingAgent());
+    annotation.setOdsHasMergingStateChangedBy(autoAcceptedAnnotation.acceptingAgent());
   }
 
   public void handleMessage(AutoAcceptedAnnotation autoAcceptedAnnotation)
       throws FailedProcessingException {
     log.info("Processing auto-accepted annotation: {}", autoAcceptedAnnotation);
     var id = postHandle(autoAcceptedAnnotation.annotation());
-    var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), HANDLE_PROXY + id, 1, null);
+    var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), HANDLE_PROXY + id, 1,
+        null);
     addMergingInformation(autoAcceptedAnnotation, annotation);
     log.info("New id has been generated for Annotation: {}", annotation.getId());
     try {

@@ -21,6 +21,7 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
@@ -56,10 +57,10 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
       AnnotationValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordService annotationBatchRecordService) {
+      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService);
+        annotationBatchRecordService, fdoProperties);
     this.annotationHasher = annotationHasher;
   }
 
@@ -150,7 +151,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     var idMap = postHandles(hashedAnnotationsRequest, jobId, isBatchResult);
     var idList = idMap.values().stream().toList();
     var hashedAnnotations = hashedAnnotationsRequest.stream().map(
-        p -> new HashedAnnotation(buildAnnotation(p.annotation(), HANDLE_PROXY + idMap.get(p.hash()), event, 1),
+        p -> new HashedAnnotation(
+            buildAnnotation(p.annotation(), HANDLE_PROXY + idMap.get(p.hash()), event, 1),
             p.hash())).toList();
     var batchIds = annotationBatchRecordService.mintBatchIds(
         hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),

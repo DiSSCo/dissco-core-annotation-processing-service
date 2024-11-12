@@ -47,7 +47,7 @@ public class AnnotationRepository {
     return context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
         .where(ANNOTATION.ID.eq(removeProxy(annotationId))
-        .and(ANNOTATION.CREATOR.eq(creatorId)))
+            .and(ANNOTATION.CREATOR.eq(creatorId)))
         .fetchOptional()
         .map(this::mapAnnotation);
   }
@@ -92,7 +92,7 @@ public class AnnotationRepository {
       return context.insertInto(ANNOTATION)
           .set(ANNOTATION.ID, removeProxy(annotation))
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
-          .set(ANNOTATION.TYPE, annotation.getRdfType())
+          .set(ANNOTATION.TYPE, annotation.getOdsFdoType())
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
           .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
           .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
@@ -114,7 +114,7 @@ public class AnnotationRepository {
     try {
       return query.onConflict(ANNOTATION.ID).doUpdate()
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
-          .set(ANNOTATION.TYPE, annotation.getRdfType())
+          .set(ANNOTATION.TYPE, annotation.getOdsFdoType())
           .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
           .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
           .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
@@ -139,7 +139,7 @@ public class AnnotationRepository {
   }
 
   public void archiveAnnotation(Annotation annotation) {
-    var timestamp = annotation.getOdsTombstoneMetadata().getOdsTombstoneDate().toInstant();
+    var timestamp = annotation.getOdsHasTombstoneMetadata().getOdsTombstoneDate().toInstant();
     try {
       context.update(ANNOTATION)
           .set(ANNOTATION.TOMBSTONED, timestamp)

@@ -12,15 +12,15 @@ public class HandleUtils {
     // Utility class
   }
 
-  public static String removeProxy(Annotation annotation){
+  public static String removeProxy(Annotation annotation) {
     return annotation.getId().replace(HANDLE_PROXY, "");
   }
 
-  public static String removeProxy(AnnotationProcessingRequest annotation){
+  public static String removeProxy(AnnotationProcessingRequest annotation) {
     return annotation.getId().replace(HANDLE_PROXY, "");
   }
 
-  public static String removeProxy(String id){
+  public static String removeProxy(String id) {
     return id.replace(HANDLE_PROXY, "");
   }
 

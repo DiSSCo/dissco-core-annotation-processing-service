@@ -1,9 +1,9 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationBatchRecord;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
