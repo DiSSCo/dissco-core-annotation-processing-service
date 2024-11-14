@@ -18,9 +18,6 @@ public class ApplicationProperties {
   private String processorName = "annotation-processing-service";
 
   @NotNull
-  private int batchPageSize = 300;
-
-  @NotNull
   private int maxBatchRetries = 10;
 
   @NotBlank

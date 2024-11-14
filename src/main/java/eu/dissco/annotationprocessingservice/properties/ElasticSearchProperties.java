@@ -30,4 +30,5 @@ public class ElasticSearchProperties {
 
   @NotBlank
   private String digitalMediaObjectIndex = "digital-media";
+
 }
