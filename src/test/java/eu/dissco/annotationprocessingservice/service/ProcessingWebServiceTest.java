@@ -88,7 +88,8 @@ class ProcessingWebServiceTest {
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService, fdoProperties);
+        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
+        fdoProperties);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -159,7 +160,8 @@ class ProcessingWebServiceTest {
     var processedAnnotation = givenAnnotationProcessedWebBatch();
     var requestEvent = new AnnotationProcessingEvent(null, List.of(givenAnnotationRequest()),
         List.of(givenAnnotationBatchMetadataTwoParam()), null);
-    var processedEvent = new ProcessedAnnotationBatch(List.of(givenAnnotationProcessedWebBatch()), null,
+    var processedEvent = new ProcessedAnnotationBatch(List.of(givenAnnotationProcessedWebBatch()),
+        null,
         List.of(givenAnnotationBatchMetadataTwoParam()), null);
 
     // When

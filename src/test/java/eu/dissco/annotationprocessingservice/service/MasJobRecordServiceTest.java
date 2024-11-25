@@ -45,14 +45,14 @@ class MasJobRecordServiceTest {
   @Test
   void testVerifyMasJobIdKafka() {
     // Given
-    given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(true);
+    given(environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.KAFKA_AUTO)).willReturn(true);
 
     // When
     assertDoesNotThrow(() -> service.verifyMasJobId(givenAnnotationEvent()));
   }
 
   @Test
-  void testMarkEmptyMasJobRecordAsComplete(){
+  void testMarkEmptyMasJobRecordAsComplete() {
     // When
     service.markEmptyMasJobRecordAsComplete(JOB_ID, false);
 
@@ -64,21 +64,23 @@ class MasJobRecordServiceTest {
   void testVerifyMasJobIdWeb() {
     // Given
     var annotationEvent = givenAnnotationEvent();
-    given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(false);
+    given(environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.KAFKA_AUTO)).willReturn(false);
 
     // When
-    assertThrows(UnsupportedOperationException.class, () -> service.verifyMasJobId(annotationEvent));
+    assertThrows(UnsupportedOperationException.class,
+        () -> service.verifyMasJobId(annotationEvent));
   }
 
   @Test
   void testVerifyMasJobIdKafkaFails() {
     // Given
-    given(environment.matchesProfiles(Profiles.KAFKA)).willReturn(true);
+    given(environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.KAFKA_AUTO)).willReturn(true);
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.verifyMasJobId(new AnnotationProcessingEvent(null, List.of(givenAnnotationRequest()), null,
-            null)));
+        () -> service.verifyMasJobId(
+            new AnnotationProcessingEvent(null, List.of(givenAnnotationRequest()), null,
+                null)));
   }
 
   @Test
@@ -103,7 +105,7 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testMarkMasJobRecordAsCompletedBatchResult(){
+  void testMarkMasJobRecordAsCompletedBatchResult() {
     // Given
     // When
     service.markMasJobRecordAsComplete(JOB_ID, List.of(ID_ALT), true);
@@ -113,7 +115,7 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testMarkMasJobRecordAsFailedBatchResult(){
+  void testMarkMasJobRecordAsFailedBatchResult() {
     // When
     service.markMasJobRecordAsFailed(JOB_ID, true);
 
@@ -122,7 +124,7 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testMarkEmptyMasJobRecordAsCompletedBatchResult(){
+  void testMarkEmptyMasJobRecordAsCompletedBatchResult() {
     // When
     service.markEmptyMasJobRecordAsComplete(JOB_ID, true);
 
@@ -131,9 +133,9 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testGetMasJobRecord(){
+  void testGetMasJobRecord() {
     // Given
-    var expected = new MasJobRecord(JOB_ID,true, null);
+    var expected = new MasJobRecord(JOB_ID, true, null);
     given(repository.getMasJobRecord(JOB_ID)).willReturn(expected);
 
     // When

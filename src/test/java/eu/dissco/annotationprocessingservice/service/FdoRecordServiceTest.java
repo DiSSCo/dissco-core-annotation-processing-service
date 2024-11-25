@@ -52,7 +52,7 @@ class FdoRecordServiceTest {
   void testBuildPostRequestBatch() throws Exception {
     // Given
     var expected = givenPostRequest().get(0);
-    ((ObjectNode)expected.get("data").get("attributes"))
+    ((ObjectNode) expected.get("data").get("attributes"))
         .put("annotationHash", ANNOTATION_HASH.toString());
 
     // When
@@ -75,7 +75,7 @@ class FdoRecordServiceTest {
   void testPatchRequestBatch() throws Exception {
     // Given
     var expected = givenPatchRequest().get(0);
-    ((ObjectNode)expected.get("data").get("attributes"))
+    ((ObjectNode) expected.get("data").get("attributes"))
         .put("annotationHash", ANNOTATION_HASH.toString());
     // When
     var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenHashedAnnotation()));

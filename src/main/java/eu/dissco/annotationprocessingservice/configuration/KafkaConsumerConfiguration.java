@@ -14,7 +14,7 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
-@Profile(Profiles.KAFKA)
+@Profile({Profiles.KAFKA_MAS, Profiles.KAFKA_AUTO})
 @Configuration
 @AllArgsConstructor
 public class KafkaConsumerConfiguration {

@@ -39,14 +39,12 @@ class AnnotationBatchRecordServiceTest {
   private AnnotationBatchRecordRepository repository;
   private AnnotationBatchRecordService service;
   private MockedStatic<Clock> mockedClock;
-
+  private MockedStatic<Instant> mockedStatic;
 
   @BeforeEach
   void setup() {
     service = new AnnotationBatchRecordService(repository);
   }
-
-  private MockedStatic<Instant> mockedStatic;
 
   @Test
   void testMintBatchIdsBatchingRequested() {
