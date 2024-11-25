@@ -75,7 +75,8 @@ class ProcessingAutoAcceptedServiceTest {
   void setup() {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService, fdoProperties);
+        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
+        fdoProperties);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);

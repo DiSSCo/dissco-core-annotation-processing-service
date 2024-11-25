@@ -24,16 +24,14 @@ import org.springframework.kafka.core.KafkaTemplate;
 @ExtendWith(MockitoExtension.class)
 class KafkaPublisherServiceTest {
 
+  private static final String TOPIC = "createUpdateDeleteTopic";
   @Mock
   private KafkaTemplate<String, String> kafkaTemplate;
   @Mock
   private KafkaConsumerProperties consumerProperties;
   @Mock
   private ProvenanceService provenanceService;
-
   private KafkaPublisherService service;
-  private static final String TOPIC = "createUpdateDeleteTopic";
-
 
   @BeforeEach
   void setup() {
@@ -87,7 +85,6 @@ class KafkaPublisherServiceTest {
     // Then
     then(kafkaTemplate).should().send(eq(TOPIC), anyString());
   }
-
 
 
 }

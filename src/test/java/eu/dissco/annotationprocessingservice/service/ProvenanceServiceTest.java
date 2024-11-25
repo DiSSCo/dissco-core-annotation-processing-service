@@ -38,6 +38,29 @@ class ProvenanceServiceTest {
     );
   }
 
+  private static List<OdsChangeValue> givenChangeValue() {
+    return List.of(
+        givenOdsChangeValue("add", "/oa:motivatedBy", "An updated motivation")
+    );
+  }
+
+  private static List<OdsChangeValue> givenTombstoneChangeValue() {
+    return List.of(
+        givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata()),
+        givenOdsChangeValue("replace", "/dcterms:modified", UPDATED),
+        givenOdsChangeValue("replace", "/ods:version", 2),
+        givenOdsChangeValue("replace", "/ods:status", OdsStatus.TOMBSTONE)
+    );
+  }
+
+  private static OdsChangeValue givenOdsChangeValue(String op, String path, Object value) {
+    return new OdsChangeValue()
+        .withAdditionalProperty("op", op)
+        .withAdditionalProperty("path", path)
+        .withAdditionalProperty("value", MAPPER.convertValue(value, new TypeReference<>() {
+        }));
+  }
+
   @BeforeEach
   void setup() {
     this.service = new ProvenanceService(MAPPER, properties);
@@ -92,29 +115,6 @@ class ProvenanceServiceTest {
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation tombstoned");
     assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());
-  }
-
-  private static List<OdsChangeValue> givenChangeValue() {
-    return List.of(
-        givenOdsChangeValue("add", "/oa:motivatedBy", "An updated motivation")
-    );
-  }
-
-  private static List<OdsChangeValue> givenTombstoneChangeValue() {
-    return List.of(
-        givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata()),
-        givenOdsChangeValue("replace", "/dcterms:modified", UPDATED),
-        givenOdsChangeValue("replace", "/ods:version", 2),
-        givenOdsChangeValue("replace", "/ods:status", OdsStatus.TOMBSTONE)
-    );
-  }
-
-  private static OdsChangeValue givenOdsChangeValue(String op, String path, Object value) {
-    return new OdsChangeValue()
-        .withAdditionalProperty("op", op)
-        .withAdditionalProperty("path", path)
-        .withAdditionalProperty("value", MAPPER.convertValue(value, new TypeReference<>() {
-        }));
   }
 
 }

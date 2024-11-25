@@ -24,7 +24,8 @@ public class MasJobRecordService {
   private final ObjectMapper mapper;
 
   public void verifyMasJobId(AnnotationProcessingEvent event) throws FailedProcessingException {
-    if (environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.KAFKA_AUTO) && event.getJobId() == null) {
+    if (environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.KAFKA_AUTO)
+        && event.getJobId() == null) {
       log.error("Missing MAS Job ID for event {}", event);
       throw new FailedProcessingException();
     }
