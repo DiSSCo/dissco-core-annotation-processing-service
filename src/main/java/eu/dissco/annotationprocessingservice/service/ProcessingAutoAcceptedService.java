@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Profile(Profiles.KAFKA)
+@Profile(Profiles.KAFKA_AUTO)
 public class ProcessingAutoAcceptedService extends AbstractProcessingService {
 
   public ProcessingAutoAcceptedService(

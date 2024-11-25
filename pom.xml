@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.5</version>
+    <version>3.4.0</version>
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>eu.dissco.core</groupId>
@@ -21,6 +21,7 @@
     <json-path.version>2.9.0</json-path.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <testcontainers.version>1.20.1</testcontainers.version>
+    <ok-http.version>4.12.0</ok-http.version>
     <sonar.organization>dissco</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <json-schema-validator.version>1.5.1</json-schema-validator.version>
@@ -172,11 +173,13 @@
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
+      <version>${ok-http.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.squareup.okhttp3</groupId>
       <artifactId>mockwebserver</artifactId>
+      <version>${ok-http.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -283,6 +286,7 @@
           <includeConstructors>true</includeConstructors>
           <includeDynamicBuilders>true</includeDynamicBuilders>
           <includeAdditionalProperties>true</includeAdditionalProperties>
+          <inclusionLevel>NON_EMPTY</inclusionLevel>
         </configuration>
         <executions>
           <execution>

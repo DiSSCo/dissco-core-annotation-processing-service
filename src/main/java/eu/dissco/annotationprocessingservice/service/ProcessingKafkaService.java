@@ -46,7 +46,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Profile(Profiles.KAFKA)
+@Profile(Profiles.KAFKA_MAS)
 public class ProcessingKafkaService extends AbstractProcessingService {
 
   private final AnnotationHasher annotationHasher;
