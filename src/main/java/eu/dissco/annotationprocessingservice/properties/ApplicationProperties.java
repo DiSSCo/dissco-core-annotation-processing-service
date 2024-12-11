@@ -12,10 +12,10 @@ import org.springframework.validation.annotation.Validated;
 public class ApplicationProperties {
 
   @NotBlank
-  private String processorHandle;
+  private String processorHandle = "https://doi.org/10.5281/zenodo.7533428";
 
   @NotBlank
-  private String processorName = "annotation-processing-service";
+  private String processorName = "DiSSCo Annotation Processing Service";
 
   @NotNull
   private int batchPageSize = 300;
