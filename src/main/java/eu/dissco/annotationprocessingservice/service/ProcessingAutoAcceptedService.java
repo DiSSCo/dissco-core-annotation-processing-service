@@ -48,7 +48,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
 
   public void handleMessage(AutoAcceptedAnnotation autoAcceptedAnnotation)
       throws FailedProcessingException {
-    log.info("Processing auto-accepted annotation: {}", autoAcceptedAnnotation);
+    log.debug("Processing auto-accepted annotation: {}", autoAcceptedAnnotation);
     var id = postHandle(autoAcceptedAnnotation.annotation());
     var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), HANDLE_PROXY + id, 1,
         null);
