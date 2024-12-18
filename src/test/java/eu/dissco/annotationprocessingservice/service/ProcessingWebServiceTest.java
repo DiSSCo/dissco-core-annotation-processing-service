@@ -299,9 +299,9 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotation() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withId(ID);
+    var annotationRequest = givenAnnotationRequest().withId(BARE_ID);
     var annotation = givenAnnotationProcessed().withOdsVersion(2).withOdsJobID(null);
-    given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
+    given(repository.getAnnotationForUser(BARE_ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Updated);
@@ -423,8 +423,8 @@ class ProcessingWebServiceTest {
   @Test
   void testUpdateAnnotationKafkaFailure() throws Exception {
     // Given
-    var annotationRequest = givenAnnotationRequest().withId(ID);
-    given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
+    var annotationRequest = givenAnnotationRequest().withId(BARE_ID);
+    given(repository.getAnnotationForUser(BARE_ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Updated);

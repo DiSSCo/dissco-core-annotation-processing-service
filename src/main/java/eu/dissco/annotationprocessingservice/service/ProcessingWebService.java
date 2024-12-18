@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.exception.DataAccessException;
+import org.springframework.boot.actuate.startup.StartupEndpoint;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -91,7 +92,7 @@ public class ProcessingWebService extends AbstractProcessingService {
           annotationRequest.getDctermsCreator().getId());
     }
     var currentAnnotation = currentAnnotationOptional.get();
-    var annotation = buildAnnotation(annotationRequest, annotationRequest.getId(),
+    var annotation = buildAnnotation(annotationRequest, HANDLE_PROXY + annotationRequest.getId(),
         currentAnnotation.getOdsVersion() + 1, null);
     if (annotationsAreEqual(currentAnnotation, annotation)) {
       processEqualAnnotations(Set.of(currentAnnotation));
