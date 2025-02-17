@@ -55,9 +55,12 @@ public class RollbackService {
       }
     }
     if (repositoryRollback) {
-      repository.rollbackAnnotations(idList);
+      try {
+        repository.rollbackAnnotations(idList);
+      } catch (DataAccessException e) {
+        log.error("Critical error: unable to rollback annotations in database", e);
+      }
     }
-    log.info("Successfully rolled back annotations: {}", idList);
   }
 
   private void rollbackHandleCreation(List<String> idList) {
