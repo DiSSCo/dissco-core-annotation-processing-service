@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.exception.DataAccessException;
-import org.springframework.boot.actuate.startup.StartupEndpoint;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -42,17 +41,18 @@ public class ProcessingWebService extends AbstractProcessingService {
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
       ApplicationProperties applicationProperties, AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties) {
+      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
+      RollbackService rollbackService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService, fdoProperties);
+        annotationBatchRecordService, fdoProperties, rollbackService);
   }
 
   public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,
       boolean batchingRequested) throws FailedProcessingException, AnnotationValidationException {
     validateAnnotationRequest(annotationRequest, true);
     var id = postHandle(annotationRequest);
-    var annotation = buildAnnotation(annotationRequest, HANDLE_PROXY + id, batchingRequested, 1);
+    var annotation = buildNewAnnotation(annotationRequest, HANDLE_PROXY + id, batchingRequested);
     if (batchingRequested) {
       annotationBatchRecordService.mintBatchId(annotation);
     }
@@ -61,7 +61,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       repository.createAnnotationRecord(annotation);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
-      rollbackHandleCreation(annotation);
+      rollbackService.rollbackNewAnnotations(List.of(annotation), false, false);
       throw new FailedProcessingException();
     }
     log.info("Annotation: {} has been successfully committed to database", id);
@@ -78,6 +78,16 @@ public class ProcessingWebService extends AbstractProcessingService {
           "An exception has occurred while creating batch annotations for parent hashedAnnotation {}",
           result.getId(), e);
     }
+  }
+
+  protected Annotation buildNewAnnotation(AnnotationProcessingRequest annotationRequest, String id,
+      boolean batchingRequested) {
+    var annotation = buildAnnotation(annotationRequest, id, 1, null);
+    if (batchingRequested) {
+      annotationBatchRecordService.mintBatchId(annotation);
+      annotation.setOdsPlaceInBatch(1);
+    }
+    return annotation;
   }
 
   public Annotation updateAnnotation(AnnotationProcessingRequest annotationRequest)
@@ -108,7 +118,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       repository.createAnnotationRecord(annotation);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
-      filterUpdatesAndRollbackHandleUpdateRecord(currentAnnotation, annotation);
+      rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, false, false);
       throw new FailedProcessingException();
     }
     log.info("Annotation: {} has been successfully committed to database",
@@ -123,44 +133,8 @@ public class ProcessingWebService extends AbstractProcessingService {
     if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
       return;
     }
-    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation);
+    var requestBody = fdoRecordService.buildPatchHandleRequest(annotation);
     handleComponent.updateHandle(requestBody);
-  }
-
-  private void filterUpdatesAndRollbackHandleUpdateRecord(Annotation currentAnnotation,
-      Annotation annotation) {
-    if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
-      return;
-    }
-    var requestBody = fdoRecordService.buildPatchRollbackHandleRequest(annotation
-    );
-    try {
-      handleComponent.rollbackHandleUpdate(requestBody);
-    } catch (PidCreationException e) {
-      log.error("Unable to rollback handle update for annotations {}", currentAnnotation.getId(),
-          e);
-    }
-  }
-
-  private void rollbackUpdatedAnnotation(Annotation currentAnnotation, Annotation annotation,
-      boolean elasticRollback) throws FailedProcessingException {
-    if (elasticRollback) {
-      try {
-        elasticRepository.indexAnnotation(currentAnnotation);
-      } catch (IOException | ElasticsearchException e) {
-        log.error("Fatal exception, unable to rollback update for: {}", annotation, e);
-      }
-    }
-    try {
-      repository.createAnnotationRecord(currentAnnotation);
-    } catch (DataAccessException e) {
-      log.error("Fatal exception: unable to revert hashedAnnotation {} to its original state",
-          currentAnnotation.getId(), e);
-      throw new FailedProcessingException();
-    }
-
-    filterUpdatesAndRollbackHandleUpdateRecord(currentAnnotation, annotation);
-    throw new FailedProcessingException();
   }
 
   private void indexElasticUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)
@@ -170,7 +144,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       indexDocument = elasticRepository.indexAnnotation(annotation);
     } catch (IOException | ElasticsearchException e) {
       log.error("Rolling back, failed to insert records in elastic", e);
-      rollbackUpdatedAnnotation(currentAnnotation, annotation, false);
+      rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, false, true);
       throw new FailedProcessingException();
     }
     if (indexDocument.result().equals(Result.Updated)) {
@@ -178,11 +152,12 @@ public class ProcessingWebService extends AbstractProcessingService {
       try {
         kafkaService.publishUpdateEvent(currentAnnotation, annotation);
       } catch (JsonProcessingException e) {
-        rollbackUpdatedAnnotation(currentAnnotation, annotation, true);
+        rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, true, true);
         throw new FailedProcessingException();
       }
     } else {
-      rollbackUpdatedAnnotation(currentAnnotation, annotation, false);
+      log.info("Elastic update failed. Rolling back annotation {}", currentAnnotation.getId());
+      rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, false, true);
       throw new FailedProcessingException();
     }
   }

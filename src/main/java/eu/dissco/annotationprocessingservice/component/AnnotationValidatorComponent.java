@@ -65,7 +65,7 @@ public class AnnotationValidatorComponent {
     if (matcher.find()) {
       var result = matcher.group();
       if (!result.equals(path)) {
-        log.error("Path {} is not valid annotation target path", path);
+        log.error("Path {} is not valid annotations target path", path);
         throw new AnnotationValidationException();
       }
     }

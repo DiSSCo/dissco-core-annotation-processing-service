@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,15 +32,24 @@ public class HandleComponent {
   private final WebClient handleClient;
   private final TokenAuthenticator tokenAuthenticator;
 
-  public List<String> postHandle(List<JsonNode> request)
+  private static final String UNEXPECTED_LOG = "Unexpected response from handle API: {}";
+  private static final String UNEXPECTED_ERR = "Unexpected response from handle API.";
+
+  public String postHandle(List<JsonNode> request)
       throws PidCreationException {
     var responseJson = sendRequest(request);
-    return getHandleNames(responseJson);
+    return getHandleName(responseJson);
   }
 
-  public Map<UUID, String> postHandles(List<JsonNode> request) throws PidCreationException {
+  public Map<UUID, String> postHandlesHashed(List<JsonNode> request) throws PidCreationException {
     var responseJson = sendRequest(request);
-    return getHandleMap(responseJson);
+    return getHandleMapHash(responseJson);
+  }
+
+  public Map<String, String> postHandlesTargetPid(List<JsonNode> request)
+      throws PidCreationException {
+    var responseJson = sendRequest(request);
+    return getHandleMapTargetPid(responseJson);
   }
 
   private JsonNode sendRequest(List<JsonNode> request) throws PidCreationException {
@@ -113,31 +121,30 @@ public class HandleComponent {
     }
   }
 
-  private List<String> getHandleNames(JsonNode jsonResponse) throws PidCreationException {
+  private String getHandleName(JsonNode jsonResponse) throws PidCreationException {
     try {
-      var handleNames = new ArrayList<String>();
       var dataNodeArray = jsonResponse.get("data");
       if (!dataNodeArray.isArray()) {
         throw new PidCreationException(
             "UNEXPECTED_MSG + \" Response: {}\", jsonResponse.toPrettyString()");
       }
-      for (var dataNode : dataNodeArray) {
-        handleNames.add(dataNode.get("id").asText());
+      if (dataNodeArray.size() != 1) {
+        log.error(UNEXPECTED_LOG, jsonResponse);
+        throw new PidCreationException(UNEXPECTED_ERR);
       }
-      return handleNames;
+      return dataNodeArray.get(0).get("id").asText();
     } catch (NullPointerException e) {
-      log.error("Unexpected response from handle API. Response: {}", jsonResponse.toPrettyString());
-      throw new PidCreationException("Unexpected response from handle API.");
+      log.error(UNEXPECTED_LOG, jsonResponse);
+      throw new PidCreationException(UNEXPECTED_ERR);
     }
   }
 
-  private Map<UUID, String> getHandleMap(JsonNode jsonResponse) throws PidCreationException {
+  private Map<UUID, String> getHandleMapHash(JsonNode jsonResponse) throws PidCreationException {
     try {
       var handleNames = new HashMap<UUID, String>();
       var dataNodeArray = jsonResponse.get("data");
       if (!dataNodeArray.isArray()) {
-        throw new PidCreationException(
-            "Unexpected response from handle API. Response: {}\", jsonResponse.toPrettyString()");
+        throw new PidCreationException(UNEXPECTED_ERR);
       }
       for (var dataNode : dataNodeArray) {
         handleNames.put(
@@ -146,8 +153,30 @@ public class HandleComponent {
       }
       return handleNames;
     } catch (NullPointerException e) {
-      log.error("Unexpected response from handle API. Response: {}", jsonResponse.toPrettyString());
-      throw new PidCreationException("Unexpected response from handle API.");
+      log.error(UNEXPECTED_LOG, jsonResponse);
+      throw new PidCreationException(UNEXPECTED_ERR);
     }
   }
+
+  private Map<String, String> getHandleMapTargetPid(JsonNode jsonResponse)
+      throws PidCreationException {
+    try {
+      var handleNames = new HashMap<String, String>();
+      var dataNodeArray = jsonResponse.get("data");
+      if (!dataNodeArray.isArray()) {
+        throw new PidCreationException(
+            "Unexpected response from handle API. Response: " + jsonResponse);
+      }
+      for (var dataNode : dataNodeArray) {
+        handleNames.put(
+            dataNode.get("attributes").get("targetPid").asText(),
+            dataNode.get("id").asText());
+      }
+      return handleNames;
+    } catch (NullPointerException e) {
+      log.error(UNEXPECTED_LOG, jsonResponse);
+      throw new PidCreationException(UNEXPECTED_ERR);
+    }
+  }
+
 }

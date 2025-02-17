@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.io.IOException;
-import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -68,7 +67,7 @@ class HandleComponentTest {
     var response = handleComponent.postHandle(requestBody);
 
     // Then
-    assertThat(response).isEqualTo(List.of(BARE_ID));
+    assertThat(response).isEqualTo(BARE_ID);
   }
 
   @Test
@@ -100,7 +99,7 @@ class HandleComponentTest {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = givenHandleResponse();
-    var expected = List.of(BARE_ID);
+    var expected = BARE_ID;
     int requestCount = mockHandleServer.getRequestCount();
 
     mockHandleServer.enqueue(new MockResponse().setResponseCode(501));

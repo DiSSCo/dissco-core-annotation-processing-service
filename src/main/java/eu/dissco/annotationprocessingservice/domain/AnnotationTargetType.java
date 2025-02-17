@@ -22,7 +22,7 @@ public enum AnnotationTargetType {
         return type;
       }
     }
-    log.error("Invalid annotation target type: {}", name);
+    log.error("Invalid annotations target type: {}", name);
     throw new IllegalStateException();
   }
 
