@@ -30,16 +30,17 @@ public class FdoRecordService {
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
 
-  public List<JsonNode> buildPostHandleRequest(AnnotationProcessingRequest annotationRequest) {
-    return List.of(buildSinglePostHandleRequest(annotationRequest, null));
+  public List<JsonNode> buildPostHandleRequest(List<AnnotationProcessingRequest> annotationRequest) {
+    return annotationRequest.stream()
+        .map(a -> buildSinglePostHandleRequest(a, null))
+        .toList();
   }
 
-  public List<JsonNode> buildPostHandleRequest(List<HashedAnnotationRequest> annotations) {
-    List<JsonNode> requestBody = new ArrayList<>();
-    for (var annotation : annotations) {
-      requestBody.add(buildSinglePostHandleRequest(annotation.annotation(), annotation.hash()));
-    }
-    return requestBody;
+  public List<JsonNode> buildPostHandleRequestHash(List<HashedAnnotationRequest> annotations) {
+    return
+        annotations.stream()
+            .map(ha -> buildSinglePostHandleRequest(ha.annotation(), ha.hash()))
+            .toList();
   }
 
   private JsonNode buildSinglePostHandleRequest(AnnotationProcessingRequest annotation,
@@ -52,20 +53,20 @@ public class FdoRecordService {
                 annotationHash)));
   }
 
-  public List<JsonNode> buildPatchRollbackHandleRequest(Annotation annotation) {
-    return List.of(buildSinglePatchRollbackHandleRequest(annotation, null));
+  public List<JsonNode> buildPatchHandleRequest(Annotation annotation) {
+    return List.of(buildSinglePatchHandleRequest(annotation, null));
   }
 
-  public List<JsonNode> buildPatchRollbackHandleRequest(List<HashedAnnotation> annotations) {
+  public List<JsonNode> buildPatchHandleRequest(List<HashedAnnotation> annotations) {
     List<JsonNode> requestBody = new ArrayList<>();
     for (var annotation : annotations) {
       requestBody.add(
-          buildSinglePatchRollbackHandleRequest(annotation.annotation(), annotation.hash()));
+          buildSinglePatchHandleRequest(annotation.annotation(), annotation.hash()));
     }
     return requestBody;
   }
 
-  private JsonNode buildSinglePatchRollbackHandleRequest(Annotation annotation,
+  private JsonNode buildSinglePatchHandleRequest(Annotation annotation,
       UUID annotationHash) {
     var request = mapper.createObjectNode();
     var data = mapper.createObjectNode();

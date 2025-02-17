@@ -75,7 +75,17 @@ public class AnnotationRepository {
     fullQuery.execute();
   }
 
-  public void createAnnotationRecord(List<HashedAnnotation> hashedAnnotations) {
+  public void createAnnotationRecords(List<Annotation> annotations) {
+    var queryList = new ArrayList<Query>();
+    for (var annotation : annotations) {
+      var insertQuery = insertAnnotation(annotation);
+      var fullQuery = onConflict(annotation, insertQuery);
+      queryList.add(fullQuery);
+    }
+    context.batch(queryList).execute();
+  }
+
+  public void createAnnotationRecordsHashed(List<HashedAnnotation> hashedAnnotations) {
     var queryList = new ArrayList<Query>();
     for (var hashedAnnotation : hashedAnnotations) {
       var insertQuery = insertAnnotation(hashedAnnotation.annotation())
