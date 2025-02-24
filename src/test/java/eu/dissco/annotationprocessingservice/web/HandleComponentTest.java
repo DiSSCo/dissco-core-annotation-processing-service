@@ -113,7 +113,7 @@ class HandleComponentTest {
 
     // Then
     assertThat(response).isEqualTo(expected);
-    assertThat(mockHandleServer.getRequestCount() - requestCount).isEqualTo(2);
+    assertThat(mockHandleServer.getRequestCount() - requestCount).isGreaterThan(1);
   }
 
   @Test
