@@ -42,8 +42,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnnotationController {
 
   private final ProcessingWebService processingService;
-  protected static final String PREFIX_OAS = "Prefix of target ID";
-  protected static final String SUFFIX_OAS = "Suffix of target ID";
+  protected static final String TARGET_ID_PREFIX_OAS = "Prefix of target ID";
+  protected static final String TARGET_ID_SUFFIX_OAS = "Suffix of target ID";
 
   @Operation(summary = "Create a new annotation")
   @ApiResponses(value = {
@@ -88,8 +88,8 @@ public class AnnotationController {
   })
   @PutMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> updateAnnotation(
-      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
-      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @Parameter(description = TARGET_ID_PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = TARGET_ID_SUFFIX_OAS) @PathVariable("suffix") String suffix,
       @RequestBody AnnotationProcessingRequest annotation)
       throws DataBaseException, FailedProcessingException, ConflictException, NotFoundException, AnnotationValidationException {
     checkId(prefix, suffix, annotation);
@@ -105,8 +105,8 @@ public class AnnotationController {
   })
   @DeleteMapping(value = "/{prefix}/{suffix}")
   public ResponseEntity<Void> tombstoneAnnotation(
-      @Parameter(description = PREFIX_OAS) @PathVariable("prefix") String prefix,
-      @Parameter(description = SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @Parameter(description = TARGET_ID_PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = TARGET_ID_SUFFIX_OAS) @PathVariable("suffix") String suffix,
       @RequestBody AnnotationTombstoneWrapper annotationTombstoneWrapper)
       throws IOException, FailedProcessingException {
     var id = prefix + '/' + suffix;

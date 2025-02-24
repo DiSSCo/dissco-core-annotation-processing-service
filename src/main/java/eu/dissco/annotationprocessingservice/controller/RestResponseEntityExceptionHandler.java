@@ -40,7 +40,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
   @ExceptionHandler(DataBaseException.class)
   public ResponseEntity<ExceptionResponse> handleException(DataBaseException e) {
     var response = new ExceptionResponse(
-        HttpStatus.UNPROCESSABLE_ENTITY, "DatabaseException", e.getMessage()
+        HttpStatus.UNPROCESSABLE_ENTITY, DataBaseException.class.getSimpleName(), e.getMessage()
     );
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
   }
