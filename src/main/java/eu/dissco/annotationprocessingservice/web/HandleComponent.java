@@ -57,10 +57,10 @@ public class HandleComponent {
     validateResponse(response);
   }
 
-  public void rollbackHandleCreation(JsonNode request)
+  public void rollbackHandleCreation(List<String> request)
       throws PidCreationException {
     var requestBody = BodyInserters.fromValue(request);
-    var response = sendRequest(HttpMethod.DELETE, requestBody, "rollback");
+    var response = sendRequest(HttpMethod.DELETE, requestBody, "rollback/create");
     validateResponse(response);
   }
 

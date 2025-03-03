@@ -327,9 +327,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
   }
 
   private void rollbackHandleCreation(List<String> idList) {
-    var requestBody = fdoRecordService.buildRollbackCreationRequest(idList);
     try {
-      handleComponent.rollbackHandleCreation(requestBody);
+      handleComponent.rollbackHandleCreation(idList);
     } catch (PidCreationException e) {
       log.error("Unable to rollback creation for annotations {}", idList, e);
     }
