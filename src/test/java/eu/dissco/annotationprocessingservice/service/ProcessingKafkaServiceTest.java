@@ -284,7 +284,6 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should().buildPostHandleRequest(anyList());
-    then(fdoRecordService).should().buildRollbackCreationRequest(anyList());
     then(handleComponent).should().rollbackHandleCreation(any());
     then(repository).should(times(1)).createAnnotationRecord(anyList());
     then(repository).should(times(2)).rollbackAnnotations(anyList());
@@ -336,7 +335,6 @@ class ProcessingKafkaServiceTest {
     // Then
     then(elasticRepository).should().archiveAnnotations(List.of(ID));
     then(repository).should().rollbackAnnotations(List.of(ID));
-    then(fdoRecordService).should().buildRollbackCreationRequest(List.of(BARE_ID));
     then(handleComponent).should().rollbackHandleCreation(any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
     then(annotationBatchRecordService).should().rollbackAnnotationBatchRecord(Optional.empty());
@@ -371,7 +369,6 @@ class ProcessingKafkaServiceTest {
     // Then
     then(elasticRepository).should().archiveAnnotations(List.of(ID));
     then(repository).should().rollbackAnnotations(List.of(ID));
-    then(fdoRecordService).should().buildRollbackCreationRequest(List.of(BARE_ID));
     then(handleComponent).should().rollbackHandleCreation(any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
     then(annotationBatchRecordService).should()
@@ -404,7 +401,6 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(repository).should().rollbackAnnotations(List.of(ID));
-    then(fdoRecordService).should().buildRollbackCreationRequest(List.of(BARE_ID));
     then(handleComponent).should().rollbackHandleCreation(any());
     then(kafkaPublisherService).shouldHaveNoInteractions();
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);

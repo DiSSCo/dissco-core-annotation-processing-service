@@ -143,8 +143,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
-    then(fdoRecordService).should().buildRollbackCreationRequest(givenAcceptedAnnotation());
-    then(handleComponent).should().rollbackHandleCreation(any());
+    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 
@@ -170,8 +169,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
-    then(fdoRecordService).should().buildRollbackCreationRequest(givenAcceptedAnnotation());
-    then(handleComponent).should().rollbackHandleCreation(any());
+    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 
@@ -198,8 +196,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(repository).should().rollbackAnnotation(ID);
-    then(fdoRecordService).should().buildRollbackCreationRequest(givenAcceptedAnnotation());
-    then(handleComponent).should().rollbackHandleCreation(any());
+    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 
@@ -225,8 +222,7 @@ class ProcessingAutoAcceptedServiceTest {
     // Then
     then(repository).should().rollbackAnnotation(ID);
     then(elasticRepository).should().archiveAnnotation(ID);
-    then(fdoRecordService).should().buildRollbackCreationRequest(givenAcceptedAnnotation());
-    then(handleComponent).should().rollbackHandleCreation(any());
+    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
     then(kafkaPublisherService).shouldHaveNoMoreInteractions();
   }
 

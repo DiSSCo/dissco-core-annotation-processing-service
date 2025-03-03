@@ -238,9 +238,8 @@ public abstract class AbstractProcessingService {
   }
 
   protected void rollbackHandleCreation(Annotation annotation) {
-    var requestBody = fdoRecordService.buildRollbackCreationRequest(annotation);
     try {
-      handleComponent.rollbackHandleCreation(requestBody);
+      handleComponent.rollbackHandleCreation(List.of(annotation.getId()));
     } catch (PidCreationException e) {
       log.error("Unable to rollback creation for annotations {}", annotation.getId(), e);
     }

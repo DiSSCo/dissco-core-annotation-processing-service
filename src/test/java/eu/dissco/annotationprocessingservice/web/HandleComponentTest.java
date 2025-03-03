@@ -117,21 +117,13 @@ class HandleComponentTest {
   }
 
   @Test
-  void testRollbackHandleCreation() throws Exception {
+  void testRollbackHandleCreation() {
     // Given
-    var requestBody = MAPPER.readTree("""
-        {
-          "data": [
-            {"id": "20.5000.1025/AAA-111-AAA"},
-            {"id": "20.5000.1025/BBB-222-BBB"}
-          ]
-        }
-        """);
     mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
         .addHeader("Content-Type", "application/json"));
 
-    // Then
-    assertDoesNotThrow(() -> handleComponent.rollbackHandleCreation(requestBody));
+    // When / Then
+    assertDoesNotThrow(() -> handleComponent.rollbackHandleCreation(List.of(ID)));
   }
 
   @Test
