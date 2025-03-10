@@ -114,6 +114,11 @@ public class MasJobRecord extends TableImpl<MasJobRecordRecord> {
      */
     public final TableField<MasJobRecordRecord, Instant> EXPIRES_ON = createField(DSL.name("expires_on"), SQLDataType.INSTANT.nullable(false), this, "");
 
+    /**
+     * The column <code>public.mas_job_record.error_message</code>.
+     */
+    public final TableField<MasJobRecordRecord, String> ERROR_MESSAGE = createField(DSL.name("error_message"), SQLDataType.CLOB, this, "");
+
     private MasJobRecord(Name alias, Table<MasJobRecordRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

@@ -13,6 +13,7 @@ import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
 import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.FailedMasEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
@@ -497,6 +498,14 @@ public class TestUtils {
         .withOdsTombstoneDate(Date.from(UPDATED))
         .withOdsTombstoneText("This annotation was archived")
         .withOdsHasAgents(List.of(givenProcessingAgent()));
+  }
+
+  public static FailedMasEvent givenFailedMasEvent() {
+    return new FailedMasEvent(
+        JOB_ID,
+        "MAS Failed"
+    );
+
   }
 
 

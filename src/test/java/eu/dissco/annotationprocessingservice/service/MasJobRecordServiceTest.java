@@ -15,6 +15,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
@@ -98,10 +99,10 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkMasJobRecordAsFailed() {
     // When
-    service.markMasJobRecordAsFailed(JOB_ID, false);
+    service.markMasJobRecordAsFailed(JOB_ID, false, ErrorCode.DISSCO_EXCEPTION, null);
 
     // Then
-    then(repository).should().markMasJobRecordAsFailed(JOB_ID);
+    then(repository).should().markMasJobRecordAsFailed(JOB_ID, ErrorCode.DISSCO_EXCEPTION, null);
   }
 
   @Test
@@ -117,7 +118,7 @@ class MasJobRecordServiceTest {
   @Test
   void testMarkMasJobRecordAsFailedBatchResult() {
     // When
-    service.markMasJobRecordAsFailed(JOB_ID, true);
+    service.markMasJobRecordAsFailed(JOB_ID, true, ErrorCode.DISSCO_EXCEPTION, null);
 
     // Then
     then(repository).shouldHaveNoInteractions();

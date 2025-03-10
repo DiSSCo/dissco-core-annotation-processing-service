@@ -2,6 +2,7 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.domain.FailedMasEvent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -28,6 +29,13 @@ public class KafkaMasConsumerService {
       throws IOException, DataBaseException, FailedProcessingException, AnnotationValidationException, ConflictException, BatchingException {
     var event = mapper.readValue(message, AnnotationProcessingEvent.class);
     service.handleMessage(event);
+  }
+
+  @KafkaListener(topics = "mas-failed")
+  public void masFailed(@Payload String message)
+      throws IOException, DataBaseException {
+    var event = mapper.readValue(message, FailedMasEvent.class);
+    service.masJobFailed(event);
   }
 
 }

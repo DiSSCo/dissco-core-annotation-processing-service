@@ -192,6 +192,20 @@ public class MasJobRecordRecord extends UpdatableRecordImpl<MasJobRecordRecord> 
         return (Instant) get(11);
     }
 
+    /**
+     * Setter for <code>public.mas_job_record.error_message</code>.
+     */
+    public void setErrorMessage(String value) {
+        set(12, value);
+    }
+
+    /**
+     * Getter for <code>public.mas_job_record.error_message</code>.
+     */
+    public String getErrorMessage() {
+        return (String) get(12);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -215,7 +229,7 @@ public class MasJobRecordRecord extends UpdatableRecordImpl<MasJobRecordRecord> 
     /**
      * Create a detached, initialised MasJobRecordRecord
      */
-    public MasJobRecordRecord(String jobId, JobState jobState, String masId, Instant timeStarted, Instant timeCompleted, JSONB annotations, String targetId, String creator, MjrTargetType targetType, Boolean batchingRequested, ErrorCode error, Instant expiresOn) {
+    public MasJobRecordRecord(String jobId, JobState jobState, String masId, Instant timeStarted, Instant timeCompleted, JSONB annotations, String targetId, String creator, MjrTargetType targetType, Boolean batchingRequested, ErrorCode error, Instant expiresOn, String errorMessage) {
         super(MasJobRecord.MAS_JOB_RECORD);
 
         setJobId(jobId);
@@ -230,6 +244,7 @@ public class MasJobRecordRecord extends UpdatableRecordImpl<MasJobRecordRecord> 
         setBatchingRequested(batchingRequested);
         setError(error);
         setExpiresOn(expiresOn);
+        setErrorMessage(errorMessage);
         resetChangedOnNotNull();
     }
 }
