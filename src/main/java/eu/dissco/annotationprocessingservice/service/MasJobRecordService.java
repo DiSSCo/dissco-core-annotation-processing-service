@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.UnsupportedOperationException;
@@ -55,9 +56,10 @@ public class MasJobRecordService {
     return listNode;
   }
 
-  public void markMasJobRecordAsFailed(String jobId, boolean isBatchResult) {
+  public void markMasJobRecordAsFailed(String jobId, boolean isBatchResult, ErrorCode errorCode,
+      String errorMessage) {
     if (!isBatchResult) {
-      repository.markMasJobRecordAsFailed(jobId);
+      repository.markMasJobRecordAsFailed(jobId, errorCode, errorMessage);
     }
   }
 
