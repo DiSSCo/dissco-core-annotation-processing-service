@@ -231,7 +231,7 @@ public abstract class AbstractProcessingService {
     }
   }
 
-  protected void indexElasticNewAnnotations(List<Annotation> annotations, List<String> idList)
+  protected void indexElasticNewAnnotations(List<Annotation> annotations)
       throws FailedProcessingException {
     BulkResponse bulkResponse = null;
     try {
@@ -242,7 +242,7 @@ public abstract class AbstractProcessingService {
       throw new FailedProcessingException();
     }
     if (!bulkResponse.errors()) {
-      log.info("Annotations: {} have been successfully indexed", idList);
+      log.info("{} annotations have been successfully indexed in elastic", annotations.size());
       try {
         for (var annotation : annotations) {
           kafkaService.publishCreateEvent(annotation);

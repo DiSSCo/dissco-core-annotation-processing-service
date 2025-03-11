@@ -167,8 +167,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     log.info("Annotations {} has been successfully committed to database", idList);
     try {
       indexElasticNewAnnotations(
-          hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),
-          idList);
+          hashedAnnotations.stream().map(HashedAnnotation::annotation).toList()
+      );
     } catch (FailedProcessingException e) {
       rollbackService.rollbackBatchIds(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);

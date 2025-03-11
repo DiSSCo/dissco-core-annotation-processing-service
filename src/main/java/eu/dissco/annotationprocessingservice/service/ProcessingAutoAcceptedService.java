@@ -37,7 +37,8 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       ApplicationProperties applicationProperties,
       AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties, RollbackService rollbackService) {
+      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
+      RollbackService rollbackService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
@@ -50,16 +51,15 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
     annotation.setOdsHasMergingStateChangedBy(autoAcceptedAnnotation.acceptingAgent());
   }
 
-  public void handleMessage(AutoAcceptedAnnotation autoAcceptedAnnotation)
+  public void handleMessage(List<AutoAcceptedAnnotation> autoAcceptedAnnotations)
       throws FailedProcessingException {
-    log.debug("Processing auto-accepted annotations: {}", autoAcceptedAnnotation);
-    var ids = postHandles(autoAcceptedAnnotation.annotations());
-    var annotations = autoAcceptedAnnotation.annotations().stream().map(annotation ->
-        buildAnnotation(annotation, HANDLE_PROXY + ids.get(annotation.getOaHasTarget().getId()), 1,
-        null)).toList();
-    var idList = ids.values().stream().toList();
-    annotations.forEach(annotation -> addMergingInformation(autoAcceptedAnnotation, annotation));
-    log.info("New id has been generated for {} Annotations", ids.size());
+    log.debug("Processing auto-accepted annotation: {}", autoAcceptedAnnotations);
+    var ids = postHandles(
+        autoAcceptedAnnotations.stream().map(AutoAcceptedAnnotation::annotation).toList());
+    var annotations = autoAcceptedAnnotations.stream().map(autoAcceptedAnnotation ->
+        buildAutoAcceptedAnnotation(autoAcceptedAnnotation, ids))
+        .toList();
+    log.info("New ids have been generated for {} Annotations", ids.size());
     try {
       repository.createAnnotationRecords(annotations);
     } catch (DataAccessException e) {
@@ -68,8 +68,16 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     log.info("Annotations have been successfully committed to database");
-    indexElasticNewAnnotations(annotations, idList);
-    log.info("Annotation annotations have been successfully indexed in elastic");
+    indexElasticNewAnnotations(annotations);
+    log.info("Annotations have been successfully indexed in elastic");
+  }
+
+  private Annotation buildAutoAcceptedAnnotation(AutoAcceptedAnnotation autoAcceptedAnnotation, Map<String, String> ids){
+    var annotation =  buildAnnotation(autoAcceptedAnnotation.annotation(),
+        HANDLE_PROXY + ids.get(autoAcceptedAnnotation.annotation().getOaHasTarget().getId()), 1,
+        null);
+    addMergingInformation(autoAcceptedAnnotation, annotation);
+    return annotation;
   }
 
   protected Map<String, String> postHandles(List<AnnotationProcessingRequest> annotationRequest)

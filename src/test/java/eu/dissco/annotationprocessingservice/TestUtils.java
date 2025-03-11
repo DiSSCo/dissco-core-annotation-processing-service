@@ -382,7 +382,7 @@ public class TestUtils {
   }
 
   public static AutoAcceptedAnnotation givenAutoAcceptedRequest() {
-    return new AutoAcceptedAnnotation(givenProcessingAgent(), List.of(givenAnnotationRequest()));
+    return new AutoAcceptedAnnotation(givenProcessingAgent(), givenAnnotationRequest());
   }
 
   public static Agent givenProcessingAgent() {

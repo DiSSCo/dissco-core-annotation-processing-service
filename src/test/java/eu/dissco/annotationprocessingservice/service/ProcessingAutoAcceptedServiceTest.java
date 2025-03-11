@@ -108,7 +108,7 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    service.handleMessage(annotationRequest);
+    service.handleMessage(List.of(annotationRequest));
 
     // Then
     then(repository).should().createAnnotationRecords(List.of(givenAcceptedAnnotation()));
@@ -126,7 +126,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(annotationRequest));
+        () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(false));
@@ -146,7 +146,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(annotationRequest));
+        () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
@@ -169,7 +169,7 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
@@ -193,7 +193,7 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
@@ -207,7 +207,7 @@ class ProcessingAutoAcceptedServiceTest {
     doThrow(PidCreationException.class).when(handleComponent).postHandlesTargetPid(any());
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(repository).shouldHaveNoInteractions();
