@@ -64,9 +64,8 @@ public class RollbackService {
   }
 
   private void rollbackHandleCreation(List<String> idList) {
-    var requestBody = fdoRecordService.buildRollbackCreationRequest(idList);
     try {
-      handleComponent.rollbackHandleCreation(requestBody);
+      handleComponent.rollbackHandleCreation(idList);
     } catch (PidCreationException e) {
       log.error("Unable to rollback PID creation for annotations {}", idList, e);
     }
