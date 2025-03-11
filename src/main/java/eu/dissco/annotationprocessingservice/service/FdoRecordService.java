@@ -6,7 +6,6 @@ import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -100,20 +99,6 @@ public class FdoRecordService {
       attributes.put(ANNOTATION_HASH.getAttribute(), annotationHash.toString());
     }
     return attributes;
-  }
-
-  public JsonNode buildRollbackCreationRequest(Annotation annotation) {
-    var dataNode = List.of(mapper.createObjectNode().put(ID, annotation.getId()));
-    ArrayNode dataArray = mapper.valueToTree(dataNode);
-    return mapper.createObjectNode().set(DATA, dataArray);
-  }
-
-  public JsonNode buildRollbackCreationRequest(List<String> idList) {
-    var dataNode = idList.stream()
-        .map(handle -> mapper.createObjectNode().put("id", handle))
-        .toList();
-    ArrayNode dataArray = mapper.valueToTree(dataNode);
-    return mapper.createObjectNode().set("data", dataArray);
   }
 
   public boolean handleNeedsUpdate(

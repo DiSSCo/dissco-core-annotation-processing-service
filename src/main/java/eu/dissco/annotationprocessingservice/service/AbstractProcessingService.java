@@ -103,6 +103,16 @@ public abstract class AbstractProcessingService {
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
+      boolean batchingRequested, int version) {
+    var annotation = buildAnnotation(annotationRequest, id, version, null);
+    if (batchingRequested) {
+      annotationBatchRecordService.mintBatchId(annotation);
+      annotation.setOdsPlaceInBatch(1);
+    }
+    return annotation;
+  }
+
+  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       AnnotationProcessingEvent event, int version) {
     var annotation = buildAnnotation(annotationRequest, id, version, event.getJobId());
     annotation.setOdsJobID(HANDLE_PROXY + event.getJobId());

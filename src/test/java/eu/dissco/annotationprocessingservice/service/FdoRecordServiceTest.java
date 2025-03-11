@@ -2,7 +2,6 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
@@ -11,7 +10,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotat
 import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenRollbackCreationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -85,12 +83,6 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testRollbackCreation() throws Exception {
-    assertThat(fdoRecordService.buildRollbackCreationRequest(givenAnnotationProcessed()))
-        .isEqualTo(givenRollbackCreationRequest());
-  }
-
-  @Test
   void testArchiveAnnotation() throws Exception {
     // Given
     var expected = MAPPER.readTree("""
@@ -106,25 +98,6 @@ class FdoRecordServiceTest {
 
     // When
     var result = fdoRecordService.buildTombstoneHandleRequest(ID);
-
-    // Then
-    assertThat(result).isEqualTo(expected);
-  }
-
-  @Test
-  void testRollbackAnnotationList() throws Exception {
-    // Given
-    var expected = MAPPER.readTree("""
-        {
-          "data": [
-                      {"id":"https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2"},
-                      {"id":"https://hdl.handle.net/20.5000.1025/ZZZ-YYY-XXX"}
-                    ]
-                  }
-        """);
-
-    // When
-    var result = fdoRecordService.buildRollbackCreationRequest(List.of(ID, ID_ALT));
 
     // Then
     assertThat(result).isEqualTo(expected);

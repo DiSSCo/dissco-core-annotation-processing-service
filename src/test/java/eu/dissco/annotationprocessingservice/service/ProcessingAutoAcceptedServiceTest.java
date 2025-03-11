@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -204,7 +205,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    doThrow(PidCreationException.class).when(handleComponent).postHandlesTargetPid(any());
+    doThrow(PidCreationException.class).when(handleComponent).postHandle(any());
 
     // When
     assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
