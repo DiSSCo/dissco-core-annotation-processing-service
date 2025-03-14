@@ -288,8 +288,8 @@ class ProcessingKafkaServiceTest {
     then(repository).should(times(1)).createAnnotationRecord(anyList());
     then(repository).should(times(2)).rollbackAnnotations(anyList());
     then(kafkaPublisherService).shouldHaveNoInteractions();
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false,
-        ErrorCode.DISSCO_EXCEPTION, null);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(elasticRepository).should().archiveAnnotations(List.of(ID));
     then(annotationBatchRecordService).should().rollbackAnnotationBatchRecord(Optional.empty());
   }
@@ -307,8 +307,8 @@ class ProcessingKafkaServiceTest {
     // Then
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent()));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false,
-        ErrorCode.DISSCO_EXCEPTION, null);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -338,8 +338,8 @@ class ProcessingKafkaServiceTest {
     then(elasticRepository).should().archiveAnnotations(List.of(ID));
     then(repository).should().rollbackAnnotations(List.of(ID));
     then(handleComponent).should().rollbackHandleCreation(any());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false,
-        ErrorCode.DISSCO_EXCEPTION, null);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(annotationBatchRecordService).should().rollbackAnnotationBatchRecord(Optional.empty());
   }
 
@@ -373,8 +373,8 @@ class ProcessingKafkaServiceTest {
     then(elasticRepository).should().archiveAnnotations(List.of(ID));
     then(repository).should().rollbackAnnotations(List.of(ID));
     then(handleComponent).should().rollbackHandleCreation(any());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false,
-        ErrorCode.DISSCO_EXCEPTION, null);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(annotationBatchRecordService).should()
         .rollbackAnnotationBatchRecord(Optional.of(givenBatchIdMap()));
     then(annotationBatchRecordService).should()
@@ -407,8 +407,8 @@ class ProcessingKafkaServiceTest {
     then(repository).should().rollbackAnnotations(List.of(ID));
     then(handleComponent).should().rollbackHandleCreation(any());
     then(kafkaPublisherService).shouldHaveNoInteractions();
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false,
-        ErrorCode.DISSCO_EXCEPTION, null);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(annotationBatchRecordService).should().rollbackAnnotationBatchRecord(Optional.empty());
   }
 
@@ -481,7 +481,7 @@ class ProcessingKafkaServiceTest {
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
     then(masJobRecordService).should()
-        .markMasJobRecordAsFailed(JOB_ID, false, ErrorCode.DISSCO_EXCEPTION, null);
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -802,7 +802,8 @@ class ProcessingKafkaServiceTest {
         FailedProcessingException.class);
 
     // Then
-    then(masJobRecordService).should().markMasJobRecordAsFailed(any(), eq(false), any(), any());
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(handleComponent).should().updateHandle(any());
     then(handleComponent).should().rollbackHandleUpdate(any());
     then(elasticRepository).should(times(2)).indexAnnotations(anyList());

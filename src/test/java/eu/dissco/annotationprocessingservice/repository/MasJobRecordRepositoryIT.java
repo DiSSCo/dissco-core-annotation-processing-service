@@ -41,7 +41,7 @@ class MasJobRecordRepositoryIT extends BaseRepositoryIT {
     postMjr(ID_ALT);
 
     // When
-    repository.markMasJobRecordAsFailed(JOB_ID, null, null);
+    repository.markMasJobRecordAsFailed(JOB_ID, ErrorCode.MAS_EXCEPTION, "Exception happened");
     var result = context.select(MAS_JOB_RECORD.JOB_ID, MAS_JOB_RECORD.JOB_STATE,
             MAS_JOB_RECORD.TIME_COMPLETED)
         .from(MAS_JOB_RECORD)
