@@ -226,8 +226,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     try {
       indexElasticUpdatedAnnotation(updatedAnnotations);
     } catch (FailedProcessingException e) {
-      // Todo
-      filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           "Unable to index annotation in elastic");
       throw new FailedProcessingException();
