@@ -10,6 +10,7 @@ import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
+import eu.dissco.annotationprocessingservice.domain.FailedMasEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessResult;
@@ -69,7 +70,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         .map(UpdatedAnnotation::hashedCurrentAnnotation)
         .map(HashedAnnotation::annotation)
         .map(Annotation::getId).toList();
+  }
 
+  public void masJobFailed(FailedMasEvent failedMasEvent){
+    log.info("MAS Job {} has failed, more information: {}", failedMasEvent.jobId(), failedMasEvent.errorMessage());
+    masJobRecordService.markMasJobRecordAsFailed(failedMasEvent.jobId(), false, ErrorCode.MAS_EXCEPTION, failedMasEvent.errorMessage());
   }
 
   public void handleMessage(AnnotationProcessingEvent event)
@@ -165,6 +170,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       log.error("Unable to post new Annotation to DB", e);
       annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       rollbackHandleCreation(idList);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+          e.getMessage());
       throw new FailedProcessingException();
     }
     log.info("Annotations {} has been successfully committed to database", idList);
@@ -175,7 +182,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           idList);
     } catch (FailedProcessingException e) {
       rollbackHandleCreation(idList);
-      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+          "Unable to index annotation in elastic");
       annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       throw new FailedProcessingException();
     }
@@ -189,7 +197,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       return handleComponent.postHandles(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
-      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+          e.getMessage());
       throw new FailedProcessingException();
     }
   }
@@ -204,7 +213,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       filterUpdatesAndUpdateHandleRecord(updatedAnnotations);
     } catch (PidCreationException e) {
       log.error("Unable to post update for annotations {}", idList, e);
-      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+          e.getMessage());
       throw new FailedProcessingException();
     }
 
@@ -221,7 +231,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       indexElasticUpdatedAnnotation(updatedAnnotations);
     } catch (FailedProcessingException e) {
       filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
-      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult);
+      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+         "Unable to index annotation in elastic");
       throw new FailedProcessingException();
     }
     return idList;

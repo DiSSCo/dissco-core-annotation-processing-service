@@ -4,6 +4,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenFailedMasEvent;
 import static org.mockito.BDDMockito.then;
 
 import java.util.List;
@@ -35,6 +36,23 @@ class KafkaMasConsumerServiceTest {
 
     // Then
     then(processingKafkaService).should().handleMessage(givenAnnotationEvent());
+  }
+
+  @Test
+  void testMasFailed() throws Exception {
+    // Given
+    var message = """
+        {
+          "jobId": "20.5000.1025/7YC-RGZ-LL1",
+          "errorMessage":"MAS Failed"
+        }
+        """;
+
+    // When
+    service.masFailed(message);
+
+    // Then
+    then(processingKafkaService).should().masJobFailed(givenFailedMasEvent());
   }
 
   private String givenMessage() throws Exception {
