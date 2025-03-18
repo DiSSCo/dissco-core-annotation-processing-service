@@ -1,4 +1,7 @@
-# Feb 17
-# Spring needs to update its versions
-CVE-2025-24970
-CVE-2024-57699
+# March 18
+# Issue with binutils in Alpine
+CVE-2025-0840
+
+# March 18
+# Isssue with Libexpat in Alpine
+CVE-2024-8176

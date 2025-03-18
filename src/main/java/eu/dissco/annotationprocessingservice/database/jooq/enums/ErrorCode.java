@@ -19,7 +19,9 @@ public enum ErrorCode implements EnumType {
 
     TIMEOUT("TIMEOUT"),
 
-    DISSCO_EXCEPTION("DISSCO_EXCEPTION");
+    DISSCO_EXCEPTION("DISSCO_EXCEPTION"),
+
+    MAS_EXCEPTION("MAS_EXCEPTION");
 
     private final String literal;
 

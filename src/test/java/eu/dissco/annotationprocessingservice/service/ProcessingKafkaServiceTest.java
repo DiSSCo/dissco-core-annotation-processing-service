@@ -285,6 +285,8 @@ class ProcessingKafkaServiceTest {
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(rollbackService).should().rollbackBatchIds(Optional.empty());
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -300,7 +302,8 @@ class ProcessingKafkaServiceTest {
     // Then
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent()));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -330,6 +333,8 @@ class ProcessingKafkaServiceTest {
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
     then(rollbackService).should().rollbackBatchIds(Optional.empty());
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -363,6 +368,8 @@ class ProcessingKafkaServiceTest {
         .rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(rollbackService).should().rollbackBatchIds(Optional.of(givenBatchIdMap()));
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -390,6 +397,8 @@ class ProcessingKafkaServiceTest {
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
     then(rollbackService).should().rollbackBatchIds(Optional.empty());
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
+        eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -461,7 +470,7 @@ class ProcessingKafkaServiceTest {
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
     then(masJobRecordService).should()
-        .markMasJobRecordAsFailed(JOB_ID, false);
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -668,6 +677,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -712,6 +722,7 @@ class ProcessingKafkaServiceTest {
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
     then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -740,6 +751,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(handleComponent).should().updateHandle(anyList());
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -765,7 +777,7 @@ class ProcessingKafkaServiceTest {
         FailedProcessingException.class);
 
     // Then
-    then(masJobRecordService).should().markMasJobRecordAsFailed(any(), eq(false));
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
   }
 

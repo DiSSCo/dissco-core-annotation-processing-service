@@ -25,10 +25,12 @@ public class MasJobRecordRepository {
   private final DSLContext context;
   private final ObjectMapper mapper;
 
-  public void markMasJobRecordAsFailed(String jobId) {
+  public void markMasJobRecordAsFailed(String jobId, ErrorCode errorCode, String errorMessage) {
     context.update(MAS_JOB_RECORD)
         .set(MAS_JOB_RECORD.JOB_STATE, JobState.FAILED)
         .set(MAS_JOB_RECORD.TIME_COMPLETED, Instant.now())
+        .set(MAS_JOB_RECORD.ERROR, errorCode)
+        .set(MAS_JOB_RECORD.ERROR_MESSAGE, errorMessage)
         .where(MAS_JOB_RECORD.JOB_ID.eq(jobId))
         .execute();
   }
