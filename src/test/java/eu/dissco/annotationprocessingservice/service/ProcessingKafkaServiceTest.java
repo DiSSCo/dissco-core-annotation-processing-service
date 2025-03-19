@@ -331,7 +331,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(rollbackService).should().rollbackBatchIds(Optional.empty());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
@@ -367,7 +367,7 @@ class ProcessingKafkaServiceTest {
     then(rollbackService).should()
         .rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(rollbackService).should().rollbackBatchIds(Optional.of(givenBatchIdMap()));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
@@ -676,7 +676,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
@@ -721,7 +721,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(JOB_ID, false);
+    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
