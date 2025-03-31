@@ -114,7 +114,7 @@ public class AnnotationController {
     var annotation = annotationTombstoneWrapper.annotation();
     var tombstoningAgent = annotationTombstoneWrapper.tombstoningAgent();
     if (!annotation.getId().contains(id)) {
-      log.error("Id in path {} does not match id in annotation {}", id, annotation.getId());
+      log.error("Id in path {} does not match id in annotations {}", id, annotation.getId());
       throw new FailedProcessingException();
     }
     processingService.archiveAnnotation(annotation, tombstoningAgent);

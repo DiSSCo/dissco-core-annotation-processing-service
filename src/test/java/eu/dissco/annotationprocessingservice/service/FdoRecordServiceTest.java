@@ -42,7 +42,7 @@ class FdoRecordServiceTest {
 
   @Test
   void testBuildPostRequest() throws Exception {
-    assertThat(fdoRecordService.buildPostHandleRequest(givenAnnotationRequest()))
+    assertThat(fdoRecordService.buildPostHandleRequest(List.of(givenAnnotationRequest())))
         .isEqualTo(givenPostRequest());
   }
 
@@ -54,7 +54,7 @@ class FdoRecordServiceTest {
         .put("annotationHash", ANNOTATION_HASH.toString());
 
     // When
-    var result = fdoRecordService.buildPostHandleRequest(List.of(givenHashedAnnotationRequest()));
+    var result = fdoRecordService.buildPostHandleRequestHash(List.of(givenHashedAnnotationRequest()));
 
     // Then
     assertThat(result).isEqualTo(List.of(expected));
@@ -63,7 +63,7 @@ class FdoRecordServiceTest {
   @Test
   void testPatchRequest() throws Exception {
     // When
-    var result = fdoRecordService.buildPatchRollbackHandleRequest(givenAnnotationProcessed());
+    var result = fdoRecordService.buildPatchHandleRequest(givenAnnotationProcessed());
 
     // Then
     assertThat(result).isEqualTo(givenPatchRequest());
@@ -76,7 +76,7 @@ class FdoRecordServiceTest {
     ((ObjectNode) expected.get("data").get("attributes"))
         .put("annotationHash", ANNOTATION_HASH.toString());
     // When
-    var result = fdoRecordService.buildPatchRollbackHandleRequest(List.of(givenHashedAnnotation()));
+    var result = fdoRecordService.buildPatchHandleRequest(List.of(givenHashedAnnotation()));
 
     // Then
     assertThat(result).isEqualTo(List.of(expected));

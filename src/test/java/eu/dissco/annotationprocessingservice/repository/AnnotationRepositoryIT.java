@@ -60,7 +60,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var expected = givenHashedAnnotation(BARE_ID);
 
     // When
-    repository.createAnnotationRecord(List.of(expected));
+    repository.createAnnotationRecordsHashed(List.of(expected));
     var result = getAnnotation(expected.annotation().getId());
 
     // Then
@@ -122,7 +122,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withId("alt id"),
         ANNOTATION_HASH_2);
-    repository.createAnnotationRecord(List.of(givenHashedAnnotation(), altHashedAnnotation));
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation));
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
@@ -135,7 +135,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetAnnotationFromHashEmpty() {
     // Given
-    repository.createAnnotationRecord(List.of(givenHashedAnnotation()));
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation()));
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH_2));

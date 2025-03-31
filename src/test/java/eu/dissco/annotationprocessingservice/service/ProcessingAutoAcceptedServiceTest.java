@@ -2,20 +2,21 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
+import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
-import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAcceptedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAutoAcceptedRequest;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
-import co.elastic.clients.elasticsearch._types.Result;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -31,6 +32,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import org.jooq.exception.DataAccessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +70,10 @@ class ProcessingAutoAcceptedServiceTest {
   private AnnotationBatchRecordService annotationBatchRecordService;
   @Mock
   private FdoProperties fdoProperties;
+  @Mock
+  private BulkResponse bulkResponse;
+  @Mock
+  private RollbackService rollbackService;
   private MockedStatic<Instant> mockedStatic;
   private ProcessingAutoAcceptedService service;
 
@@ -76,7 +82,7 @@ class ProcessingAutoAcceptedServiceTest {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
         kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
         schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
-        fdoProperties);
+        fdoProperties, rollbackService);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -92,10 +98,9 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Created);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
+    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(applicationProperties.getProcessorName()).willReturn(
@@ -103,34 +108,36 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    service.handleMessage(annotationRequest);
+    service.handleMessage(List.of(annotationRequest));
 
     // Then
-    then(repository).should().createAnnotationRecord(givenAcceptedAnnotation());
+    then(repository).should().createAnnotationRecords(List.of(givenAcceptedAnnotation()));
     then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
   @Test
   void testDataAccessExceptionNewAnnotation() throws Exception {
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(ID));
+    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(DataAccessException.class).when(repository)
-        .createAnnotationRecord(any(Annotation.class));
+        .createAnnotationRecords(anyList());
 
-    // When / Then
+    // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(annotationRequest));
-    then(handleComponent).should().rollbackHandleCreation(any());
+        () -> service.handleMessage(List.of(annotationRequest)));
+
+    // Then
+    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(false));
   }
 
   @Test
   void testCreateAnnotationElasticIOException() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
-    doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
+    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    doThrow(IOException.class).when(elasticRepository).indexAnnotations(anyList());
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(applicationProperties.getProcessorName()).willReturn(
@@ -139,11 +146,10 @@ class ProcessingAutoAcceptedServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(annotationRequest));
+        () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
-    then(repository).should().rollbackAnnotation(ID);
-    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
+    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
 
@@ -151,40 +157,11 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationElasticFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
+    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.NotFound);
-    given(elasticRepository.indexAnnotation(givenAcceptedAnnotation())).willReturn(
-        indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
-    given(fdoProperties.getType()).willReturn(FDO_TYPE);
-
-    // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
-
-    // Then
-    then(repository).should().rollbackAnnotation(ID);
-    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
-    then(kafkaPublisherService).shouldHaveNoInteractions();
-  }
-
-  @Test
-  void testCreateAnnotationElasticFailureNoArchive() throws Exception {
-    // Given
-    var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.NotFound);
-    given(elasticRepository.indexAnnotation(givenAcceptedAnnotation())).willReturn(
-        indexResponse);
-    doThrow(PidCreationException.class).when(handleComponent).rollbackHandleCreation(any());
+    given(bulkResponse.errors()).willReturn(true);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(applicationProperties.getProcessorName()).willReturn(
@@ -192,22 +169,21 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
-    then(repository).should().rollbackAnnotation(ID);
-    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
+    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
     then(kafkaPublisherService).shouldHaveNoInteractions();
   }
+
 
   @Test
   void testCreateAnnotationKafkaFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandle(any())).willReturn(List.of(BARE_ID));
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Created);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
+    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(JsonProcessingException.class).when(kafkaPublisherService)
@@ -217,12 +193,10 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
-    then(repository).should().rollbackAnnotation(ID);
-    then(elasticRepository).should().archiveAnnotation(ID);
-    then(handleComponent).should().rollbackHandleCreation(List.of(ID));
+    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(kafkaPublisherService).shouldHaveNoMoreInteractions();
   }
 
@@ -230,10 +204,10 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    doThrow(PidCreationException.class).when(handleComponent).postHandle(any());
+    doThrow(PidCreationException.class).when(handleComponent).postHandlesTargetPid(any());
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(annotationRequest));
+    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(repository).shouldHaveNoInteractions();

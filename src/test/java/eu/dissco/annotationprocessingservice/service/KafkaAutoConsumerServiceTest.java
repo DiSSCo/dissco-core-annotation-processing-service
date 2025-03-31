@@ -5,6 +5,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAutoAcceptedR
 import static org.mockito.BDDMockito.then;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,13 +28,13 @@ class KafkaAutoConsumerServiceTest {
   @Test
   void testGetAutoAcceptedMessages() throws Exception {
     // Given
-    var message = givenAutoAcceptedMessage();
+    var message = List.of(givenAutoAcceptedMessage());
 
     // When
     service.getAutoAcceptedMessages(message);
 
     // Then
-    then(autoAcceptedService).should().handleMessage(givenAutoAcceptedRequest());
+    then(autoAcceptedService).should().handleMessage(List.of(givenAutoAcceptedRequest()));
   }
 
   private String givenAutoAcceptedMessage() throws JsonProcessingException {

@@ -1,8 +1,11 @@
 package eu.dissco.annotationprocessingservice.web;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
+import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -13,6 +16,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
@@ -68,7 +72,55 @@ class HandleComponentTest {
     var response = handleComponent.postHandle(requestBody);
 
     // Then
-    assertThat(response).isEqualTo(List.of(BARE_ID));
+    assertThat(response).isEqualTo(BARE_ID);
+  }
+
+  @Test
+  void testPostHandlesHashed() throws Exception {
+    // Given
+    var responseBody = MAPPER.readTree("""
+        {
+          "data": [{
+            "type": "mediaObject",
+            "id":"20.5000.1025/KZL-VC0-ZK2",
+            "attributes": {
+               "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
+               "subjectDigitalObjectId": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
+               "annotationTopic":"20.5000.1025/460-A7R-QMJ",
+               "replaceOrAppend": "append",
+               "accessRestricted": false,
+               "linkedObjectUrl":"https://hdl.handle.net/anno-process-service-pid",
+               "annotationHash": "3a36d684-deb8-8779-2753-caef497e9ed8"
+             }
+           }]
+        }
+        """);
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.CREATED.value())
+        .setBody(MAPPER.writeValueAsString(responseBody))
+        .addHeader("Content-Type", "application/json"));
+    var expected = Map.of(ANNOTATION_HASH, BARE_ID);
+
+    // When
+    var response = handleComponent.postHandlesHashed(givenPostRequest());
+
+    // Then
+    assertThat(response).isEqualTo(expected);
+  }
+
+  @Test
+  void testPostHandlesTargetPid() throws Exception {
+    // Given
+    var responseBody = givenHandleResponse();
+    mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.CREATED.value())
+        .setBody(MAPPER.writeValueAsString(responseBody))
+        .addHeader("Content-Type", "application/json"));
+    var expected = Map.of(DOI_PROXY + TARGET_ID, BARE_ID);
+
+    // When
+    var response = handleComponent.postHandlesTargetPid(givenPostRequest());
+
+    // Then
+    assertThat(response).isEqualTo(expected);
   }
 
   @Test
@@ -100,7 +152,7 @@ class HandleComponentTest {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = givenHandleResponse();
-    var expected = List.of(BARE_ID);
+    var expected = BARE_ID;
     int requestCount = mockHandleServer.getRequestCount();
 
     mockHandleServer.enqueue(new MockResponse().setResponseCode(501));
@@ -262,6 +314,7 @@ class HandleComponentTest {
             "type": "mediaObject",
             "id":"20.5000.1025/KZL-VC0-ZK2",
             "attributes": {
+               "targetPid": "https://doi.org/20.5000.1025/QRS-123-ABC",
                "digitalObjectType": "https://hdl.handle.net/21.T11148/64396cf36b976ad08267",
                "subjectDigitalObjectId": "https://hdl.handle.net/20.5000.1025/DW0-BNT-FM0",
                "annotationTopic":"20.5000.1025/460-A7R-QMJ",

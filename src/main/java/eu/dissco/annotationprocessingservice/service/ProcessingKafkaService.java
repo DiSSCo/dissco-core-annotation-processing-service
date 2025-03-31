@@ -5,7 +5,6 @@ import static eu.dissco.annotationprocessingservice.configuration.ApplicationCon
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
@@ -30,7 +29,6 @@ import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -58,10 +56,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
       AnnotationValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
-      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties) {
+      AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
+      RollbackService rollbackService) {
     super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService, fdoProperties);
+        annotationBatchRecordService, fdoProperties, rollbackService);
     this.annotationHasher = annotationHasher;
   }
 
@@ -165,26 +164,23 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     hashedAnnotations.forEach(annotation -> addBatchIds(annotation.annotation(), batchIds, event));
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
-      repository.createAnnotationRecord(hashedAnnotations);
+      repository.createAnnotationRecordsHashed(hashedAnnotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
-      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
-      rollbackHandleCreation(idList);
+      rollbackService.rollbackNewAnnotationsHash(hashedAnnotations, false, false, batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           e.getMessage());
       throw new FailedProcessingException();
     }
     log.info("Annotations {} has been successfully committed to database", idList);
-
     try {
       indexElasticNewAnnotations(
-          hashedAnnotations.stream().map(HashedAnnotation::annotation).toList(),
-          idList);
+          hashedAnnotations.stream().map(HashedAnnotation::annotation).toList()
+      );
     } catch (FailedProcessingException e) {
-      rollbackHandleCreation(idList);
+      rollbackService.rollbackBatchIds(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           "Unable to index annotation in elastic");
-      annotationBatchRecordService.rollbackAnnotationBatchRecord(batchIds);
       throw new FailedProcessingException();
     }
     return hashedAnnotations.stream().map(HashedAnnotation::annotation).toList();
@@ -192,9 +188,9 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   private Map<UUID, String> postHandles(List<HashedAnnotationRequest> hashedAnnotations,
       String jobId, boolean isBatchResult) throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequest(hashedAnnotations);
+    var requestBody = fdoRecordService.buildPostHandleRequestHash(hashedAnnotations);
     try {
-      return handleComponent.postHandles(requestBody);
+      return handleComponent.postHandlesHashed(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
@@ -219,20 +215,19 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
 
     try {
-      repository.createAnnotationRecord(
+      repository.createAnnotationRecordsHashed(
           updatedAnnotations.stream().map(UpdatedAnnotation::hashedAnnotation).toList());
     } catch (DataAccessException e) {
       log.error("Unable to update annotations in database. Rolling back handle updates", e);
-      filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
+      rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, false, false);
       throw new FailedProcessingException();
     }
     log.info("Annotation: {} has been successfully committed to database", idList);
     try {
       indexElasticUpdatedAnnotation(updatedAnnotations);
     } catch (FailedProcessingException e) {
-      filterUpdatesAndRollbackHandleUpdateRecord(updatedAnnotations);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
-         "Unable to index annotation in elastic");
+          "Unable to index annotation in elastic");
       throw new FailedProcessingException();
     }
     return idList;
@@ -240,33 +235,6 @@ public class ProcessingKafkaService extends AbstractProcessingService {
 
   private UUID hashAnnotation(AnnotationProcessingRequest annotation) {
     return annotationHasher.getAnnotationHash(annotation);
-  }
-
-  private void indexElasticNewAnnotations(List<Annotation> annotations, List<String> idList)
-      throws FailedProcessingException {
-    BulkResponse bulkResponse = null;
-    try {
-      bulkResponse = elasticRepository.indexAnnotations(annotations);
-    } catch (IOException | ElasticsearchException e) {
-      log.error("Rolling back, failed to insert records in elastic", e);
-      rollbackNewAnnotations(annotations, false);
-      throw new FailedProcessingException();
-    }
-    if (!bulkResponse.errors()) {
-      log.info("Annotations: {} have been successfully indexed", idList);
-      try {
-        for (var annotation : annotations) {
-          kafkaService.publishCreateEvent(annotation);
-        }
-      } catch (JsonProcessingException e) {
-        log.error("Unable to publish annotations to kafka, rolling back");
-        rollbackNewAnnotations(annotations, true);
-        throw new FailedProcessingException();
-      }
-    } else {
-      partiallyFailedElasticInsert(annotations, bulkResponse);
-      throw new FailedProcessingException();
-    }
   }
 
   private void indexElasticUpdatedAnnotation(Set<UpdatedAnnotation> updatedAnnotations)
@@ -281,7 +249,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           .toList());
     } catch (IOException | ElasticsearchException e) {
       log.error("Rolling back, failed to insert records in elastic", e);
-      rollbackUpdatedAnnotations(updatedAnnotations, false);
+      rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, false, true);
       throw new FailedProcessingException();
     }
     if (!bulkResponse.errors()) {
@@ -293,7 +261,7 @@ public class ProcessingKafkaService extends AbstractProcessingService {
                   .annotation());
         }
       } catch (JsonProcessingException e) {
-        rollbackUpdatedAnnotations(updatedAnnotations, true);
+        rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, true, true);
         throw new FailedProcessingException();
       }
     } else {
@@ -302,112 +270,28 @@ public class ProcessingKafkaService extends AbstractProcessingService {
     }
   }
 
-  private void rollbackNewAnnotations(List<Annotation> annotations, boolean elasticRollback) {
-    var idList = annotations.stream().map(Annotation::getId).toList();
-    log.warn("Rolling back for annotations: {}", idList);
-    if (elasticRollback) {
-      try {
-        elasticRepository.archiveAnnotations(idList);
-      } catch (IOException | ElasticsearchException e) {
-        log.info("Fatal exception, unable to rollback: {}", idList);
-      }
-    }
-    repository.rollbackAnnotations(idList);
-
-  }
-
-  private void rollbackUpdatedAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
-      boolean elasticRollback) {
-    var currentAnnotationsHashed = updatedAnnotations.stream()
-        .map(UpdatedAnnotation::hashedCurrentAnnotation).toList();
-    var idList = getIdListFromUpdates(updatedAnnotations);
-    if (elasticRollback) {
-      try {
-        elasticRepository.indexAnnotations(
-            currentAnnotationsHashed.stream().map(HashedAnnotation::annotation).toList());
-      } catch (IOException | ElasticsearchException e) {
-        log.error("Fatal exception, unable to rollback update for: {}", idList, e);
-      }
-    }
-    try {
-      repository.createAnnotationRecord(currentAnnotationsHashed);
-    } catch (DataAccessException e) {
-      log.error("Fatal database exception. Unable to rollback annotations to original state");
-    }
-
-  }
-
-  private void rollbackHandleCreation(List<String> idList) {
-    try {
-      handleComponent.rollbackHandleCreation(idList);
-    } catch (PidCreationException e) {
-      log.error("Unable to rollback creation for annotations {}", idList, e);
-    }
-  }
-
-  private void filterUpdatesAndRollbackHandleUpdateRecord(
-      Set<UpdatedAnnotation> updatedAnnotations) {
-    var requestBody = filterHandleUpdates(updatedAnnotations);
-    try {
-      handleComponent.rollbackHandleUpdate(requestBody);
-    } catch (PidCreationException e) {
-      log.error("Unable to rollback handle update for annotations {}",
-          updatedAnnotations.stream().map(p -> p.hashedCurrentAnnotation().annotation().getId())
-              .toList());
-    }
-  }
-
   private void filterUpdatesAndUpdateHandleRecord(Set<UpdatedAnnotation> updatedAnnotations)
       throws PidCreationException {
-    var requestBody = filterHandleUpdates(updatedAnnotations);
-    if (!requestBody.isEmpty()) {
-      handleComponent.updateHandle(requestBody);
-    }
-  }
-
-  private List<JsonNode> filterHandleUpdates(Set<UpdatedAnnotation> updatedAnnotations) {
     var handleNeedsUpdate = updatedAnnotations.stream()
         .filter(p -> fdoRecordService.handleNeedsUpdate(p.hashedCurrentAnnotation().annotation(),
             p.hashedAnnotation().annotation()))
         .map(UpdatedAnnotation::hashedAnnotation)
         .toList();
     if (handleNeedsUpdate.isEmpty()) {
-      return Collections.emptyList();
+      return;
     }
-    return fdoRecordService.buildPatchRollbackHandleRequest(handleNeedsUpdate);
-  }
-
-  private void partiallyFailedElasticInsert(List<Annotation> annotations,
-      BulkResponse bulkResponse) {
-    var annotationMap = annotations.stream()
-        .collect(Collectors.toMap(Annotation::getId, a -> a));
-    var annotationRollbacksElasticFail = new ArrayList<Annotation>();
-    var annotationRollbacksElasticSuccess = new ArrayList<Annotation>();
-
-    bulkResponse.items().forEach(
-        item -> {
-          var annotation = annotationMap.get(item.id());
-          if (item.error() != null) {
-            annotationRollbacksElasticFail.add(annotation);
-            log.error("Failed item to insert into elastic search: {} with errors {}",
-                annotation.getId(), item.error().reason());
-          } else {
-            annotationRollbacksElasticSuccess.add(annotation);
-          }
-        }
-    );
-    rollbackNewAnnotations(annotationRollbacksElasticFail, false);
-    rollbackNewAnnotations(annotationRollbacksElasticSuccess, true);
+    var requestBody = fdoRecordService.buildPatchHandleRequest(handleNeedsUpdate);
+    if (!requestBody.isEmpty()) {
+      handleComponent.updateHandle(requestBody);
+    }
   }
 
   private void partiallyFailedElasticUpdate(Set<UpdatedAnnotation> updatedAnnotations,
       BulkResponse bulkResponse) {
-
     var annotationMap = updatedAnnotations.stream()
         .collect(Collectors.toMap(p -> p.hashedAnnotation().annotation().getId(), p -> p));
     var annotationRollbacksElasticFail = new HashSet<UpdatedAnnotation>();
     var annotationRollbacksElasticSuccess = new HashSet<UpdatedAnnotation>();
-
     bulkResponse.items().forEach(
         item -> {
           var annotationPair = annotationMap.get(item.id());
@@ -420,8 +304,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
           }
         }
     );
-    rollbackUpdatedAnnotations(annotationRollbacksElasticFail, false);
-    rollbackUpdatedAnnotations(annotationRollbacksElasticSuccess, true);
+    rollbackService.rollbackUpdatedAnnotations(annotationRollbacksElasticFail, false, true);
+    rollbackService.rollbackUpdatedAnnotations(annotationRollbacksElasticSuccess, true, true);
   }
 
 }

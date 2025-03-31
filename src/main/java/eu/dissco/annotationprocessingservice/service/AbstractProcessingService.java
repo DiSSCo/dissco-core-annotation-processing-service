@@ -6,6 +6,7 @@ import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProx
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
@@ -31,6 +32,7 @@ import eu.dissco.annotationprocessingservice.utils.AgentUtils;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,6 +60,7 @@ public abstract class AbstractProcessingService {
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;
   protected final FdoProperties fdoProperties;
+  protected final RollbackService rollbackService;
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {
@@ -228,20 +232,39 @@ public abstract class AbstractProcessingService {
 
   protected String postHandle(AnnotationProcessingRequest annotationRequest)
       throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequest(annotationRequest);
+    var requestBody = fdoRecordService.buildPostHandleRequest(List.of(annotationRequest));
     try {
-      return handleComponent.postHandle(requestBody).get(0);
+      return handleComponent.postHandle(requestBody);
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
       throw new FailedProcessingException();
     }
   }
 
-  protected void rollbackHandleCreation(Annotation annotation) {
+  protected void indexElasticNewAnnotations(List<Annotation> annotations)
+      throws FailedProcessingException {
+    BulkResponse bulkResponse = null;
     try {
-      handleComponent.rollbackHandleCreation(List.of(annotation.getId()));
-    } catch (PidCreationException e) {
-      log.error("Unable to rollback creation for annotations {}", annotation.getId(), e);
+      bulkResponse = elasticRepository.indexAnnotations(annotations);
+    } catch (IOException | ElasticsearchException e) {
+      log.error("Rolling back, failed to insert records in elastic", e);
+      rollbackService.rollbackNewAnnotations(annotations, false, true);
+      throw new FailedProcessingException();
+    }
+    if (!bulkResponse.errors()) {
+      log.info("{} annotations have been successfully indexed in elastic", annotations.size());
+      try {
+        for (var annotation : annotations) {
+          kafkaService.publishCreateEvent(annotation);
+        }
+      } catch (JsonProcessingException e) {
+        log.error("Unable to publish annotations to kafka, rolling back");
+        rollbackService.rollbackNewAnnotations(annotations, true, true);
+        throw new FailedProcessingException();
+      }
+    } else {
+      partiallyFailedElasticInsert(annotations, bulkResponse);
+      throw new FailedProcessingException();
     }
   }
 
@@ -252,7 +275,7 @@ public abstract class AbstractProcessingService {
       indexDocument = elasticRepository.indexAnnotation(annotation);
     } catch (IOException | ElasticsearchException e) {
       log.error("Rolling back, failed to insert records in elastic", e);
-      rollbackNewAnnotation(annotation, false);
+      rollbackService.rollbackNewAnnotations(List.of(annotation), false, true);
       throw new FailedProcessingException();
     }
     if (indexDocument.result().equals(Result.Created)) {
@@ -261,29 +284,37 @@ public abstract class AbstractProcessingService {
         kafkaService.publishCreateEvent(annotation);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish create event to kafka.");
-        rollbackNewAnnotation(annotation, true);
+        rollbackService.rollbackNewAnnotations(List.of(annotation), true, true);
         throw new FailedProcessingException();
       }
     } else {
       log.error("Elasticsearch did not create annotations: {}", id);
-      rollbackNewAnnotation(annotation, false);
+      rollbackService.rollbackNewAnnotations(List.of(annotation), false, true);
       throw new FailedProcessingException();
     }
   }
 
-  private void rollbackNewAnnotation(Annotation annotation, boolean elasticRollback)
-      throws FailedProcessingException {
-    log.warn("Rolling back for annotations: {}", annotation);
-    if (elasticRollback) {
-      try {
-        elasticRepository.archiveAnnotation(annotation.getId());
-      } catch (IOException | ElasticsearchException e) {
-        log.info("Fatal exception, unable to rollback: {}", annotation.getId(), e);
-      }
-    }
-    repository.rollbackAnnotation(annotation.getId());
-    rollbackHandleCreation(annotation);
-    throw new FailedProcessingException();
+  private void partiallyFailedElasticInsert(List<Annotation> annotations,
+      BulkResponse bulkResponse) {
+    var annotationMap = annotations.stream()
+        .collect(Collectors.toMap(Annotation::getId, a -> a));
+    var annotationRollbacksElasticFail = new ArrayList<Annotation>();
+    var annotationRollbacksElasticSuccess = new ArrayList<Annotation>();
+
+    bulkResponse.items().forEach(
+        item -> {
+          var annotation = annotationMap.get(item.id());
+          if (item.error() != null) {
+            annotationRollbacksElasticFail.add(annotation);
+            log.error("Failed item to insert into elastic search: {} with errors {}",
+                annotation.getId(), item.error().reason());
+          } else {
+            annotationRollbacksElasticSuccess.add(annotation);
+          }
+        }
+    );
+    rollbackService.rollbackNewAnnotations(annotationRollbacksElasticFail, false, true);
+    rollbackService.rollbackNewAnnotations(annotationRollbacksElasticSuccess, true, true);
   }
 
 }
