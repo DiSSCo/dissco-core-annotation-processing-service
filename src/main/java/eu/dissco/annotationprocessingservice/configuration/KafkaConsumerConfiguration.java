@@ -33,6 +33,7 @@ public class KafkaConsumerConfiguration {
     props.put(
         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
         StringDeserializer.class);
+    props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, properties.getBatchSize());
     return new DefaultKafkaConsumerFactory<>(props);
   }
 
@@ -41,6 +42,7 @@ public class KafkaConsumerConfiguration {
   kafkaListenerContainerFactory() {
     ConcurrentKafkaListenerContainerFactory<String, String> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
+    factory.setBatchListener(true);
     factory.setConsumerFactory(consumerFactory());
     return factory;
   }
