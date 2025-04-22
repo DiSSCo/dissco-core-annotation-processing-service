@@ -51,7 +51,7 @@ public abstract class AbstractProcessingService {
 
   protected final AnnotationRepository repository;
   protected final ElasticSearchRepository elasticRepository;
-  protected final KafkaPublisherService kafkaService;
+  protected final RabbitMqPublisherService rabbitMqPublisherService;
   protected final FdoRecordService fdoRecordService;
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
@@ -166,7 +166,7 @@ public abstract class AbstractProcessingService {
           timestamp);
       repository.archiveAnnotation(tombstoneAnnotation);
       log.info("Sending Tombstone event to provenance servie");
-      kafkaService.publishTombstoneEvent(tombstoneAnnotation, currentAnnotation);
+      rabbitMqPublisherService.publishTombstoneEvent(tombstoneAnnotation, currentAnnotation);
       log.info("Archived annotations: {}", currentAnnotation.getId());
     } else {
       log.error("Unable to archive annotation in Elastic. Result is {}", document.result());
@@ -255,7 +255,7 @@ public abstract class AbstractProcessingService {
       log.info("{} annotations have been successfully indexed in elastic", annotations.size());
       try {
         for (var annotation : annotations) {
-          kafkaService.publishCreateEvent(annotation);
+          rabbitMqPublisherService.publishCreateEvent(annotation);
         }
       } catch (JsonProcessingException e) {
         log.error("Unable to publish annotations to kafka, rolling back");
@@ -281,7 +281,7 @@ public abstract class AbstractProcessingService {
     if (indexDocument.result().equals(Result.Created)) {
       log.info("Annotation: {} has been successfully indexed", id);
       try {
-        kafkaService.publishCreateEvent(annotation);
+        rabbitMqPublisherService.publishCreateEvent(annotation);
       } catch (JsonProcessingException e) {
         log.error("Unable to publish create event to kafka.");
         rollbackService.rollbackNewAnnotations(List.of(annotation), true, true);

@@ -117,7 +117,7 @@ class ProcessingKafkaServiceTest {
   @Mock
   private ElasticSearchRepository elasticRepository;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService rabbitMqPublisherService;
   @Mock
   private FdoRecordService fdoRecordService;
   @Mock
@@ -152,7 +152,7 @@ class ProcessingKafkaServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingKafkaService(repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         masJobRecordService, annotationHasher, schemaValidator, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
     mockedStatic = mockStatic(Instant.class);
@@ -196,7 +196,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(repository).should().createAnnotationRecordsHashed(List.of(givenHashedAnnotation()));
-    then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
+    then(rabbitMqPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
   }
@@ -230,7 +230,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(repository).should()
         .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), true);
     then(annotationBatchRecordService).should().updateAnnotationBatchRecord(BATCH_ID, 1);
@@ -247,7 +247,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(masJobRecordService).should().markEmptyMasJobRecordAsComplete(JOB_ID, false);
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
     then(repository).shouldHaveNoInteractions();
     then(fdoRecordService).shouldHaveNoInteractions();
     then(handleComponent).shouldHaveNoInteractions();
@@ -316,7 +316,7 @@ class ProcessingKafkaServiceTest {
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishCreateEvent(any(
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishCreateEvent(any(
         Annotation.class));
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
@@ -348,7 +348,7 @@ class ProcessingKafkaServiceTest {
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishCreateEvent(any(
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishCreateEvent(any(
         Annotation.class));
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
@@ -416,7 +416,7 @@ class ProcessingKafkaServiceTest {
     service.handleMessage(givenAnnotationEvent(annotation));
 
     // Then
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
     then(handleComponent).shouldHaveNoInteractions();
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
@@ -445,7 +445,7 @@ class ProcessingKafkaServiceTest {
     then(fdoRecordService).should()
         .buildPatchHandleRequest(anyList());
     then(handleComponent).should().updateHandle(any());
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
@@ -530,9 +530,9 @@ class ProcessingKafkaServiceTest {
     then(handleComponent).should().updateHandle(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
     then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(changedAnnotationOriginal, changedAnnotation);
-    then(kafkaPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
+    then(rabbitMqPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
     then(masJobRecordService).should()
         .markMasJobRecordAsComplete(JOB_ID, List.of(equalId, ID, ID), false);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
@@ -598,9 +598,9 @@ class ProcessingKafkaServiceTest {
     then(handleComponent).should().updateHandle(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
     then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(changedAnnotationOriginal, changedAnnotation);
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishCreateEvent(newAnnotation.withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should()
         .markMasJobRecordAsComplete(JOB_ID, List.of(equalId, ID, ID), false);
@@ -626,7 +626,7 @@ class ProcessingKafkaServiceTest {
 
     // Then
     then(fdoRecordService).should().buildPatchHandleRequest(anyList());
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
   }
@@ -649,7 +649,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(fdoRecordService).shouldHaveNoMoreInteractions();
     then(handleComponent).shouldHaveNoInteractions();
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
   }
@@ -734,7 +734,7 @@ class ProcessingKafkaServiceTest {
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishUpdateEvent(any(
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
         Annotation.class), any(Annotation.class));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
@@ -763,7 +763,7 @@ class ProcessingKafkaServiceTest {
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService).publishUpdateEvent(any(
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
         Annotation.class), any(Annotation.class));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
@@ -860,7 +860,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(repository).should()
         .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).should().applyBatchAnnotations(batchMetadata);
@@ -897,7 +897,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(repository).should()
         .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(batchAnnotationService).shouldHaveNoInteractions();
@@ -984,7 +984,7 @@ class ProcessingKafkaServiceTest {
     // Then
     then(repository).should()
         .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();

@@ -26,20 +26,20 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Profile(Profiles.KAFKA_AUTO)
+@Profile(Profiles.RABBITMQ_AUTO)
 public class ProcessingAutoAcceptedService extends AbstractProcessingService {
 
   public ProcessingAutoAcceptedService(
       AnnotationRepository repository,
       ElasticSearchRepository elasticRepository,
-      KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
+      RabbitMqPublisherService rabbitMqPublisherService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent,
       ApplicationProperties applicationProperties,
       AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
       RollbackService rollbackService) {
-    super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
+    super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService, handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
   }
