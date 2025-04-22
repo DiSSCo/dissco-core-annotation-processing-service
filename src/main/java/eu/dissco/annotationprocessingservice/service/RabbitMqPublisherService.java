@@ -38,7 +38,7 @@ public class RabbitMqPublisherService {
   }
 
   private void publishMessage(CreateUpdateTombstoneEvent event) throws JsonProcessingException {
-    rabbitTemplate.convertSendAndReceive(
+    rabbitTemplate.convertAndSend(
         rabbitMqProperties.getCreateUpdateTombstone().getExchangeName(),
         rabbitMqProperties.getCreateUpdateTombstone().getRoutingKeyName(),
         mapper.writeValueAsString(event));
