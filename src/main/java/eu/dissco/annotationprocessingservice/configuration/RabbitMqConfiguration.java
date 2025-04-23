@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile(Profiles.RABBITMQ_AUTO)
+@Profile(Profiles.RABBIT_MQ_AUTO)
 @AllArgsConstructor
 public class RabbitMqConfiguration {
 
@@ -31,7 +31,7 @@ public class RabbitMqConfiguration {
     return factory;
   }
 
-  @Bean
+  @Bean(name = "batchTemplate")
   public RabbitTemplate compressedTemplate(ConnectionFactory connectionFactory,
       MessageCompressionComponent compressedMessageConverter) {
     var rabbitTemplate = new RabbitTemplate(connectionFactory);

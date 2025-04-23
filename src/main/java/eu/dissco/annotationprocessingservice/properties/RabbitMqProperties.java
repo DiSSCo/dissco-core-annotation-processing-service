@@ -18,6 +18,8 @@ public class RabbitMqProperties {
   private CreateUpdateTombstone createUpdateTombstone = new CreateUpdateTombstone();
   @NotNull
   private AutoAcceptedAnnotation autoAcceptedAnnotation = new AutoAcceptedAnnotation();
+  @NotNull
+  private MasAnnotation masAnnotation = new MasAnnotation();
 
   @Data
   @Validated
@@ -39,6 +41,17 @@ public class RabbitMqProperties {
 
     @NotNull
     private String dlqRoutingKeyName = "auto-accepted-annotation-dlq";
+  }
+
+  @Data
+  @Validated
+  public static class MasAnnotation {
+
+    @NotBlank
+    private String exchangeName = "mas-annotation-exchange";
+
+    @NotNull
+    private String routingKeyName = "mas-annotation";
   }
 
 }

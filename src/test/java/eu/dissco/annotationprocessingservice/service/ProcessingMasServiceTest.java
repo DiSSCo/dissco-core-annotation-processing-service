@@ -95,7 +95,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ProcessingKafkaServiceTest {
+class ProcessingMasServiceTest {
 
   private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   @Mock
@@ -133,7 +133,7 @@ class ProcessingKafkaServiceTest {
   @Mock
   RollbackService rollbackService;
   private MockedStatic<Instant> mockedStatic;
-  private ProcessingKafkaService service;
+  private ProcessingMasService service;
 
   private static Stream<Arguments> unequalAnnotations() {
     return Stream.of(
@@ -151,7 +151,7 @@ class ProcessingKafkaServiceTest {
 
   @BeforeEach
   void setup() {
-    service = new ProcessingKafkaService(repository, elasticRepository,
+    service = new ProcessingMasService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         masJobRecordService, annotationHasher, schemaValidator, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);

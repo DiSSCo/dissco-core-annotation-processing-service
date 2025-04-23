@@ -25,7 +25,7 @@ public class BatchAnnotationService {
 
   private final ApplicationProperties applicationProperties;
   private final ElasticSearchRepository elasticRepository;
-  private final KafkaPublisherService kafkaService;
+  private final RabbitMqPublisherService rabbitMqPublisherService;
   private final JsonPathComponent jsonPathComponent;
 
   public void applyBatchAnnotations(ProcessedAnnotationBatch batchmetadata)
@@ -63,7 +63,7 @@ public class BatchAnnotationService {
           var annotations = generateBatchAnnotations(baseAnnotation, batchMetadata,
               annotatedObjects);
           if (!annotations.isEmpty()) {
-            kafkaService.publishBatchAnnotation(new ProcessedAnnotationBatch(
+            rabbitMqPublisherService.publishBatchAnnotation(new ProcessedAnnotationBatch(
                 annotations,
                 jobId,
                 null,

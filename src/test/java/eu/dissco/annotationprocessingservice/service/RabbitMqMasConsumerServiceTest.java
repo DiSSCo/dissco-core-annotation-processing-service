@@ -15,15 +15,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class KafkaMasConsumerServiceTest {
+class RabbitMqMasConsumerServiceTest {
 
   @Mock
-  private ProcessingKafkaService processingKafkaService;
-  private KafkaMasConsumerService service;
+  private ProcessingMasService processingMasService;
+  private RabbitMqMasConsumerService rabbitMqMasConsumerService;
 
   @BeforeEach
   void setup() {
-    service = new KafkaMasConsumerService(MAPPER, processingKafkaService);
+    rabbitMqMasConsumerService = new RabbitMqMasConsumerService(MAPPER, processingMasService);
   }
 
   @Test
@@ -32,10 +32,10 @@ class KafkaMasConsumerServiceTest {
     var message = givenMessage();
 
     // When
-    service.getMessages(message);
+    rabbitMqMasConsumerService.getMessages(message);
 
     // Then
-    then(processingKafkaService).should().handleMessage(givenAnnotationEvent());
+    then(processingMasService).should().handleMessage(givenAnnotationEvent());
   }
 
   @Test
@@ -49,10 +49,10 @@ class KafkaMasConsumerServiceTest {
         """;
 
     // When
-    service.masFailed(message);
+    rabbitMqMasConsumerService.masFailed(message);
 
     // Then
-    then(processingKafkaService).should().masJobFailed(givenFailedMasEvent());
+    then(processingMasService).should().masJobFailed(givenFailedMasEvent());
   }
 
   private String givenMessage() throws Exception {

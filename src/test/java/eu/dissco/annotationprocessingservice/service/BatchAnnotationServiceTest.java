@@ -56,7 +56,7 @@ class BatchAnnotationServiceTest {
   @Mock
   private ElasticSearchRepository elasticRepository;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService rabbitMqPublisherService;
   @Mock
   private JsonPathComponent jsonPathComponent;
   private BatchAnnotationService batchAnnotationService;
@@ -64,7 +64,7 @@ class BatchAnnotationServiceTest {
   @BeforeEach
   void setup() {
     batchAnnotationService = new BatchAnnotationService(applicationProperties, elasticRepository,
-        kafkaPublisherService, jsonPathComponent);
+        rabbitMqPublisherService, jsonPathComponent);
   }
 
 
@@ -96,7 +96,7 @@ class BatchAnnotationServiceTest {
     batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
-    then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
+    then(rabbitMqPublisherService).should(times(1)).publishBatchAnnotation(batchEvent);
   }
 
   @Test
@@ -118,7 +118,7 @@ class BatchAnnotationServiceTest {
     batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
 
@@ -167,8 +167,8 @@ class BatchAnnotationServiceTest {
     batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
-    then(kafkaPublisherService).should().publishBatchAnnotation(batchEventA);
-    then(kafkaPublisherService).should().publishBatchAnnotation(batchEventB);
+    then(rabbitMqPublisherService).should().publishBatchAnnotation(batchEventA);
+    then(rabbitMqPublisherService).should().publishBatchAnnotation(batchEventB);
   }
 
   @Test
@@ -187,7 +187,7 @@ class BatchAnnotationServiceTest {
 
     // Then
     then(jsonPathComponent).shouldHaveNoInteractions();
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
 
@@ -248,8 +248,8 @@ class BatchAnnotationServiceTest {
     batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
-    then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEventA);
-    then(kafkaPublisherService).should(times(1)).publishBatchAnnotation(batchEventB);
+    then(rabbitMqPublisherService).should(times(1)).publishBatchAnnotation(batchEventA);
+    then(rabbitMqPublisherService).should(times(1)).publishBatchAnnotation(batchEventB);
   }
 
   @Test
@@ -307,7 +307,7 @@ class BatchAnnotationServiceTest {
     batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
-    then(kafkaPublisherService).should(times(2)).publishBatchAnnotation(any());
+    then(rabbitMqPublisherService).should(times(2)).publishBatchAnnotation(any());
   }
 
   @Test
@@ -323,7 +323,7 @@ class BatchAnnotationServiceTest {
     batchAnnotationService.applyBatchAnnotations(event);
 
     // Then
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
     then(jsonPathComponent).shouldHaveNoInteractions();
   }
 

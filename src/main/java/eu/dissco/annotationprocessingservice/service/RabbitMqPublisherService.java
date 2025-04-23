@@ -2,12 +2,14 @@ package eu.dissco.annotationprocessingservice.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.properties.RabbitMqProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.CreateUpdateTombstoneEvent;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,7 +18,9 @@ import org.springframework.stereotype.Service;
 public class RabbitMqPublisherService {
 
   private final ObjectMapper mapper;
-  private final RabbitTemplate rabbitTemplate;
+  private final RabbitTemplate template;
+  @Qualifier("batchTemplate")
+  private final RabbitTemplate batchTemplate;
   private final RabbitMqProperties rabbitMqProperties;
   private final ProvenanceService provenanceService;
 
@@ -38,15 +42,22 @@ public class RabbitMqPublisherService {
   }
 
   private void publishMessage(CreateUpdateTombstoneEvent event) throws JsonProcessingException {
-    rabbitTemplate.convertAndSend(
+    batchTemplate.convertAndSend(
         rabbitMqProperties.getCreateUpdateTombstone().getExchangeName(),
         rabbitMqProperties.getCreateUpdateTombstone().getRoutingKeyName(),
         mapper.writeValueAsString(event));
   }
 
   public void deadLetterRaw(String message) {
-    rabbitTemplate.convertSendAndReceive(
+    batchTemplate.convertSendAndReceive(
         rabbitMqProperties.getAutoAcceptedAnnotation().getDlqExchangeName(),
         rabbitMqProperties.getAutoAcceptedAnnotation().getDlqRoutingKeyName(), message);
+  }
+
+  public void publishBatchAnnotation(ProcessedAnnotationBatch annotationEvent)
+      throws JsonProcessingException {
+    template.convertAndSend(rabbitMqProperties.getMasAnnotation().getExchangeName(),
+        rabbitMqProperties.getMasAnnotation().getRoutingKeyName(),
+        mapper.writeValueAsString(annotationEvent));
   }
 }

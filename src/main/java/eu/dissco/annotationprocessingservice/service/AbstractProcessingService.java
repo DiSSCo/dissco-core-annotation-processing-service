@@ -258,7 +258,7 @@ public abstract class AbstractProcessingService {
           rabbitMqPublisherService.publishCreateEvent(annotation);
         }
       } catch (JsonProcessingException e) {
-        log.error("Unable to publish annotations to kafka, rolling back");
+        log.error("Unable to publish annotations to rabbitmq, rolling back");
         rollbackService.rollbackNewAnnotations(annotations, true, true);
         throw new FailedProcessingException();
       }
@@ -283,7 +283,7 @@ public abstract class AbstractProcessingService {
       try {
         rabbitMqPublisherService.publishCreateEvent(annotation);
       } catch (JsonProcessingException e) {
-        log.error("Unable to publish create event to kafka.");
+        log.error("Unable to publish create event to rabbitmq.");
         rollbackService.rollbackNewAnnotations(List.of(annotation), true, true);
         throw new FailedProcessingException();
       }

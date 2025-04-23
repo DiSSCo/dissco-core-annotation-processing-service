@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Profile(Profiles.RABBITMQ_AUTO)
+@Profile(Profiles.RABBIT_MQ_AUTO)
 public class ProcessingAutoAcceptedService extends AbstractProcessingService {
 
   public ProcessingAutoAcceptedService(

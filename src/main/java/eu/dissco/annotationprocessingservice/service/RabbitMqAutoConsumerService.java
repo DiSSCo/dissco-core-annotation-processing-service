@@ -16,10 +16,10 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile(Profiles.RABBITMQ_AUTO)
+@Profile(Profiles.RABBIT_MQ_AUTO)
 @AllArgsConstructor
 @Slf4j
-public class RabbitMqConsumerService {
+public class RabbitMqAutoConsumerService {
 
   private final ObjectMapper mapper;
   private final ProcessingAutoAcceptedService autoAcceptedService;

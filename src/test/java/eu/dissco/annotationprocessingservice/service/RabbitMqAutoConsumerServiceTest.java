@@ -13,18 +13,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RabbitMqConsumerServiceTest {
+class RabbitMqAutoConsumerServiceTest {
 
   @Mock
   private ProcessingAutoAcceptedService autoAcceptedService;
   @Mock
   private RabbitMqPublisherService rabbitMqPublisherService;
 
-  private RabbitMqConsumerService service;
+  private RabbitMqAutoConsumerService service;
 
   @BeforeEach
   void setup() {
-    service = new RabbitMqConsumerService(MAPPER, autoAcceptedService, rabbitMqPublisherService);
+    service = new RabbitMqAutoConsumerService(MAPPER, autoAcceptedService, rabbitMqPublisherService);
   }
 
   @Test

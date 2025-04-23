@@ -25,12 +25,12 @@ public class MasJobRecordService {
   private final ObjectMapper mapper;
 
   public void verifyMasJobId(AnnotationProcessingEvent event) throws FailedProcessingException {
-    if (environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.RABBITMQ_AUTO)
+    if (environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)
         && event.getJobId() == null) {
       log.error("Missing MAS Job ID for event {}", event);
       throw new FailedProcessingException();
     }
-    if (!environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.RABBITMQ_AUTO)) {
+    if (!environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)) {
       throw new UnsupportedOperationException();
     }
   }

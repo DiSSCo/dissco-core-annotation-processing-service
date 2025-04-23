@@ -46,7 +46,8 @@ class MasJobRecordServiceTest {
   @Test
   void testVerifyMasJobIdKafka() {
     // Given
-    given(environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.RABBITMQ_AUTO)).willReturn(true);
+    given(environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)).willReturn(
+        true);
 
     // When
     assertDoesNotThrow(() -> service.verifyMasJobId(givenAnnotationEvent()));
@@ -65,7 +66,8 @@ class MasJobRecordServiceTest {
   void testVerifyMasJobIdWeb() {
     // Given
     var annotationEvent = givenAnnotationEvent();
-    given(environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.RABBITMQ_AUTO)).willReturn(false);
+    given(environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)).willReturn(
+        false);
 
     // When
     assertThrows(UnsupportedOperationException.class,
@@ -75,7 +77,8 @@ class MasJobRecordServiceTest {
   @Test
   void testVerifyMasJobIdKafkaFails() {
     // Given
-    given(environment.matchesProfiles(Profiles.KAFKA_MAS, Profiles.RABBITMQ_AUTO)).willReturn(true);
+    given(environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)).willReturn(
+        true);
 
     // When
     assertThrows(FailedProcessingException.class,

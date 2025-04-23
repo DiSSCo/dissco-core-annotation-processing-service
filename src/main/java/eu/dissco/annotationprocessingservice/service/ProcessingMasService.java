@@ -45,12 +45,12 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Profile(Profiles.KAFKA_MAS)
-public class ProcessingKafkaService extends AbstractProcessingService {
+@Profile(Profiles.RABBIT_MQ_MAS)
+public class ProcessingMasService extends AbstractProcessingService {
 
   private final AnnotationHasher annotationHasher;
 
-  public ProcessingKafkaService(AnnotationRepository repository,
+  public ProcessingMasService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository,
       RabbitMqPublisherService rabbitMqPublisherService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
@@ -59,9 +59,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
       RollbackService rollbackService) {
     super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
-        handleComponent,
-        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService, fdoProperties, rollbackService);
+        handleComponent, applicationProperties, schemaValidator, masJobRecordService,
+        batchAnnotationService, annotationBatchRecordService, fdoProperties, rollbackService);
     this.annotationHasher = annotationHasher;
   }
 
