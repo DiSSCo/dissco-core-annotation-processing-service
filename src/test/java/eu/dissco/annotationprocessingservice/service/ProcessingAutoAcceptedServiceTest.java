@@ -53,7 +53,7 @@ class ProcessingAutoAcceptedServiceTest {
   @Mock
   private ElasticSearchRepository elasticRepository;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService rabbitMqPublisherService;
   @Mock
   private FdoRecordService fdoRecordService;
   @Mock
@@ -80,7 +80,7 @@ class ProcessingAutoAcceptedServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
         fdoProperties, rollbackService);
     mockedStatic = mockStatic(Instant.class);
@@ -112,7 +112,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(repository).should().createAnnotationRecords(List.of(givenAcceptedAnnotation()));
-    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+    then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
   @Test
@@ -150,7 +150,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
   @Test
@@ -173,7 +173,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
 
@@ -186,7 +186,7 @@ class ProcessingAutoAcceptedServiceTest {
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService)
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishCreateEvent(givenAcceptedAnnotation());
     given(applicationProperties.getProcessorName()).willReturn(
         "annotation-processing-service");
@@ -197,7 +197,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(kafkaPublisherService).shouldHaveNoMoreInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoMoreInteractions();
   }
 
   @Test
@@ -212,7 +212,7 @@ class ProcessingAutoAcceptedServiceTest {
     // Then
     then(repository).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
 }

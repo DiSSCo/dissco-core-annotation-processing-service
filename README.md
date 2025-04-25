@@ -3,7 +3,7 @@
 
 The annotation processing service can receive an annotation from two different sources:
 - Through the API as a request to register or archive an annotation
-- Through a Kafka queue to register an annotation
+- Through a RabbitMQ queue to register an annotation
 
 After the processing services received the annotation event it will take the following actions:
 - Check if the same annotation is already in the system based on:
@@ -34,7 +34,7 @@ If the insert into elasticSearch or the publishing of the CreateUpdateDelete eve
 To run the system locally it can be run from an IDEA.
 Clone the code and fill in the application properties (see below).
 The application needs to store data in a database and an Elastic Search instance.
-In Kafka mode it needs a kafka cluster to connect to and receive the messages from.
+In RabbitMQ mode it needs a RabbitMQ cluster to connect to and receive the messages from.
 
 ## Run as Container 
 The application can also be run as container.
@@ -52,8 +52,8 @@ This endpoint can be used to post annotation events to the processing service. A
 This endpoint can be used to archive a specific annotation.
 Archiving will put the status of the Handle on `Archived`, fill the `deleted_on` field in the database and remove the annotation from Elasticsearch.
 
-### Kafka
-`spring.profiles.active=web`
+### RabbitMQ
+`spring.profiles.active=rabbit-mq-mas`
 This will make the application listen to a specified queue and process the annotation events from the queue.
 After receiving it will follow the above describe process.
 If exceptions are thrown, it will retry the message a X number of time after which it will push it to a Dead Letter Queue
@@ -72,8 +72,7 @@ elasticsearch.hostname=# The hostname of the Elasticsearch cluster
 elasticsearch.port=# The port of the Elasticsearch cluster
 elasticsearch.index-name=# The name of the index for Elasticsearch
 
-# Kafka properties (only necessary when the kafka profile is active)
-kafka.publisher.host=# The host address of the kafka instance to which the application will publish the CreateUpdateDelete events 
-kafka.consumer.host=# The host address of the kafka instance from which the application will consume the Annotation events
-kafka.consumer.group=# The group name of the kafka group from which the application will consume the Annotation events
-kafka.consumer.topic=# The topic name of the kafka topic from which the application will consume the Annotation events
+# RabbitMQ properties (only necessary when the RabbitMQ profile is active). RabbitMQ also has a series of default properties
+spring.rabbitmq.username=# Username to connect to RabbitMQ
+spring.rabbitmq.password=# Password to connect to RabbitMQ
+spring.rabbitmq.host=# Hostname of RabbitMQ

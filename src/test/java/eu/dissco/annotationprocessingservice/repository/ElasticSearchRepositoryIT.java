@@ -82,7 +82,7 @@ class ElasticSearchRepositoryIT {
   }
 
   @AfterAll
-  public static void closeResources() throws Exception {
+  static void closeResources() throws Exception {
     restClient.close();
   }
 

@@ -37,13 +37,14 @@ import org.springframework.stereotype.Service;
 public class ProcessingWebService extends AbstractProcessingService {
 
   public ProcessingWebService(AnnotationRepository repository,
-      ElasticSearchRepository elasticRepository, KafkaPublisherService kafkaService,
+      ElasticSearchRepository elasticRepository, RabbitMqPublisherService rabbitMqPublisherService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
       ApplicationProperties applicationProperties, AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
       RollbackService rollbackService) {
-    super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
+    super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
+        handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
   }
@@ -150,7 +151,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     if (indexDocument.result().equals(Result.Updated)) {
       log.info("Annotation: {} has been successfully indexed", currentAnnotation.getId());
       try {
-        kafkaService.publishUpdateEvent(currentAnnotation, annotation);
+        rabbitMqPublisherService.publishUpdateEvent(currentAnnotation, annotation);
       } catch (JsonProcessingException e) {
         rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, true, true);
         throw new FailedProcessingException();

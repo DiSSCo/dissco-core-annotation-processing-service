@@ -6,27 +6,27 @@ import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.context.annotation.Profile;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile(Profiles.KAFKA_AUTO)
+@Profile(Profiles.RABBIT_MQ_AUTO)
 @AllArgsConstructor
 @Slf4j
-public class KafkaAutoConsumerService {
+public class RabbitMqAutoConsumerService {
 
   private final ObjectMapper mapper;
   private final ProcessingAutoAcceptedService autoAcceptedService;
+  private final RabbitMqPublisherService publisherService;
 
-
-  @KafkaListener(topics = "${kafka.consumer.topic}")
+  @RabbitListener(queues = "${rabbitmq.auto-accepted-annotation.queue-name:auto-accepted-annotation-queue}",
+      containerFactory = "consumerBatchContainerFactory")
   public void getAutoAcceptedMessages(@Payload List<String> messages)
       throws DataBaseException, FailedProcessingException {
     var events = messages.stream().map(message -> {
@@ -34,6 +34,7 @@ public class KafkaAutoConsumerService {
         return mapper.readValue(message, AutoAcceptedAnnotation.class);
       } catch (JsonProcessingException e) {
         log.error("Failed to parse event message", e);
+        publisherService.deadLetterRaw(message);
         return null;
       }
     }).filter(Objects::nonNull).toList();

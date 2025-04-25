@@ -13,16 +13,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class KafkaAutoConsumerServiceTest {
+class RabbitMqAutoConsumerServiceTest {
 
   @Mock
   private ProcessingAutoAcceptedService autoAcceptedService;
+  @Mock
+  private RabbitMqPublisherService rabbitMqPublisherService;
 
-  private KafkaAutoConsumerService service;
+  private RabbitMqAutoConsumerService service;
 
   @BeforeEach
   void setup() {
-    service = new KafkaAutoConsumerService(MAPPER, autoAcceptedService);
+    service = new RabbitMqAutoConsumerService(MAPPER, autoAcceptedService, rabbitMqPublisherService);
   }
 
   @Test
@@ -35,6 +37,19 @@ class KafkaAutoConsumerServiceTest {
 
     // Then
     then(autoAcceptedService).should().handleMessage(List.of(givenAutoAcceptedRequest()));
+  }
+
+  @Test
+  void testInvalidAutoAcceptedMessages() throws Exception {
+    // Given
+    var invalidMessage = "invalid message";
+
+    // When
+    service.getAutoAcceptedMessages(List.of(invalidMessage));
+
+    // Then
+    then(rabbitMqPublisherService).should().deadLetterRaw(invalidMessage);
+    then(autoAcceptedService).should().handleMessage(List.of());
   }
 
   private String givenAutoAcceptedMessage() throws JsonProcessingException {

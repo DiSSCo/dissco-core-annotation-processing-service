@@ -45,22 +45,22 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@Profile(Profiles.KAFKA_MAS)
-public class ProcessingKafkaService extends AbstractProcessingService {
+@Profile(Profiles.RABBIT_MQ_MAS)
+public class ProcessingMasService extends AbstractProcessingService {
 
   private final AnnotationHasher annotationHasher;
 
-  public ProcessingKafkaService(AnnotationRepository repository,
+  public ProcessingMasService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository,
-      KafkaPublisherService kafkaService, FdoRecordService fdoRecordService,
+      RabbitMqPublisherService rabbitMqPublisherService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
       AnnotationValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
       RollbackService rollbackService) {
-    super(repository, elasticRepository, kafkaService, fdoRecordService, handleComponent,
-        applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService, fdoProperties, rollbackService);
+    super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
+        handleComponent, applicationProperties, schemaValidator, masJobRecordService,
+        batchAnnotationService, annotationBatchRecordService, fdoProperties, rollbackService);
     this.annotationHasher = annotationHasher;
   }
 
@@ -71,9 +71,11 @@ public class ProcessingKafkaService extends AbstractProcessingService {
         .map(Annotation::getId).toList();
   }
 
-  public void masJobFailed(FailedMasEvent failedMasEvent){
-    log.info("MAS Job {} has failed, more information: {}", failedMasEvent.jobId(), failedMasEvent.errorMessage());
-    masJobRecordService.markMasJobRecordAsFailed(failedMasEvent.jobId(), false, ErrorCode.MAS_EXCEPTION, failedMasEvent.errorMessage());
+  public void masJobFailed(FailedMasEvent failedMasEvent) {
+    log.info("MAS Job {} has failed, more information: {}", failedMasEvent.jobId(),
+        failedMasEvent.errorMessage());
+    masJobRecordService.markMasJobRecordAsFailed(failedMasEvent.jobId(), false,
+        ErrorCode.MAS_EXCEPTION, failedMasEvent.errorMessage());
   }
 
   public void handleMessage(AnnotationProcessingEvent event)
@@ -256,7 +258,8 @@ public class ProcessingKafkaService extends AbstractProcessingService {
       log.info("Annotations: {} have been successfully indexed", idList);
       try {
         for (var updatedAnnotation : updatedAnnotations) {
-          kafkaService.publishUpdateEvent(updatedAnnotation.hashedCurrentAnnotation().annotation(),
+          rabbitMqPublisherService.publishUpdateEvent(
+              updatedAnnotation.hashedCurrentAnnotation().annotation(),
               updatedAnnotation.hashedAnnotation()
                   .annotation());
         }

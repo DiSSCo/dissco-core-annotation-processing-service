@@ -65,7 +65,7 @@ class ProcessingWebServiceTest {
   @Mock
   private ElasticSearchRepository elasticRepository;
   @Mock
-  private KafkaPublisherService kafkaPublisherService;
+  private RabbitMqPublisherService rabbitMqPublisherService;
   @Mock
   private FdoRecordService fdoRecordService;
   @Mock
@@ -90,7 +90,7 @@ class ProcessingWebServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
-        kafkaPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
         fdoProperties, rollbackService);
     mockedStatic = mockStatic(Instant.class);
@@ -125,7 +125,7 @@ class ProcessingWebServiceTest {
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getId()).isEqualTo(ID);
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedWeb());
-    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+    then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
   @Test
@@ -154,7 +154,7 @@ class ProcessingWebServiceTest {
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getId()).isEqualTo(ID);
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedWebBatch());
-    then(kafkaPublisherService).should().publishCreateEvent(any(Annotation.class));
+    then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
   @Test
@@ -230,7 +230,7 @@ class ProcessingWebServiceTest {
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService)
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishCreateEvent(givenAnnotationProcessedWeb());
     given(applicationProperties.getProcessorName()).willReturn(
         "annotation-processing-service");
@@ -257,7 +257,7 @@ class ProcessingWebServiceTest {
     // Then
     then(repository).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
   @Test
@@ -286,7 +286,7 @@ class ProcessingWebServiceTest {
     then(fdoRecordService).should()
         .buildPatchHandleRequest(annotation);
     then(handleComponent).should().updateHandle(any());
-    then(kafkaPublisherService).should()
+    then(rabbitMqPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
   }
@@ -307,7 +307,7 @@ class ProcessingWebServiceTest {
     then(repository).should().updateLastChecked(List.of(ID));
     then(fdoRecordService).shouldHaveNoInteractions();
     then(handleComponent).shouldHaveNoInteractions();
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
   }
 
@@ -336,7 +336,7 @@ class ProcessingWebServiceTest {
 
     // Then
     then(repository).shouldHaveNoMoreInteractions();
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
   }
 
@@ -355,7 +355,7 @@ class ProcessingWebServiceTest {
 
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotation(any(), any(), eq(false), eq(true));
-    then(kafkaPublisherService).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).shouldHaveNoInteractions();
   }
 
   @Test
@@ -388,7 +388,7 @@ class ProcessingWebServiceTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any())).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(JsonProcessingException.class).when(kafkaPublisherService)
+    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
     given(applicationProperties.getProcessorHandle()).willReturn(
