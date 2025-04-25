@@ -1,6 +1,5 @@
 package eu.dissco.annotationprocessingservice.configuration;
 
-import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.MessageCompressionComponent;
 import eu.dissco.annotationprocessingservice.properties.RabbitMqProperties;
 import lombok.AllArgsConstructor;
@@ -9,10 +8,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile(Profiles.RABBIT_MQ_AUTO)
 @AllArgsConstructor
 public class RabbitMqConfiguration {
 
