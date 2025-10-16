@@ -9,7 +9,10 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
@@ -61,6 +64,7 @@ public abstract class AbstractProcessingService {
   protected final AnnotationBatchRecordService annotationBatchRecordService;
   protected final FdoProperties fdoProperties;
   protected final RollbackService rollbackService;
+  private final AnnotationHasher annotationHasher;
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {
@@ -100,16 +104,6 @@ public abstract class AbstractProcessingService {
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationRequest.getOdsBatchID());
-  }
-
-  protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
-      boolean batchingRequested, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version, null);
-    if (batchingRequested) {
-      annotationBatchRecordService.mintBatchId(annotation);
-      annotation.setOdsPlaceInBatch(1);
-    }
-    return annotation;
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
@@ -230,17 +224,6 @@ public abstract class AbstractProcessingService {
     }
   }
 
-  protected String postHandle(AnnotationProcessingRequest annotationRequest)
-      throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequest(List.of(annotationRequest));
-    try {
-      return handleComponent.postHandle(requestBody);
-    } catch (PidCreationException e) {
-      log.error("Unable to create handle for given annotations. ", e);
-      throw new FailedProcessingException();
-    }
-  }
-
   protected void indexElasticNewAnnotations(List<Annotation> annotations)
       throws FailedProcessingException {
     BulkResponse bulkResponse = null;
@@ -315,6 +298,36 @@ public abstract class AbstractProcessingService {
     );
     rollbackService.rollbackNewAnnotations(annotationRollbacksElasticFail, false, true);
     rollbackService.rollbackNewAnnotations(annotationRollbacksElasticSuccess, true, true);
+  }
+
+  protected UUID hashAnnotation(AnnotationProcessingRequest annotation) {
+    return annotationHasher.getAnnotationHash(annotation);
+  }
+
+  protected Map<UUID, String> postHandles(List<HashedAnnotationRequest> hashedAnnotations,
+      String jobId, boolean isBatchResult) throws FailedProcessingException {
+    var requestBody = fdoRecordService.buildPostHandleRequestHash(hashedAnnotations);
+    try {
+      return handleComponent.postHandlesHashed(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to create handle for given annotations. ", e);
+      if (jobId != null) {
+        masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+            e.getMessage());
+      }
+      throw new FailedProcessingException();
+    }
+  }
+
+  protected String postHandle(AnnotationProcessingRequest annotationRequest)
+      throws FailedProcessingException {
+    var requestBody = fdoRecordService.buildPostHandleRequest(List.of(annotationRequest));
+    try {
+      return handleComponent.postHandle(requestBody);
+    } catch (PidCreationException e) {
+      log.error("Unable to create handle for given annotations. ", e);
+      throw new FailedProcessingException();
+    }
   }
 
 }

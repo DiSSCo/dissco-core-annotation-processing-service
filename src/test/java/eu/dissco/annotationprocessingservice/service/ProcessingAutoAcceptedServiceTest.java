@@ -1,12 +1,18 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH;
+import static eu.dissco.annotationprocessingservice.TestUtils.ANNOTATION_HASH_2;
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
-import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
+import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAcceptedAnnotation;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAutoAcceptedRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAgent;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -15,10 +21,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
+import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -26,11 +35,14 @@ import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.jooq.exception.DataAccessException;
@@ -74,6 +86,8 @@ class ProcessingAutoAcceptedServiceTest {
   private BulkResponse bulkResponse;
   @Mock
   private RollbackService rollbackService;
+  @Mock
+  private AnnotationHasher annotationHasher;
   private MockedStatic<Instant> mockedStatic;
   private ProcessingAutoAcceptedService service;
 
@@ -82,7 +96,7 @@ class ProcessingAutoAcceptedServiceTest {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
-        fdoProperties, rollbackService);
+        fdoProperties, rollbackService, annotationHasher);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
@@ -98,7 +112,8 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
@@ -116,9 +131,46 @@ class ProcessingAutoAcceptedServiceTest {
   }
 
   @Test
+  void testCreateAnnotations() throws Exception {
+    // Given
+    var altBody = new AnnotationBody().withOaValue(List.of("another value"));
+    var expected = List.of(
+        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID),
+        givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID).
+            withOdsMergingStateChangeDate(Date.from(CREATED))
+            .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED)
+            .withOdsHasMergingStateChangedBy(givenProcessingAgent())
+            .withOaHasBody(altBody));
+    var annotationRequests = List.of(givenAutoAcceptedRequest(),
+        new AutoAcceptedAnnotation(givenProcessingAgent(),
+            givenAnnotationRequest().withOaHasBody(altBody)));
+    given(annotationHasher.getAnnotationHash(givenAutoAcceptedRequest().annotation())).willReturn(
+        ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(annotationRequests.get(1).annotation())).willReturn(
+        ANNOTATION_HASH_2);
+    given(handleComponent.postHandlesHashed(any())).willReturn(
+        Map.of(ANNOTATION_HASH, BARE_ID, ANNOTATION_HASH_2, TARGET_ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
+
+    // When
+    service.handleMessage(annotationRequests);
+
+    // Then
+    then(repository).should().createAnnotationRecords(expected);
+    then(rabbitMqPublisherService).should(times(2)).publishCreateEvent(any(Annotation.class));
+  }
+
+  @Test
   void testDataAccessExceptionNewAnnotation() throws Exception {
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(DataAccessException.class).when(repository)
@@ -136,7 +188,8 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationElasticIOException() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     doThrow(IOException.class).when(elasticRepository).indexAnnotations(anyList());
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
@@ -157,7 +210,8 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationElasticFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     given(bulkResponse.errors()).willReturn(true);
@@ -169,7 +223,8 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
+    assertThrows(FailedProcessingException.class,
+        () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
@@ -181,7 +236,8 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationKafkaFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(handleComponent.postHandlesTargetPid(any())).willReturn(Map.of(DOI_PROXY + TARGET_ID, BARE_ID));
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(applicationProperties.getProcessorHandle()).willReturn(
@@ -193,7 +249,8 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
+    assertThrows(FailedProcessingException.class,
+        () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
@@ -204,10 +261,12 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    doThrow(PidCreationException.class).when(handleComponent).postHandlesTargetPid(any());
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    doThrow(PidCreationException.class).when(handleComponent).postHandlesHashed(any());
 
     // When
-    assertThrows(FailedProcessingException.class, () -> service.handleMessage(List.of(annotationRequest)));
+    assertThrows(FailedProcessingException.class,
+        () -> service.handleMessage(List.of(annotationRequest)));
 
     // Then
     then(repository).shouldHaveNoInteractions();

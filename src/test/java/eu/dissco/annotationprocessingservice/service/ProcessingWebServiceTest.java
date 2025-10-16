@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mockStatic;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -84,6 +85,8 @@ class ProcessingWebServiceTest {
   private FdoProperties fdoProperties;
   @Mock
   RollbackService rollbackService;
+  @Mock
+  private AnnotationHasher annotationHasher;
   private MockedStatic<Instant> mockedStatic;
   private ProcessingWebService service;
 
@@ -92,7 +95,7 @@ class ProcessingWebServiceTest {
     service = new ProcessingWebService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
-        fdoProperties, rollbackService);
+        fdoProperties, rollbackService, annotationHasher);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);

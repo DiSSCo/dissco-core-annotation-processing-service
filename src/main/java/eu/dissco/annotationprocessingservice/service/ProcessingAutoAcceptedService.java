@@ -3,8 +3,11 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
+import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
+import eu.dissco.annotationprocessingservice.domain.HashedAutoAcceptedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -19,6 +22,8 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.exception.DataAccessException;
 import org.springframework.context.annotation.Profile;
@@ -38,10 +43,11 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
-      RollbackService rollbackService) {
-    super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService, handleComponent,
+      RollbackService rollbackService, AnnotationHasher annotationHasher) {
+    super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
+        handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService, fdoProperties, rollbackService);
+        annotationBatchRecordService, fdoProperties, rollbackService, annotationHasher);
   }
 
   private static void addMergingInformation(AutoAcceptedAnnotation autoAcceptedAnnotation,
@@ -54,10 +60,18 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
   public void handleMessage(List<AutoAcceptedAnnotation> autoAcceptedAnnotations)
       throws FailedProcessingException {
     log.debug("Processing auto-accepted annotation: {}", autoAcceptedAnnotations);
+    var hashedAnnotations = autoAcceptedAnnotations.stream()
+        .map(annotation -> new HashedAutoAcceptedAnnotationRequest(
+            annotation.acceptingAgent(),
+            new HashedAnnotationRequest(annotation.annotation(),
+                hashAnnotation(annotation.annotation()))))
+        .collect(Collectors.toSet());
     var ids = postHandles(
-        autoAcceptedAnnotations.stream().map(AutoAcceptedAnnotation::annotation).toList());
+        hashedAnnotations.stream().map(HashedAutoAcceptedAnnotationRequest::hashedRequest).toList(),
+        null, false);
+
     var annotations = autoAcceptedAnnotations.stream().map(autoAcceptedAnnotation ->
-        buildAutoAcceptedAnnotation(autoAcceptedAnnotation, ids))
+            buildAutoAcceptedAnnotation(autoAcceptedAnnotation, ids))
         .toList();
     log.info("New ids have been generated for {} Annotations", ids.size());
     try {
@@ -72,23 +86,12 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
     log.info("Annotations have been successfully indexed in elastic");
   }
 
-  private Annotation buildAutoAcceptedAnnotation(AutoAcceptedAnnotation autoAcceptedAnnotation, Map<String, String> ids){
-    var annotation =  buildAnnotation(autoAcceptedAnnotation.annotation(),
-        HANDLE_PROXY + ids.get(autoAcceptedAnnotation.annotation().getOaHasTarget().getId()), 1,
-        null);
+  private Annotation buildAutoAcceptedAnnotation(AutoAcceptedAnnotation autoAcceptedAnnotation,
+      Map<UUID, String> ids) {
+    var id = HANDLE_PROXY + ids.get(hashAnnotation(autoAcceptedAnnotation.annotation()));
+    var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), id, 1, null);
     addMergingInformation(autoAcceptedAnnotation, annotation);
     return annotation;
-  }
-
-  protected Map<String, String> postHandles(List<AnnotationProcessingRequest> annotationRequest)
-      throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequest(annotationRequest);
-    try {
-      return handleComponent.postHandlesTargetPid(requestBody);
-    } catch (PidCreationException e) {
-      log.error("Unable to create handle for given annotations. ", e);
-      throw new FailedProcessingException();
-    }
   }
 
 }
