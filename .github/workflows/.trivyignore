@@ -1,0 +1,9 @@
+# Oct 20 - Spring boot needs to update
+# Netty
+CVE-2025-55163
+
+# Tomcat
+CVE-2025-48989
+
+# Spring framework
+CVE-2025-41249
