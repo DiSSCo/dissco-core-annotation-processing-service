@@ -8,6 +8,7 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
+import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
@@ -42,11 +43,11 @@ public class ProcessingWebService extends AbstractProcessingService {
       ApplicationProperties applicationProperties, AnnotationValidatorComponent schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
-      RollbackService rollbackService) {
+      RollbackService rollbackService, AnnotationHasher annotationHasher) {
     super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
         handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
-        annotationBatchRecordService, fdoProperties, rollbackService);
+        annotationBatchRecordService, fdoProperties, rollbackService, annotationHasher);
   }
 
   public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,

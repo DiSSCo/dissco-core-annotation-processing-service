@@ -382,6 +382,14 @@ public class TestUtils {
     return annotation;
   }
 
+  public static Annotation givenAcceptedAnnotation(String id) {
+    var annotation = givenAnnotationProcessedWeb(id, CREATOR, TARGET_ID);
+    annotation.setOdsMergingStateChangeDate(Date.from(CREATED));
+    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+    annotation.setOdsHasMergingStateChangedBy(givenProcessingAgent());
+    return annotation;
+  }
+
   public static AutoAcceptedAnnotation givenAutoAcceptedRequest() {
     return new AutoAcceptedAnnotation(givenProcessingAgent(), givenAnnotationRequest());
   }

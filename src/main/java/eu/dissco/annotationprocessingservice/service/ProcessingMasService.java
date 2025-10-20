@@ -48,8 +48,6 @@ import org.springframework.stereotype.Service;
 @Profile(Profiles.RABBIT_MQ_MAS)
 public class ProcessingMasService extends AbstractProcessingService {
 
-  private final AnnotationHasher annotationHasher;
-
   public ProcessingMasService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository,
       RabbitMqPublisherService rabbitMqPublisherService, FdoRecordService fdoRecordService,
@@ -60,8 +58,7 @@ public class ProcessingMasService extends AbstractProcessingService {
       RollbackService rollbackService) {
     super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
         handleComponent, applicationProperties, schemaValidator, masJobRecordService,
-        batchAnnotationService, annotationBatchRecordService, fdoProperties, rollbackService);
-    this.annotationHasher = annotationHasher;
+        batchAnnotationService, annotationBatchRecordService, fdoProperties, rollbackService,  annotationHasher);
   }
 
   private static List<String> getIdListFromUpdates(Set<UpdatedAnnotation> updatedAnnotations) {
@@ -188,19 +185,6 @@ public class ProcessingMasService extends AbstractProcessingService {
     return hashedAnnotations.stream().map(HashedAnnotation::annotation).toList();
   }
 
-  private Map<UUID, String> postHandles(List<HashedAnnotationRequest> hashedAnnotations,
-      String jobId, boolean isBatchResult) throws FailedProcessingException {
-    var requestBody = fdoRecordService.buildPostHandleRequestHash(hashedAnnotations);
-    try {
-      return handleComponent.postHandlesHashed(requestBody);
-    } catch (PidCreationException e) {
-      log.error("Unable to create handle for given annotations. ", e);
-      masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
-          e.getMessage());
-      throw new FailedProcessingException();
-    }
-  }
-
   private List<String> updateExistingAnnotations(Set<UpdatedAnnotation> updatedAnnotations,
       String jobId, boolean isBatchResult) throws FailedProcessingException {
     if (updatedAnnotations.isEmpty()) {
@@ -233,10 +217,6 @@ public class ProcessingMasService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     return idList;
-  }
-
-  private UUID hashAnnotation(AnnotationProcessingRequest annotation) {
-    return annotationHasher.getAnnotationHash(annotation);
   }
 
   private void indexElasticUpdatedAnnotation(Set<UpdatedAnnotation> updatedAnnotations)
