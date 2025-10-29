@@ -200,12 +200,11 @@
   "required": [
     "@id",
     "@type",
-    "ods:ID",
+    "dcterms:identifier",
     "rdf:type",
     "ods:version",
     "oa:motivation",
     "oa:hasTarget",
-    "oa:hasBody",
     "dcterms:creator",
     "dcterms:created",
     "dcterms:modified",
