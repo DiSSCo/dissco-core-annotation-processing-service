@@ -51,7 +51,7 @@ class RestResponseEntityExceptionHandlerTest {
   @Test
   void testAnnotationValidationException(){
     // When
-    var result = exceptionHandler.handleException(new AnnotationValidationException());
+    var result = exceptionHandler.handleException(new AnnotationValidationException(""));
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);

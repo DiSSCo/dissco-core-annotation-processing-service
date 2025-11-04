@@ -6,9 +6,13 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatchRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.DigitalMediaObject;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.DigitalSpecimen;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationBatchRecordRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.records.DigitalMediaObjectRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.records.DigitalSpecimenRecord;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.MasJobRecordRecord;
 
 import org.jooq.TableField;
@@ -21,7 +25,7 @@ import org.jooq.impl.Internal;
  * A class modelling foreign key relationships and constraints of tables in
  * public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Keys {
 
     // -------------------------------------------------------------------------
@@ -30,5 +34,7 @@ public class Keys {
 
     public static final UniqueKey<AnnotationRecord> ANNOTATION_PK = Internal.createUniqueKey(Annotation.ANNOTATION, DSL.name("annotation_pk"), new TableField[] { Annotation.ANNOTATION.ID }, true);
     public static final UniqueKey<AnnotationBatchRecordRecord> ANNOTATION_BATCH_PK = Internal.createUniqueKey(AnnotationBatchRecord.ANNOTATION_BATCH_RECORD, DSL.name("annotation_batch_pk"), new TableField[] { AnnotationBatchRecord.ANNOTATION_BATCH_RECORD.ID }, true);
+    public static final UniqueKey<DigitalMediaObjectRecord> DIGITAL_MEDIA_OBJECT_PK = Internal.createUniqueKey(DigitalMediaObject.DIGITAL_MEDIA_OBJECT, DSL.name("digital_media_object_pk"), new TableField[] { DigitalMediaObject.DIGITAL_MEDIA_OBJECT.ID }, true);
+    public static final UniqueKey<DigitalSpecimenRecord> DIGITAL_SPECIMEN_PK = Internal.createUniqueKey(DigitalSpecimen.DIGITAL_SPECIMEN, DSL.name("digital_specimen_pk"), new TableField[] { DigitalSpecimen.DIGITAL_SPECIMEN.ID }, true);
     public static final UniqueKey<MasJobRecordRecord> MAS_JOB_RECORD_PK = Internal.createUniqueKey(MasJobRecord.MAS_JOB_RECORD, DSL.name("mas_job_record_pk"), new TableField[] { MasJobRecord.MAS_JOB_RECORD.JOB_ID }, true);
 }

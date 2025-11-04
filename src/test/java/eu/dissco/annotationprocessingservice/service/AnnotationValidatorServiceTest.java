@@ -1,15 +1,17 @@
-package eu.dissco.annotationprocessingservice.component;
+package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
-import static eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent.validateAnnotationRequest;
 import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.properties.FdoProperties;
+import eu.dissco.annotationprocessingservice.repository.DigitalSpecimenRepository;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
+import io.github.dissco.annotationlogic.validator.AnnotationValidator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,16 +20,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AnnotationValidatorComponentTest {
+class AnnotationValidatorServiceTest {
 
-  AnnotationValidatorComponent annotationValidatorComponent;
+  private AnnotationValidatorService annotationValidatorComponent;
+  @Mock
+  private AnnotationValidator annotationValidator;
+  @Mock
+  private DigitalSpecimenRepository digitalSpecimenRepository;
 
   @BeforeEach
-  void setup(){
-    annotationValidatorComponent = new AnnotationValidatorComponent();
+  void setup() {
+    annotationValidatorComponent = new AnnotationValidatorService(annotationValidator,
+        digitalSpecimenRepository, new FdoProperties());
   }
 
   @Test
@@ -45,11 +53,11 @@ class AnnotationValidatorComponentTest {
 
   @ParameterizedTest
   @MethodSource("invalidAnnotations")
-  void testInvalidAnnotations(AnnotationProcessingRequest annotationRequest) {
+  void testInvalidIdAnnotations(AnnotationProcessingRequest annotationRequest, boolean isNew) {
     // Then
     assertThrows(AnnotationValidationException.class,
-        () -> validateAnnotationRequest(annotationRequest,
-            true));
+        () -> annotationValidatorComponent.validateAnnotationRequest(List.of(annotationRequest),
+            isNew));
   }
 
   @Test
@@ -59,18 +67,7 @@ class AnnotationValidatorComponentTest {
 
     // Then
     assertThrows(AnnotationValidationException.class,
-        () -> validateAnnotationRequest(annotationRequest,
-            false));
-  }
-
-  @Test
-  void testCreateMissingCreated() {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withDctermsCreated(null);
-
-    // Then
-    assertThrows(AnnotationValidationException.class,
-        () -> validateAnnotationRequest(annotationRequest,
+        () -> annotationValidatorComponent.validateAnnotationRequest(List.of(annotationRequest),
             false));
   }
 
@@ -79,8 +76,9 @@ class AnnotationValidatorComponentTest {
   void testValidAnnotation(AnnotationProcessingRequest annotationRequest, Boolean isNew) {
 
     // Then
-    assertDoesNotThrow(() ->
-        validateAnnotationRequest(annotationRequest, isNew));
+    assertDoesNotThrow(
+        () -> annotationValidatorComponent.validateAnnotationRequest(List.of(annotationRequest),
+            isNew));
   }
 
   private static Stream<Arguments> validAnnotations() {
@@ -92,10 +90,8 @@ class AnnotationValidatorComponentTest {
 
   private static Stream<Arguments> invalidAnnotations() {
     return Stream.of(
-        Arguments.of(givenAnnotationRequest().withId(ID)),
-        Arguments.of(givenAnnotationRequest().withDctermsCreator(null)),
-        Arguments.of(givenAnnotationRequest().withDctermsCreated(null))
-    );
+        Arguments.of(givenAnnotationRequest().withId(ID), true),
+        Arguments.of(givenAnnotationRequest(), false));
   }
 
 }

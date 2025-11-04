@@ -18,7 +18,9 @@
         job_state |
         mjr_target_type |
         error_code |
-        annotation_batch_record
+        annotation_batch_record |
+        digital_specimen |
+        digital_media_object
       </includes>
       <forcedTypes>
         <forcedType>

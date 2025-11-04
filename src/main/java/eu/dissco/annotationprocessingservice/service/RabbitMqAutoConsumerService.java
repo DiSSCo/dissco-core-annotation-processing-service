@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import java.util.List;
@@ -28,7 +29,7 @@ public class RabbitMqAutoConsumerService {
   @RabbitListener(queues = "${rabbitmq.auto-accepted-annotation.queue-name:auto-accepted-annotation-queue}",
       containerFactory = "consumerBatchContainerFactory")
   public void getAutoAcceptedMessages(@Payload List<String> messages)
-      throws DataBaseException, FailedProcessingException {
+      throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     var events = messages.stream().map(message -> {
       try {
         return mapper.readValue(message, AutoAcceptedAnnotation.class);

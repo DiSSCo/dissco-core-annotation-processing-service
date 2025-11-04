@@ -51,12 +51,12 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -101,7 +101,7 @@ class ProcessingMasServiceTest {
   @Mock
   AnnotationHasher annotationHasher;
   @Mock
-  AnnotationValidatorComponent schemaValidator;
+  AnnotationValidatorService annotationValidator;
   @Mock
   BatchAnnotationService batchAnnotationService;
   @Mock
@@ -153,7 +153,7 @@ class ProcessingMasServiceTest {
   void setup() {
     service = new ProcessingMasService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        masJobRecordService, annotationHasher, schemaValidator, batchAnnotationService,
+        masJobRecordService, annotationHasher, annotationValidator, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
@@ -253,6 +253,23 @@ class ProcessingMasServiceTest {
     then(handleComponent).shouldHaveNoInteractions();
     then(elasticRepository).shouldHaveNoInteractions();
     then(annotationBatchRecordService).shouldHaveNoInteractions();
+  }
+
+  @Test
+  void testAnnotationValidationFailed() throws Exception {
+    // Given
+    var annotationEvent = givenAnnotationEvent();
+    doThrow(AnnotationValidationException.class).when(annotationValidator)
+        .validateEvent(annotationEvent);
+
+    // When
+    assertThrows(AnnotationValidationException.class,
+        () -> service.handleMessage(annotationEvent));
+
+    // Then
+    then(rollbackService).shouldHaveNoMoreInteractions();
+    then(repository).shouldHaveNoInteractions();
+    then(elasticRepository).shouldHaveNoInteractions();
   }
 
   @Test

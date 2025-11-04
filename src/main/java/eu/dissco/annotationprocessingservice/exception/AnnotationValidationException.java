@@ -2,8 +2,8 @@ package eu.dissco.annotationprocessingservice.exception;
 
 public class AnnotationValidationException extends Exception {
 
-  public AnnotationValidationException() {
-    super();
+  public AnnotationValidationException(String s) {
+    super(s);
   }
 
 }

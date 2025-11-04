@@ -6,13 +6,15 @@ package eu.dissco.annotationprocessingservice.database.jooq;
 
 import eu.dissco.annotationprocessingservice.database.jooq.tables.Annotation;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.AnnotationBatchRecord;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.DigitalMediaObject;
+import eu.dissco.annotationprocessingservice.database.jooq.tables.DigitalSpecimen;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.MasJobRecord;
 
 
 /**
  * Convenience access to all tables in public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Tables {
 
     /**
@@ -24,6 +26,16 @@ public class Tables {
      * The table <code>public.annotation_batch_record</code>.
      */
     public static final AnnotationBatchRecord ANNOTATION_BATCH_RECORD = AnnotationBatchRecord.ANNOTATION_BATCH_RECORD;
+
+    /**
+     * The table <code>public.digital_media_object</code>.
+     */
+    public static final DigitalMediaObject DIGITAL_MEDIA_OBJECT = DigitalMediaObject.DIGITAL_MEDIA_OBJECT;
+
+    /**
+     * The table <code>public.digital_specimen</code>.
+     */
+    public static final DigitalSpecimen DIGITAL_SPECIMEN = DigitalSpecimen.DIGITAL_SPECIMEN;
 
     /**
      * The table <code>public.mas_job_record</code>.

@@ -26,8 +26,8 @@ import static org.mockito.Mockito.times;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -73,7 +73,7 @@ class ProcessingAutoAcceptedServiceTest {
   @Mock
   private ApplicationProperties applicationProperties;
   @Mock
-  private AnnotationValidatorComponent schemaValidator;
+  private AnnotationValidatorService annotationValidator;
   @Mock
   private MasJobRecordService masJobRecordService;
   @Mock
@@ -95,7 +95,8 @@ class ProcessingAutoAcceptedServiceTest {
   void setup() {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
+        annotationValidator, masJobRecordService, batchAnnotationService,
+        annotationBatchRecordService,
         fdoProperties, rollbackService, annotationHasher);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
@@ -168,6 +169,7 @@ class ProcessingAutoAcceptedServiceTest {
 
   @Test
   void testDataAccessExceptionNewAnnotation() throws Exception {
+    // Given
     var annotationRequest = givenAutoAcceptedRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
@@ -182,6 +184,23 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(false));
+  }
+
+  @Test
+  void testAnnotationValidationFailed() throws Exception {
+    // Given
+    var annotationRequest = givenAutoAcceptedRequest();
+    doThrow(AnnotationValidationException.class).when(annotationValidator)
+        .validateAnnotationRequest(List.of(annotationRequest.annotation()), true);
+
+    // When
+    assertThrows(AnnotationValidationException.class,
+        () -> service.handleMessage(List.of(annotationRequest)));
+
+    // Then
+    then(rollbackService).shouldHaveNoMoreInteractions();
+    then(repository).shouldHaveNoInteractions();
+    then(elasticRepository).shouldHaveNoInteractions();
   }
 
   @Test

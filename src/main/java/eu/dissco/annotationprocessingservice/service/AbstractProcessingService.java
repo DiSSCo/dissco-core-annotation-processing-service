@@ -10,7 +10,6 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
@@ -58,7 +57,7 @@ public abstract class AbstractProcessingService {
   protected final FdoRecordService fdoRecordService;
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
-  protected final AnnotationValidatorComponent schemaValidator;
+  protected final AnnotationValidatorService annotationValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;
@@ -312,7 +311,8 @@ public abstract class AbstractProcessingService {
     } catch (PidCreationException e) {
       log.error("Unable to create handle for given annotations. ", e);
       if (jobId != null) {
-        masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
+        masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult,
+            ErrorCode.DISSCO_EXCEPTION,
             e.getMessage());
       }
       throw new FailedProcessingException();

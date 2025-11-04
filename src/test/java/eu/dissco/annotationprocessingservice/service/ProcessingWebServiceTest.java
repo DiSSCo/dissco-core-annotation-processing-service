@@ -28,8 +28,8 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -74,7 +74,7 @@ class ProcessingWebServiceTest {
   @Mock
   private ApplicationProperties applicationProperties;
   @Mock
-  private AnnotationValidatorComponent schemaValidator;
+  private AnnotationValidatorService annotationValidator;
   @Mock
   private MasJobRecordService masJobRecordService;
   @Mock
@@ -94,7 +94,7 @@ class ProcessingWebServiceTest {
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        schemaValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
+        annotationValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
         fdoProperties, rollbackService, annotationHasher);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
@@ -176,6 +176,23 @@ class ProcessingWebServiceTest {
     // Then
     then(batchAnnotationService).should()
         .applyBatchAnnotations(processedEvent);
+  }
+
+  @Test
+  void testAnnotationValidationFailed() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest();
+    doThrow(AnnotationValidationException.class).when(annotationValidator)
+        .validateAnnotationRequest(List.of(annotationRequest), true);
+
+    // When
+    assertThrows(AnnotationValidationException.class,
+        () -> service.persistNewAnnotation(annotationRequest, false));
+
+    // Then
+    then(rollbackService).shouldHaveNoMoreInteractions();
+    then(repository).shouldHaveNoInteractions();
+    then(elasticRepository).shouldHaveNoInteractions();
   }
 
   @Test
