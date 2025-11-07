@@ -1,5 +1,6 @@
 package eu.dissco.annotationprocessingservice.repository;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.DIGITAL_SPECIMEN;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jooq.Record;
 import org.jooq.exception.DataAccessException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
@@ -30,8 +32,8 @@ public class DigitalSpecimenRepository {
     try {
       return context.select(DIGITAL_SPECIMEN.asterisk())
           .from(DIGITAL_SPECIMEN)
-          .where(DIGITAL_SPECIMEN.PHYSICAL_SPECIMEN_ID.in(specimenIds))
-          .fetch(dbRecord -> mapToDigitalSpecimen(dbRecord.get(DIGITAL_SPECIMEN.DATA)));
+          .where(DIGITAL_SPECIMEN.ID.in(specimenIds))
+          .fetch(this::mapToDigitalSpecimen);
     } catch (DataAccessException ex) {
       log.error("Unable to get specimen from repository", ex);
       throw new DataBaseException(
@@ -39,11 +41,13 @@ public class DigitalSpecimenRepository {
     }
   }
 
-  private DigitalSpecimen mapToDigitalSpecimen(JSONB jsonb) {
+  private DigitalSpecimen mapToDigitalSpecimen(Record dbRecord) {
     try {
-      return mapper.readValue(jsonb.data(), DigitalSpecimen.class);
+      return mapper.readValue(dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), DigitalSpecimen.class)
+          .withDctermsIdentifier(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
+          .withId(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID));
     } catch (JsonProcessingException e) {
-      log.warn("Unable to map jsonb to digital specimen: {}", jsonb.data(), e);
+      log.warn("Unable to map jsonb to digital specimen: {}", dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), e);
       throw new DataBaseException(
           "Unable to map jsonb to digital specimen. Validation not possible.");
     }

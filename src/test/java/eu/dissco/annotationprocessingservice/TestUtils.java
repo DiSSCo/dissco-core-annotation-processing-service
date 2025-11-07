@@ -34,6 +34,12 @@ import eu.dissco.annotationprocessingservice.schema.OdsHasAggregateRating;
 import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
 import eu.dissco.annotationprocessingservice.utils.AgentUtils;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsLivingOrPreserved;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsPhysicalSpecimenIDType;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsTopicDiscipline;
+import io.github.dissco.core.annotationlogic.schema.Identification;
+import io.github.dissco.core.annotationlogic.schema.TaxonIdentification;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -513,7 +519,39 @@ public class TestUtils {
         JOB_ID,
         "MAS Failed"
     );
+  }
 
+  public static DigitalSpecimen givenDigitalSpecimen() {
+    return new DigitalSpecimen()
+        .withDctermsIdentifier(DOI_PROXY + TARGET_ID)
+        .withId(DOI_PROXY + TARGET_ID)
+        .withOdsOrganisationID("https://ror.org/0443cwa12")
+        .withOdsOrganisationName("National Museum of Natural History")
+        .withOdsPhysicalSpecimenIDType(OdsPhysicalSpecimenIDType.GLOBAL)
+        .withOdsPhysicalSpecimenID("https://geocollections.info/specimen/23602")
+        .withOdsNormalisedPhysicalSpecimenID("https://geocollections.info/specimen/23602")
+        .withOdsSpecimenName("specimen")
+        .withOdsTopicDiscipline(OdsTopicDiscipline.ZOOLOGY)
+        .withOdsSourceSystemID(ID_ALT)
+        .withOdsSourceSystemName("Source System")
+        .withOdsLivingOrPreserved(OdsLivingOrPreserved.PRESERVED)
+        .withDctermsLicense("http://creativecommons.org/licenses/by-nc/4.0/")
+        .withOdsIsMarkedAsType(true)
+        .withOdsIsKnownToContainMedia(false)
+        .withDctermsModified("2022-11-01T09:59:24.000Z")
+        .withOdsHasIdentifications(List.of(
+            new Identification()
+                .withOdsHasTaxonIdentifications(List.of(
+                    new TaxonIdentification()
+                        .withDwcKingdom("Animalia")
+                        .withDwcPhylum("Chordata")
+                        .withDwcClass("Actinopterygii")
+                        .withDwcOrder("Tetraodontiformes")
+                        .withDwcFamily("Molidae")
+                        .withDwcGenus("Mola")
+                        .withDwcScientificName("Mola mola (Linnaeus, 1758)")
+                ))
+        ));
   }
 
 

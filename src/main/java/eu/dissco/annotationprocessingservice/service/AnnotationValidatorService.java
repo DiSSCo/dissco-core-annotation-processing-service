@@ -1,5 +1,7 @@
 package eu.dissco.annotationprocessingservice.service;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DOI_PROXY;
+
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -13,6 +15,8 @@ import io.github.dissco.core.annotationlogic.schema.Agent;
 import io.github.dissco.core.annotationlogic.schema.Annotation;
 import io.github.dissco.core.annotationlogic.schema.Annotation.OaMotivation;
 import io.github.dissco.core.annotationlogic.schema.Annotation.OdsStatus;
+import io.github.dissco.core.annotationlogic.schema.AnnotationBody;
+import io.github.dissco.core.annotationlogic.schema.AnnotationTarget;
 import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
 import io.github.dissco.core.annotationlogic.schema.Identifier;
 import io.github.dissco.core.annotationlogic.schema.Identifier.DctermsType;
@@ -57,7 +61,12 @@ public class AnnotationValidatorService {
   private void validateAnnotationContents(
       List<AnnotationProcessingRequest> annotationProcessingRequests)
       throws AnnotationValidationException {
-    var annotations = annotationProcessingRequests.stream().map(this::toAnnotation).toList();
+    var annotations = annotationProcessingRequests.stream()
+        .filter(annotationProcessingRequest ->
+            AnnotationProcessingRequest.OaMotivation.OA_EDITING.equals(annotationProcessingRequest.getOaMotivation()) ||
+            AnnotationProcessingRequest.OaMotivation.ODS_DELETING.equals(annotationProcessingRequest.getOaMotivation()) ||
+            AnnotationProcessingRequest.OaMotivation.ODS_ADDING.equals(annotationProcessingRequest.getOaMotivation()))
+        .map(this::toAnnotation).toList();
     var specimenTargets = getSpecimenTargets(annotationProcessingRequests);
     try {
       for (var annotation : annotations) {
@@ -75,45 +84,41 @@ public class AnnotationValidatorService {
   private Map<String, DigitalSpecimen> getSpecimenTargets(
       List<AnnotationProcessingRequest> annotationProcessingRequests) {
     var specimenIds = annotationProcessingRequests.stream().filter(
-            annotationProcessingRequest -> annotationProcessingRequest.getOaHasTarget().getType()
-                .equals("ods:DigitalSpecimen"))
+            annotationProcessingRequest ->
+                "ods:DigitalSpecimen".equals(annotationProcessingRequest.getOaHasTarget().getType())
+                    || fdoProperties.getSpecimenType().equals(
+                        annotationProcessingRequest.getOaHasTarget().getType()))
         .map(annotationProcessingRequest -> annotationProcessingRequest.getOaHasTarget().getId())
+        .map(id -> id.replace(DOI_PROXY, ""))
         .collect(Collectors.toSet());
     var specimens = digitalSpecimenRepository.getDigitalSpecimenTargets(specimenIds);
     return specimens.stream()
+        .map(AnnotationValidatorService::addMissingSpecimenFields)
         .collect(Collectors.toMap(
             DigitalSpecimen::getDctermsIdentifier,
             Function.identity()
         ));
   }
 
+  // These required fields aren't stored in the db, so we use placeholders.
+  private static DigitalSpecimen addMissingSpecimenFields(DigitalSpecimen specimen) {
+    return specimen.withOdsVersion(PLACEHOLDER_VERSION)
+        .withDctermsCreated(Date.from(Instant.now()))
+        .withOdsMidsLevel(PLACEHOLDER_VERSION);
+  }
+
   private Annotation toAnnotation(AnnotationProcessingRequest annotationProcessingRequest) {
     var timestamp = Instant.now();
-    return new Annotation()
+    var newAnnotation = new Annotation()
         .withId(PLACEHOLDER_HANDLE)
         .withType("ods:Annotation")
         .withDctermsIdentifier(PLACEHOLDER_HANDLE)
         .withOdsFdoType(fdoProperties.getType())
         .withOdsVersion(PLACEHOLDER_VERSION)
         .withOdsStatus(OdsStatus.ACTIVE)
-        .withOaMotivation(
-            OaMotivation.fromValue(annotationProcessingRequest.getOaMotivation().value()))
         .withOaMotivatedBy(annotationProcessingRequest.getOaMotivatedBy())
-        .withOaHasTarget(new io.github.dissco.core.annotationlogic.schema.AnnotationTarget()
-            .withDctermsIdentifier(
-                annotationProcessingRequest.getOaHasTarget().getDctermsIdentifier())
-            .withId(annotationProcessingRequest.getOaHasTarget().getId())
-            .withType(annotationProcessingRequest.getOaHasTarget().getType())
-            .withOdsFdoType(annotationProcessingRequest.getOaHasTarget().getOdsFdoType())
-            .withOaHasSelector(
-                toSelector(annotationProcessingRequest.getOaHasTarget().getOaHasSelector()))
-        )
-        .withOaHasBody(new io.github.dissco.core.annotationlogic.schema.AnnotationBody()
-            .withOaValue(annotationProcessingRequest.getOaHasBody().getOaValue())
-            .withType(annotationProcessingRequest.getOaHasBody().getType())
-            .withOdsScore(annotationProcessingRequest.getOaHasBody().getOdsScore())
-            .withDctermsReferences(
-                annotationProcessingRequest.getOaHasBody().getDctermsReferences()))
+        .withOaHasTarget(getTarget(annotationProcessingRequest))
+        .withOaHasBody(getBody(annotationProcessingRequest))
         .withDctermsCreator(getAgent(annotationProcessingRequest))
         .withAsGenerator(getAgent(annotationProcessingRequest))
         .withDctermsIssued(Date.from(timestamp))
@@ -121,22 +126,64 @@ public class AnnotationValidatorService {
         .withDctermsCreated(annotationProcessingRequest.getDctermsCreated())
         .withOdsPlaceInBatch(annotationProcessingRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationProcessingRequest.getOdsBatchID());
+    if (annotationProcessingRequest.getOaMotivation() != null) {
+      newAnnotation.withOaMotivation(
+          OaMotivation.fromValue(annotationProcessingRequest.getOaMotivation().value()));
+    }
+    return newAnnotation;
+  }
+
+  private static AnnotationTarget getTarget(
+      AnnotationProcessingRequest annotationProcessingRequest) {
+    var target = new AnnotationTarget();
+    if (annotationProcessingRequest.getOaHasTarget() != null) {
+      target
+          .withDctermsIdentifier(
+              annotationProcessingRequest.getOaHasTarget().getDctermsIdentifier())
+          .withId(annotationProcessingRequest.getOaHasTarget().getId())
+          .withType(annotationProcessingRequest.getOaHasTarget().getType())
+          .withOdsFdoType(annotationProcessingRequest.getOaHasTarget().getOdsFdoType())
+          .withOaHasSelector(
+              toSelector(annotationProcessingRequest.getOaHasTarget().getOaHasSelector()));
+    }
+    return target;
+  }
+
+  private static AnnotationBody getBody(AnnotationProcessingRequest annotationProcessingRequest) {
+    if (annotationProcessingRequest.getOaHasBody() != null) {
+      return new io.github.dissco.core.annotationlogic.schema.AnnotationBody()
+          .withOaValue(annotationProcessingRequest.getOaHasBody().getOaValue())
+          .withType(annotationProcessingRequest.getOaHasBody().getType())
+          .withOdsScore(annotationProcessingRequest.getOaHasBody().getOdsScore())
+          .withDctermsReferences(
+              annotationProcessingRequest.getOaHasBody().getDctermsReferences());
+    } else {
+      return new AnnotationBody();
+    }
   }
 
   private static Agent getAgent(AnnotationProcessingRequest annotationProcessingRequest) {
-    return new Agent()
-        .withId(annotationProcessingRequest.getDctermsCreator().getId())
-        .withType(Agent.Type.fromValue(
-            annotationProcessingRequest.getDctermsCreator().getType().value()))
-        .withOdsHasIdentifiers(toIdentifiers(annotationProcessingRequest.getDctermsCreator()
-            .getOdsHasIdentifiers()));
+    var newAgent = new Agent();
+    if (annotationProcessingRequest.getDctermsCreator() != null) {
+      newAgent
+          .withId(annotationProcessingRequest.getDctermsCreator().getId())
+          .withOdsHasIdentifiers(toIdentifiers(annotationProcessingRequest.getDctermsCreator()
+              .getOdsHasIdentifiers()));
+      if (annotationProcessingRequest.getDctermsCreator().getType() != null) {
+        newAgent.withType(Agent.Type.fromValue(
+            annotationProcessingRequest.getDctermsCreator().getType().value()));
+      }
+    }
+    return newAgent;
   }
 
   private static OaHasSelector toSelector(
       eu.dissco.annotationprocessingservice.schema.OaHasSelector requestSelector) {
     var selector = new OaHasSelector();
-    for (var property : requestSelector.getAdditionalProperties().entrySet()) {
-      selector = selector.withAdditionalProperty(property.getKey(), property.getValue());
+    if (requestSelector != null) {
+      for (var property : requestSelector.getAdditionalProperties().entrySet()) {
+        selector = selector.withAdditionalProperty(property.getKey(), property.getValue());
+      }
     }
     return selector;
   }
@@ -145,20 +192,28 @@ public class AnnotationValidatorService {
       List<eu.dissco.annotationprocessingservice.schema.Identifier> requestIdentifiers) {
     var identifierList = new ArrayList<Identifier>();
     for (var identifier : requestIdentifiers) {
-      identifierList.add(
-          new Identifier()
-              .withId(identifier.getId())
-              .withType(identifier.getType())
-              .withDctermsTitle(identifier.getDctermsTitle())
-              .withDctermsType(DctermsType.fromValue(identifier.getDctermsType().value()))
-              .withDctermsIdentifier(identifier.getDctermsIdentifier())
-              .withDctermsFormat(identifier.getDctermsFormat())
-              .withDctermsSubject(identifier.getDctermsSubject())
-              .withOdsIsPartOfLabel(identifier.getOdsIsPartOfLabel())
-              .withOdsGupriLevel(OdsGupriLevel.fromValue(identifier.getOdsGupriLevel().value()))
-              .withOdsIdentifierStatus(
-                  OdsIdentifierStatus.fromValue(identifier.getOdsIdentifierStatus().value()))
-      );
+      var newIdentifier = new Identifier();
+      new Identifier()
+          .withId(identifier.getId())
+          .withType(identifier.getType())
+          .withDctermsTitle(identifier.getDctermsTitle())
+          .withDctermsIdentifier(identifier.getDctermsIdentifier())
+          .withDctermsFormat(identifier.getDctermsFormat())
+          .withDctermsSubject(identifier.getDctermsSubject())
+          .withOdsIsPartOfLabel(identifier.getOdsIsPartOfLabel());
+
+      if (identifier.getDctermsType() != null) {
+        newIdentifier.withDctermsType(DctermsType.fromValue(identifier.getDctermsType().value()));
+      }
+      if (identifier.getOdsIdentifierStatus() != null) {
+        newIdentifier.withOdsIdentifierStatus(
+            OdsIdentifierStatus.fromValue(identifier.getOdsIdentifierStatus().value()));
+      }
+      if (identifier.getOdsGupriLevel() != null) {
+        newIdentifier.withOdsGupriLevel(
+            OdsGupriLevel.fromValue(identifier.getOdsGupriLevel().value()));
+      }
+      identifierList.add(newIdentifier);
     }
     return identifierList;
   }
