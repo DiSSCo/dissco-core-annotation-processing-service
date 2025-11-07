@@ -26,6 +26,7 @@ import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
@@ -103,7 +104,8 @@ public abstract class AbstractProcessingService {
         .withDctermsModified(Date.from(timestamp))
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
-        .withOdsBatchID(annotationRequest.getOdsBatchID());
+        .withOdsBatchID(annotationRequest.getOdsBatchID())
+        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.PENDING);
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
