@@ -12,6 +12,7 @@ import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class MasJobRecordService {
 
   private final MasJobRecordRepository repository;
   private final Environment environment;
+  @Qualifier("objectMapper")
   private final ObjectMapper mapper;
 
   public void verifyMasJobId(AnnotationProcessingEvent event) throws FailedProcessingException {

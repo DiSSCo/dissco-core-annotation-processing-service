@@ -6,7 +6,6 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,6 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticSearchConfiguration {
 
   private final ElasticSearchProperties properties;
-  private final ObjectMapper mapper;
 
   @Bean
   public ElasticsearchClient elasticsearchClient() {

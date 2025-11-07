@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +27,7 @@ public class FdoRecordService {
   private static final String TYPE = "type";
   private static final String DATA = "data";
   private static final String ID = "id";
+  @Qualifier("objectMapper")
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
 

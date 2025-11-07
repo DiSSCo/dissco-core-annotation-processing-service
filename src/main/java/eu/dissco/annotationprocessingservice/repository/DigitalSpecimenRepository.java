@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.exception.DataAccessException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Repository;
 public class DigitalSpecimenRepository {
 
   private final DSLContext context;
+  @Qualifier("objectMapper")
   private final ObjectMapper mapper;
 
 

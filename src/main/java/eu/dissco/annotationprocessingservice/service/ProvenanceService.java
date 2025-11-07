@@ -20,12 +20,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class ProvenanceService {
 
+  @Qualifier("objectMapper")
   private final ObjectMapper mapper;
   private final ApplicationProperties properties;
 

@@ -27,7 +27,7 @@ public class ApplicationConfiguration {
 
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
 
-  @Bean
+  @Bean("objectMapper")
   public ObjectMapper objectMapper() {
     var mapper = new ObjectMapper().findAndRegisterModules();
     SimpleModule dateModule = new SimpleModule();
