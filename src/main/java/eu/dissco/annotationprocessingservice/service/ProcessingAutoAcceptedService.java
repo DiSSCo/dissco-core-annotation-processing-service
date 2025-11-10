@@ -52,7 +52,6 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
 
   private static void addMergingInformation(AutoAcceptedAnnotation autoAcceptedAnnotation,
       Annotation annotation) {
-    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
     annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
     annotation.setOdsHasMergingStateChangedBy(autoAcceptedAnnotation.acceptingAgent());
   }
