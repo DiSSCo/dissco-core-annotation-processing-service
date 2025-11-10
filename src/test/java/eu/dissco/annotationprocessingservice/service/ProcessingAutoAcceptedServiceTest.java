@@ -136,7 +136,7 @@ class ProcessingAutoAcceptedServiceTest {
     // Given
     var annotation = givenAutoAcceptedRequest().annotation().withOaMotivation(OaMotivation.OA_EDITING);
     var annotationRequest =new AutoAcceptedAnnotation(givenProcessingAgent(), annotation);
-    var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING);
+    var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING).withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -160,10 +160,10 @@ class ProcessingAutoAcceptedServiceTest {
     // Given
     var altBody = new AnnotationBody().withOaValue(List.of("another value"));
     var expected = List.of(
-        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID),
+        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID)
+            .withOdsMergingDecisionStatus(null),
         givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID).
             withOdsMergingStateChangeDate(Date.from(CREATED))
-            .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED)
             .withOdsHasMergingStateChangedBy(givenProcessingAgent())
             .withOaHasBody(altBody));
     var annotationRequests = List.of(givenAutoAcceptedRequest(),
