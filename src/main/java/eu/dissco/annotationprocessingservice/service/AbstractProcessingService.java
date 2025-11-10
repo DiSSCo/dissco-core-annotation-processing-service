@@ -84,7 +84,13 @@ public abstract class AbstractProcessingService {
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
-      int version, String jobId) {
+      int version, String jobId, boolean isAccepted) {
+    OdsMergingDecisionStatus mergingDecisionStatus = null;
+    if (isAccepted && isTransformativeMotivation(annotationRequest.getOaMotivation())) {
+     mergingDecisionStatus = OdsMergingDecisionStatus.APPROVED;
+    } else if (isTransformativeMotivation(annotationRequest.getOaMotivation())) {
+      mergingDecisionStatus = OdsMergingDecisionStatus.PENDING;
+    }
     var timestamp = Instant.now();
     return new Annotation()
         .withId(id)
@@ -105,12 +111,19 @@ public abstract class AbstractProcessingService {
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationRequest.getOdsBatchID())
-        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.PENDING);
+        .withOdsMergingDecisionStatus(mergingDecisionStatus);
+  }
+
+  private static boolean isTransformativeMotivation(
+      AnnotationProcessingRequest.OaMotivation oaMotivation) {
+    return AnnotationProcessingRequest.OaMotivation.OA_EDITING.equals(oaMotivation) ||
+        AnnotationProcessingRequest.OaMotivation.ODS_ADDING.equals(oaMotivation)
+        || AnnotationProcessingRequest.OaMotivation.ODS_DELETING.equals(oaMotivation);
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       AnnotationProcessingEvent event, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version, event.getJobId());
+    var annotation = buildAnnotation(annotationRequest, id, version, event.getJobId(), false);
     annotation.setOdsJobID(HANDLE_PROXY + event.getJobId());
     return annotation;
   }

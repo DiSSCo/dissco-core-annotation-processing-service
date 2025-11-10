@@ -143,8 +143,7 @@ public class TestUtils {
         .withDctermsCreated(Date.from(CREATED))
         .withDctermsIssued(Date.from(CREATED))
         .withDctermsModified(Date.from(CREATED))
-        .withAsGenerator(givenGenerator())
-        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.PENDING);
+        .withAsGenerator(givenGenerator());
   }
 
   public static Annotation givenAnnotationProcessedAlt() {

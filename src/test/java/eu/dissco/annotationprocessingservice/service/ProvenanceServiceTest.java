@@ -46,7 +46,6 @@ class ProvenanceServiceTest {
 
   private static List<OdsChangeValue> givenTombstoneChangeValue() {
     return List.of(
-        givenOdsChangeValue("remove", "/ods:mergingDecisionStatus", null),
         givenOdsChangeValue("add", "/ods:hasTombstoneMetadata", givenTombstoneMetadata()),
         givenOdsChangeValue("replace", "/dcterms:modified", UPDATED),
         givenOdsChangeValue("replace", "/ods:version", 2),

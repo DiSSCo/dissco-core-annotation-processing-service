@@ -89,7 +89,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
   private Annotation buildAutoAcceptedAnnotation(AutoAcceptedAnnotation autoAcceptedAnnotation,
       Map<UUID, String> ids) {
     var id = HANDLE_PROXY + ids.get(hashAnnotation(autoAcceptedAnnotation.annotation()));
-    var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), id, 1, null);
+    var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), id, 1, null, true);
     addMergingInformation(autoAcceptedAnnotation, annotation);
     return annotation;
   }
