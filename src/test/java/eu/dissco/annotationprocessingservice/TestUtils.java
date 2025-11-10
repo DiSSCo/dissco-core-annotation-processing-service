@@ -232,7 +232,7 @@ public class TestUtils {
   public static OaHasSelector givenRequestSelector() {
     return new OaHasSelector()
         .withAdditionalProperty("ods:term",
-            "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
+            "$['ods:hasEvents'][0]['ods:hasLocation']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
@@ -258,7 +258,7 @@ public class TestUtils {
   public static OaHasSelector givenSelector() {
     return new OaHasSelector()
         .withAdditionalProperty("ods:term",
-            "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
+            "$['ods:hasEvents'][0]['ods:hasLocation']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
@@ -525,6 +525,8 @@ public class TestUtils {
     return new DigitalSpecimen()
         .withDctermsIdentifier(DOI_PROXY + TARGET_ID)
         .withId(DOI_PROXY + TARGET_ID)
+        .withType("ods:DigitalSpecimen")
+        .withOdsFdoType("https://doi.org/21.T11148/894b1e6cad57e921764e")
         .withOdsOrganisationID("https://ror.org/0443cwa12")
         .withOdsOrganisationName("National Museum of Natural History")
         .withOdsPhysicalSpecimenIDType(OdsPhysicalSpecimenIDType.GLOBAL)
@@ -541,8 +543,11 @@ public class TestUtils {
         .withDctermsModified("2022-11-01T09:59:24.000Z")
         .withOdsHasIdentifications(List.of(
             new Identification()
+                .withType("ods:Identification")
+                .withOdsIsVerifiedIdentification(true)
                 .withOdsHasTaxonIdentifications(List.of(
                     new TaxonIdentification()
+                        .withType("ods:TaxonIdentification")
                         .withDwcKingdom("Animalia")
                         .withDwcPhylum("Chordata")
                         .withDwcClass("Actinopterygii")
