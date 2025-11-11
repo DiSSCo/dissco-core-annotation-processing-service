@@ -111,7 +111,7 @@ public class AnnotationValidatorService {
 
   private Annotation toAnnotation(AnnotationProcessingRequest annotationProcessingRequest) {
     var timestamp = Instant.now();
-    var newAnnotation = new Annotation()
+    return new Annotation()
         .withId(PLACEHOLDER_HANDLE)
         .withType("ods:Annotation")
         .withDctermsIdentifier(PLACEHOLDER_HANDLE)
@@ -127,12 +127,9 @@ public class AnnotationValidatorService {
         .withDctermsModified(Date.from(timestamp))
         .withDctermsCreated(annotationProcessingRequest.getDctermsCreated())
         .withOdsPlaceInBatch(annotationProcessingRequest.getOdsPlaceInBatch())
-        .withOdsBatchID(annotationProcessingRequest.getOdsBatchID());
-    if (annotationProcessingRequest.getOaMotivation() != null) {
-      newAnnotation.withOaMotivation(
-          OaMotivation.fromValue(annotationProcessingRequest.getOaMotivation().value()));
-    }
-    return newAnnotation;
+        .withOdsBatchID(annotationProcessingRequest.getOdsBatchID())
+        .withOaMotivation(
+            OaMotivation.fromValue(annotationProcessingRequest.getOaMotivation().value()));
   }
 
   private static AnnotationTarget getTarget(
@@ -180,10 +177,8 @@ public class AnnotationValidatorService {
   private static OaHasSelector toSelector(
       eu.dissco.annotationprocessingservice.schema.OaHasSelector requestSelector) {
     var selector = new OaHasSelector();
-    if (requestSelector != null) {
-      for (var property : requestSelector.getAdditionalProperties().entrySet()) {
-        selector = selector.withAdditionalProperty(property.getKey(), property.getValue());
-      }
+    for (var property : requestSelector.getAdditionalProperties().entrySet()) {
+      selector = selector.withAdditionalProperty(property.getKey(), property.getValue());
     }
     return selector;
   }
