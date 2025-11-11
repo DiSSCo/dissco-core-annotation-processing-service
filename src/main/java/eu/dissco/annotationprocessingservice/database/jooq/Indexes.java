@@ -15,14 +15,15 @@ import org.jooq.impl.Internal;
 /**
  * A class modelling indexes of tables in public.
  */
-@SuppressWarnings({ "all", "unchecked", "rawtypes" })
+@SuppressWarnings({ "all", "unchecked", "rawtypes", "this-escape" })
 public class Indexes {
 
     // -------------------------------------------------------------------------
     // INDEX definitions
     // -------------------------------------------------------------------------
 
-    public static final Index ANNOTATION_HASH = Internal.createIndex(DSL.name("annotation_hash"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.ANNOTATION_HASH }, false);
+    public static final Index ANNOTATION_HASH_IDX = Internal.createIndex(DSL.name("annotation_hash_idx"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.ANNOTATION_HASH }, false);
     public static final Index ANNOTATION_ID_CREATOR_ID_INDEX = Internal.createIndex(DSL.name("annotation_id_creator_id_index"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.CREATOR }, false);
     public static final Index ANNOTATION_ID_TARGET_ID_INDEX = Internal.createIndex(DSL.name("annotation_id_target_id_index"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.TARGET_ID }, false);
+    public static final Index ANNOTATION_STATUS_INDEX = Internal.createIndex(DSL.name("annotation_status_index"), Annotation.ANNOTATION, new OrderField[] { Annotation.ANNOTATION.TARGET_ID, Annotation.ANNOTATION.ANNOTATION_STATUS }, false);
 }

@@ -5,6 +5,7 @@ import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProx
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.AnnotationStatusEnum;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
@@ -25,6 +26,7 @@ import org.jooq.InsertSetMoreStep;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -111,10 +113,25 @@ public class AnnotationRepository {
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
+          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation))
           .set(ANNOTATION.DATA, mapToJSONB(annotation));
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
+    }
+  }
+
+  private static AnnotationStatusEnum getAnnotationStatus(Annotation annotation){
+    switch (annotation.getOdsMergingDecisionStatus()){
+      case APPROVED -> {
+        return AnnotationStatusEnum.ACCEPTED;
+      } case PENDING ->  {
+        return AnnotationStatusEnum.PENDING;
+      } case REJECTED ->  {
+        return AnnotationStatusEnum.REJECTED;
+      } case null, default -> {
+        return null;
+      }
     }
   }
 
@@ -157,6 +174,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.LAST_CHECKED, timestamp)
           .set(ANNOTATION.DATA, mapToJSONB(annotation))
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+          .setNull(ANNOTATION.ANNOTATION_STATUS)
           .where(ANNOTATION.ID.eq(removeProxy(annotation)))
           .execute();
     } catch (JsonProcessingException e) {

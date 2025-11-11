@@ -18,6 +18,7 @@ import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import java.util.List;
 import java.util.Set;
 import org.jooq.Record;
@@ -147,16 +148,18 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testArchiveAnnotation() {
     // Given
-    var annotation = givenAnnotationProcessed(BARE_ID);
+    var annotation = givenAnnotationProcessed(BARE_ID).withOdsMergingDecisionStatus(
+        OdsMergingDecisionStatus.APPROVED);
     repository.createAnnotationRecord(annotation);
 
     // When
     repository.archiveAnnotation(givenTombstoneAnnotation());
 
     // Then
-    var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED).from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
-    assertThat(deletedTimestamp).isNotNull();
+    var result = context.select(ANNOTATION.TOMBSTONED, ANNOTATION.ANNOTATION_STATUS).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne();
+    assertThat(result.get(ANNOTATION.TOMBSTONED)).isNotNull();
+    assertThat(result.get(ANNOTATION.ANNOTATION_STATUS)).isNull();
   }
 
   @Test

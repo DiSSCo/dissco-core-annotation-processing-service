@@ -1,3 +1,5 @@
+create type annotation_status_enum as enum('ACCEPTED', 'REJECTED', 'PENDING');
+
 create table annotation
 (
     id              text                     not null
@@ -15,7 +17,8 @@ create table annotation
     last_checked    timestamp with time zone not null,
     tombstoned      timestamp with time zone,
     target_id       text                     not null,
-    data            jsonb
+    data            jsonb,
+    annotation_status annotation_status_enum
 );
 
 create type job_state as enum ('SCHEDULED', 'RUNNING', 'FAILED', 'COMPLETED');
