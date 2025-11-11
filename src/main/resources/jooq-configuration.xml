@@ -19,8 +19,7 @@
         mjr_target_type |
         error_code |
         annotation_batch_record |
-        digital_specimen |
-        digital_media_object
+        digital_specimen
       </includes>
       <forcedTypes>
         <forcedType>

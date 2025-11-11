@@ -70,7 +70,7 @@ class MessageCompressionComponentTest {
           "enrichmentList": [
             "OCR"
             ],
-          "digitalSpecimenWrapper": {
+          "digitalspecimen": {
             "ods:normalisedPhysicalSpecimenID": "https://geocollections.info/specimen/23602",
             "ods:type": "https://doi.org/21.T11148/894b1e6cad57e921764e",
             "ods:attributes": {

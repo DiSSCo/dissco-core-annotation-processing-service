@@ -54,3 +54,23 @@ create table annotation_batch_record
     parent_annotation_id text
 );
 
+create table digital_specimen
+(
+    id                     text                     not null
+        constraint digital_specimen_pk
+            primary key,
+    version                integer                  not null,
+    type                   text                     not null,
+    midslevel              smallint                 not null,
+    physical_specimen_id   text                     not null,
+    physical_specimen_type text                     not null,
+    specimen_name          text,
+    organization_id        text                     not null,
+    source_system_id       text                     not null,
+    created                timestamp with time zone not null,
+    last_checked           timestamp with time zone not null,
+    deleted                timestamp with time zone,
+    data                   jsonb,
+    original_data          jsonb,
+    modified               timestamp with time zone
+);

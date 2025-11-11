@@ -14,12 +14,18 @@ import static org.mockito.BDDMockito.given;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.DigitalSpecimenRepository;
+import eu.dissco.annotationprocessingservice.schema.Agent;
+import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
+import eu.dissco.annotationprocessingservice.schema.Identifier;
+import eu.dissco.annotationprocessingservice.schema.Identifier.OdsGupriLevel;
+import eu.dissco.annotationprocessingservice.schema.Identifier.OdsIdentifierStatus;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
+import eu.dissco.annotationprocessingservice.schema.OdsHasRole;
 import io.github.dissco.annotationlogic.configuration.AnnotationLogicLibraryConfiguration;
 import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
 import io.github.dissco.core.annotationlogic.schema.Event;
@@ -84,7 +90,6 @@ class AnnotationValidatorIT {
     // When / Then
     assertDoesNotThrow(
         () -> annotationValidatorService.validateAnnotationRequest(List.of(annotation), true));
-
   }
 
   @Test
@@ -123,6 +128,29 @@ class AnnotationValidatorIT {
     return Stream.of(
         Arguments.of(
             givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING),
+            givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
+        ),
+        Arguments.of(
+            givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)
+                .withDctermsCreator(new Agent()
+                    .withOdsHasIdentifiers(List.of(
+                        new Identifier()
+                            .withType("ods:Identifier")
+                            .withDctermsTitle("Title")
+                            .withDctermsType(Identifier.DctermsType.ARK)
+                            .withDctermsFormat(List.of("format"))
+                            .withDctermsSubject(List.of("subject"))
+                            .withOdsIsPartOfLabel(false)
+                            .withOdsGupriLevel(OdsGupriLevel.GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE)
+                            .withOdsIdentifierStatus(OdsIdentifierStatus.PREFERRED)
+                            .withDctermsIdentifier(JOB_ID)
+                    ))
+                    .withId(JOB_ID)
+                    .withType(Type.SCHEMA_PERSON)
+                    .withSchemaName("schemaName")
+                    .withOdsHasRoles(List.of(new OdsHasRole()
+                        .withSchemaRoleName("creator")))
+                ),
             givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
         ),
         Arguments.of(
