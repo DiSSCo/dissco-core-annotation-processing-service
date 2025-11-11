@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class RabbitMqPublisherService {
 
-  @Qualifier("objectMapper")
+
   private final ObjectMapper mapper;
   private final RabbitTemplate template;
   @Qualifier("batchTemplate")

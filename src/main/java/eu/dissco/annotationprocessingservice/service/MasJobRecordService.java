@@ -23,7 +23,7 @@ public class MasJobRecordService {
 
   private final MasJobRecordRepository repository;
   private final Environment environment;
-  @Qualifier("objectMapper")
+
   private final ObjectMapper mapper;
 
   public void verifyMasJobId(AnnotationProcessingEvent event) throws FailedProcessingException {

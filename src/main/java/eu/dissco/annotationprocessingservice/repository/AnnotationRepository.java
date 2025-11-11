@@ -33,7 +33,7 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AnnotationRepository {
 
-  @Qualifier("objectMapper")
+
   private final ObjectMapper mapper;
   private final DSLContext context;
 

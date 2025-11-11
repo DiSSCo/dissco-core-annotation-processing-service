@@ -40,9 +40,7 @@ public class JsonPathComponent {
 
   private static final String TYPE = "@type";
 
-  @Qualifier("objectMapper")
   private final ObjectMapper mapper;
-  @Qualifier("localJsonPath")
   private final Configuration jsonPathConfig;
 
   private final Pattern lastKeyPattern = Pattern.compile("\\[(?!.*\\[')(.*)");

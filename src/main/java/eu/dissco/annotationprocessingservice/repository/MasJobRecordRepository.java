@@ -24,7 +24,7 @@ import org.springframework.stereotype.Repository;
 public class MasJobRecordRepository {
 
   private final DSLContext context;
-  @Qualifier("objectMapper")
+
   private final ObjectMapper mapper;
 
   public void markMasJobRecordAsFailed(String jobId, ErrorCode errorCode, String errorMessage) {

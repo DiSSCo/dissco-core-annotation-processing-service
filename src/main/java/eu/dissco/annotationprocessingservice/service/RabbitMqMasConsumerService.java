@@ -12,7 +12,6 @@ import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import java.io.IOException;
 import lombok.AllArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class RabbitMqMasConsumerService {
 
-  @Qualifier("objectMapper")
+
   private final ObjectMapper mapper;
   private final ProcessingMasService service;
 

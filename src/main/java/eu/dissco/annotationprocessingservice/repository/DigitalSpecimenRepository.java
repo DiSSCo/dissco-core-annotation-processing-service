@@ -24,7 +24,7 @@ import org.springframework.stereotype.Repository;
 public class DigitalSpecimenRepository {
 
   private final DSLContext context;
-  @Qualifier("objectMapper")
+
   private final ObjectMapper mapper;
 
 

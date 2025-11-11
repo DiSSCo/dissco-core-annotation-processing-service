@@ -29,7 +29,7 @@ public class ApplicationConfiguration {
   public static final String DOI_PROXY = "https://doi.org/";
 
 
-  @Bean("objectMapper")
+  @Bean
   public ObjectMapper objectMapper() {
     var mapper = new ObjectMapper().findAndRegisterModules();
     SimpleModule dateModule = new SimpleModule();
