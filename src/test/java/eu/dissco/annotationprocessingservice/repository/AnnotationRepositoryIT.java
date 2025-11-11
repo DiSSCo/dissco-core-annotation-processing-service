@@ -21,11 +21,15 @@ import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AnnotationRepositoryIT extends BaseRepositoryIT {
 
@@ -42,10 +46,20 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     context.truncate(ANNOTATION).execute();
   }
 
-  @Test
-  void testCreateAnnotationRecord() throws DataBaseException {
+  private static Stream<Arguments> annotationMergingDecisionStatus(){
+    return Stream.of(
+        Arguments.of(OdsMergingDecisionStatus.APPROVED),
+        Arguments.of(OdsMergingDecisionStatus.PENDING),
+        Arguments.of(OdsMergingDecisionStatus.REJECTED),
+        Arguments.of((Object) null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("annotationMergingDecisionStatus")
+  void testCreateAnnotationRecord(OdsMergingDecisionStatus mergingDecisionStatus) throws DataBaseException {
     // Given
-    var expected = givenAnnotationProcessed(ID);
+    var expected = givenAnnotationProcessed(ID).withOdsMergingDecisionStatus(mergingDecisionStatus);
 
     // When
     repository.createAnnotationRecord(expected);
