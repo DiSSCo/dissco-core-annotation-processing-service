@@ -58,6 +58,7 @@ import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -65,6 +66,7 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -809,6 +811,20 @@ class ProcessingMasServiceTest {
     // When
     assertThrows(FailedProcessingException.class,
         () -> service.archiveAnnotation(givenAnnotationProcessed(), givenProcessingAgent()));
+
+    // Then
+    then(elasticRepository).shouldHaveNoInteractions();
+    then(repository).shouldHaveNoMoreInteractions();
+  }
+
+  @Test
+  void testArchiveAnnotationNotPermitted() {
+    // Given
+
+    // When
+    assertThrows(MethodNotAllowedException.class,
+        () -> service.archiveAnnotation(givenAnnotationProcessed().withOdsMergingDecisionStatus(
+            OdsMergingDecisionStatus.APPROVED), givenProcessingAgent()));
 
     // Then
     then(elasticRepository).shouldHaveNoInteractions();

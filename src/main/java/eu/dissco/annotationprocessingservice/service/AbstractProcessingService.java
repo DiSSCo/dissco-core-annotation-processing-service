@@ -17,6 +17,7 @@ import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -157,8 +158,17 @@ public abstract class AbstractProcessingService {
   }
 
   public void archiveAnnotation(Annotation currentAnnotation, Agent tombstoningAgent)
-      throws IOException, FailedProcessingException {
+      throws IOException, FailedProcessingException, MethodNotAllowedException {
     log.info("Archive annotations: {} in handle service", currentAnnotation.getId());
+    if (!(currentAnnotation.getOdsMergingDecisionStatus() == null ||
+        OdsMergingDecisionStatus.PENDING.equals(currentAnnotation.getOdsMergingDecisionStatus()))) {
+      log.warn("Annotation {} has status {} and can not be tombstoned", currentAnnotation.getId(),
+          currentAnnotation.getOdsMergingDecisionStatus());
+      throw new MethodNotAllowedException(
+          "Annotation has status " + currentAnnotation.getOdsMergingDecisionStatus()
+              + " and can not be tombstoned.");
+    }
+
     var handle = removeProxy(currentAnnotation);
     var requestBody = fdoRecordService.buildTombstoneHandleRequest(handle);
     try {
