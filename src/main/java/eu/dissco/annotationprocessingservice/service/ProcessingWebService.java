@@ -82,7 +82,7 @@ public class ProcessingWebService extends AbstractProcessingService {
 
   protected Annotation buildNewAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       boolean batchingRequested) {
-    var annotation = buildAnnotation(annotationRequest, id, 1, null);
+    var annotation = buildAnnotation(annotationRequest, id, 1, null, false);
     if (batchingRequested) {
       annotationBatchRecordService.mintBatchId(annotation);
       annotation.setOdsPlaceInBatch(1);
@@ -103,7 +103,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     var currentAnnotation = currentAnnotationOptional.get();
     var annotation = buildAnnotation(annotationRequest, HANDLE_PROXY + annotationRequest.getId(),
-        currentAnnotation.getOdsVersion() + 1, null);
+        currentAnnotation.getOdsVersion() + 1, null, false);
     if (annotationsAreEqual(currentAnnotation, annotation)) {
       processEqualAnnotations(Set.of(currentAnnotation));
       return currentAnnotation;

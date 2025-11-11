@@ -25,6 +25,7 @@ import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
@@ -64,6 +65,10 @@ public abstract class AbstractProcessingService {
   protected final FdoProperties fdoProperties;
   protected final RollbackService rollbackService;
   private final AnnotationHasher annotationHasher;
+  private static final Set<AnnotationProcessingRequest.OaMotivation> TRANSFORMATIVE_MOTIVATIONS = Set.of(
+      AnnotationProcessingRequest.OaMotivation.ODS_ADDING,
+      AnnotationProcessingRequest.OaMotivation.OA_EDITING,
+      AnnotationProcessingRequest.OaMotivation.ODS_DELETING);
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {
@@ -82,7 +87,13 @@ public abstract class AbstractProcessingService {
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
-      int version, String jobId) {
+      int version, String jobId, boolean isAccepted) {
+    OdsMergingDecisionStatus mergingDecisionStatus = null;
+    if (isAccepted && isTransformativeMotivation(annotationRequest.getOaMotivation())) {
+      mergingDecisionStatus = OdsMergingDecisionStatus.APPROVED;
+    } else if (isTransformativeMotivation(annotationRequest.getOaMotivation())) {
+      mergingDecisionStatus = OdsMergingDecisionStatus.PENDING;
+    }
     var timestamp = Instant.now();
     return new Annotation()
         .withId(id)
@@ -102,12 +113,18 @@ public abstract class AbstractProcessingService {
         .withDctermsModified(Date.from(timestamp))
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
-        .withOdsBatchID(annotationRequest.getOdsBatchID());
+        .withOdsBatchID(annotationRequest.getOdsBatchID())
+        .withOdsMergingDecisionStatus(mergingDecisionStatus);
+  }
+
+  private static boolean isTransformativeMotivation(
+      AnnotationProcessingRequest.OaMotivation oaMotivation) {
+    return TRANSFORMATIVE_MOTIVATIONS.contains(oaMotivation);
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
       AnnotationProcessingEvent event, int version) {
-    var annotation = buildAnnotation(annotationRequest, id, version, event.getJobId());
+    var annotation = buildAnnotation(annotationRequest, id, version, event.getJobId(), false);
     annotation.setOdsJobID(HANDLE_PROXY + event.getJobId());
     return annotation;
   }

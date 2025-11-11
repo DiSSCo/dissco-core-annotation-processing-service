@@ -38,7 +38,9 @@ import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest.OaMotivation;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -130,6 +132,34 @@ class ProcessingWebServiceTest {
     then(repository).should().createAnnotationRecord(givenAnnotationProcessedWeb());
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
+
+  @Test
+  void testCreateAnnotationEditing() throws Exception {
+    // Given
+    var annotationRequest = givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING);
+    given(handleComponent.postHandle(any())).willReturn(BARE_ID);
+    var indexResponse = mock(IndexResponse.class);
+    given(indexResponse.result()).willReturn(Result.Created);
+    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
+    var expected = givenAnnotationProcessedWeb().withOaMotivation(
+        Annotation.OaMotivation.OA_EDITING).withOdsMergingDecisionStatus(
+        OdsMergingDecisionStatus.PENDING);
+
+    // When
+    var result = service.persistNewAnnotation(annotationRequest, false);
+
+    // Then
+    assertThat(result).isNotNull().isInstanceOf(Annotation.class);
+    assertThat(result.getId()).isEqualTo(ID);
+    then(repository).should().createAnnotationRecord(expected);
+    then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
+  }
+
 
   @Test
   void testCreateAnnotationBatch() throws Exception {

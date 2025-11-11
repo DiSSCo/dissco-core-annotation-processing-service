@@ -54,11 +54,14 @@ class ProvenanceServiceTest {
   }
 
   private static OdsChangeValue givenOdsChangeValue(String op, String path, Object value) {
-    return new OdsChangeValue()
+    var changeValue = new OdsChangeValue()
         .withAdditionalProperty("op", op)
-        .withAdditionalProperty("path", path)
-        .withAdditionalProperty("value", MAPPER.convertValue(value, new TypeReference<>() {
-        }));
+        .withAdditionalProperty("path", path);
+    if (value != null) {
+      changeValue.withAdditionalProperty("value", MAPPER.convertValue(value, new TypeReference<>() {
+      }));
+    }
+    return changeValue;
   }
 
   @BeforeEach

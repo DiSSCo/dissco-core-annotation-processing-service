@@ -383,7 +383,6 @@ public class TestUtils {
   public static Annotation givenAcceptedAnnotation() {
     var annotation = givenAnnotationProcessedWeb();
     annotation.setOdsMergingStateChangeDate(Date.from(CREATED));
-    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
     annotation.setOdsHasMergingStateChangedBy(givenProcessingAgent());
     return annotation;
   }
@@ -503,7 +502,8 @@ public class TestUtils {
         .withOdsVersion(original.getOdsVersion() + 1)
         .withOdsStatus(OdsStatus.TOMBSTONE)
         .withOdsHasTombstoneMetadata(givenTombstoneMetadata())
-        .withDctermsModified(Date.from(UPDATED));
+        .withDctermsModified(Date.from(UPDATED))
+        .withOdsMergingDecisionStatus(null);
   }
 
   public static TombstoneMetadata givenTombstoneMetadata() {

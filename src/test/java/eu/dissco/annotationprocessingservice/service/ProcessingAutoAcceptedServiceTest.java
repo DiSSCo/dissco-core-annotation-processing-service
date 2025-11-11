@@ -37,6 +37,7 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest.OaMotivation;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Clock;
@@ -132,14 +133,38 @@ class ProcessingAutoAcceptedServiceTest {
   }
 
   @Test
+  void testCreateAnnotationEditing() throws Exception {
+    // Given
+    var annotation = givenAutoAcceptedRequest().annotation().withOaMotivation(OaMotivation.OA_EDITING);
+    var annotationRequest =new AutoAcceptedAnnotation(givenProcessingAgent(), annotation);
+    var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING).withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
+    given(bulkResponse.errors()).willReturn(false);
+    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
+    given(applicationProperties.getProcessorHandle()).willReturn(
+        "https://hdl.handle.net/anno-process-service-pid");
+    given(applicationProperties.getProcessorName()).willReturn(
+        "annotation-processing-service");
+    given(fdoProperties.getType()).willReturn(FDO_TYPE);
+
+    // When
+    service.handleMessage(List.of(annotationRequest));
+
+    // Then
+    then(repository).should().createAnnotationRecords(List.of(expected));
+    then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
+  }
+
+  @Test
   void testCreateAnnotations() throws Exception {
     // Given
     var altBody = new AnnotationBody().withOaValue(List.of("another value"));
     var expected = List.of(
-        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID),
+        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID)
+            .withOdsMergingDecisionStatus(null),
         givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID).
             withOdsMergingStateChangeDate(Date.from(CREATED))
-            .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED)
             .withOdsHasMergingStateChangedBy(givenProcessingAgent())
             .withOaHasBody(altBody));
     var annotationRequests = List.of(givenAutoAcceptedRequest(),
