@@ -1,9 +1,11 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenDigitalSpecimen;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenRequestOaTarget;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -13,6 +15,7 @@ import eu.dissco.annotationprocessingservice.exception.AnnotationValidationExcep
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.DigitalSpecimenRepository;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
@@ -84,6 +87,31 @@ class AnnotationValidatorIT {
 
   }
 
+  @Test
+  void testValidateAnnotationEvent() {
+    // Given
+    var digitalSpecimen = givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()));
+    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(List.of(digitalSpecimen));
+    var event = new AnnotationProcessingEvent()
+        .withJobId(JOB_ID)
+            .withAnnotations(List.of(givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)));
+
+    // When / Then
+    assertDoesNotThrow(() -> annotationValidatorService.validateEvent(event));
+  }
+
+  @Test
+  void testInvalidAnnotationContents() {
+    var digitalSpecimen = givenDigitalSpecimen();
+    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(List.of(digitalSpecimen));
+    var event = new AnnotationProcessingEvent()
+        .withJobId(JOB_ID)
+        .withAnnotations(List.of(givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)));
+
+    // When / Then
+    assertThrowsExactly(AnnotationValidationException.class, () -> annotationValidatorService.validateEvent(event));
+  }
+
 
   private static Stream<Arguments> invalidAnnotationId() {
     return Stream.of(
@@ -98,26 +126,19 @@ class AnnotationValidatorIT {
             givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
         ),
         Arguments.of(
-            givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING),
-            givenDigitalSpecimen()
-        ),
-        Arguments.of(
-            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_ADDING),
-            givenDigitalSpecimen()
-        ),
-        Arguments.of(
-            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_ADDING),
-            givenDigitalSpecimen()
-        ),
-        Arguments.of(
-            givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING),
+            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_ADDING)
+                .withOaHasTarget(givenRequestOaTarget(TARGET_ID)
+                    .withOaHasSelector(new OaHasSelector()
+                        .withAdditionalProperty("ods:term",
+                            "$['dwc:organismQuantityType']")
+                        .withAdditionalProperty("@type", "ods:TermSelector"))),
             givenDigitalSpecimen()
         ),
         Arguments.of(
             givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)
                 .withOaHasTarget(localityTargetEdit())
                 .withOaHasBody(localityBody()),
-            givenDigitalSpecimen()
+            givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
         ),
         Arguments.of(
             givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_ADDING)
@@ -126,8 +147,8 @@ class AnnotationValidatorIT {
             givenDigitalSpecimen()
         ),
         Arguments.of(
-            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_DELETING),
-            givenDigitalSpecimen()
+            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_DELETING).withOaHasBody(new AnnotationBody().withOaValue(List.of())),
+            givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
         )
     );
   }
