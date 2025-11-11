@@ -3,7 +3,6 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DOI_PROXY;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
-import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.DigitalSpecimenRepository;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;

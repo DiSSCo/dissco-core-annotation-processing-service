@@ -25,14 +25,12 @@ import org.jooq.InsertSetMoreStep;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
 @Repository
 @RequiredArgsConstructor
 public class AnnotationRepository {
-
 
   private final ObjectMapper mapper;
   private final DSLContext context;

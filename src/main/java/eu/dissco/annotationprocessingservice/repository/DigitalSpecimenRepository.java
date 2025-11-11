@@ -12,10 +12,8 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
-import org.jooq.JSONB;
 import org.jooq.Record;
 import org.jooq.exception.DataAccessException;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -47,7 +45,8 @@ public class DigitalSpecimenRepository {
           .withDctermsIdentifier(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
           .withId(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID));
     } catch (JsonProcessingException e) {
-      log.warn("Unable to map jsonb to digital specimen: {}", dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), e);
+      log.warn("Unable to map jsonb to digital specimen: {}",
+          dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), e);
       throw new DataBaseException(
           "Unable to map jsonb to digital specimen. Validation not possible.");
     }

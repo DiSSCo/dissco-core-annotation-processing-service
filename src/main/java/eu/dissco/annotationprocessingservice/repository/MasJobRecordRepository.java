@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record3;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Repository;
 public class MasJobRecordRepository {
 
   private final DSLContext context;
-
   private final ObjectMapper mapper;
 
   public void markMasJobRecordAsFailed(String jobId, ErrorCode errorCode, String errorMessage) {
