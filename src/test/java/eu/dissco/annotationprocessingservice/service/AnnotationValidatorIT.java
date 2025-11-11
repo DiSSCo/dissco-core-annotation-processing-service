@@ -177,7 +177,11 @@ class AnnotationValidatorIT {
         Arguments.of(
             givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_DELETING).withOaHasBody(new AnnotationBody().withOaValue(List.of())),
             givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
-        )
+        ),
+        Arguments.of( givenAnnotationRequest()
+                .withOaMotivation(OaMotivation.ODS_DELETING)
+                .withOaHasBody(null),
+            givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent())))
     );
   }
 

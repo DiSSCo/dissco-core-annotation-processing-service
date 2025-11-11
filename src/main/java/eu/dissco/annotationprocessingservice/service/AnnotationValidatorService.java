@@ -62,9 +62,12 @@ public class AnnotationValidatorService {
       throws AnnotationValidationException {
     var annotations = annotationProcessingRequests.stream()
         .filter(annotationProcessingRequest ->
-            AnnotationProcessingRequest.OaMotivation.OA_EDITING.equals(annotationProcessingRequest.getOaMotivation()) ||
-            AnnotationProcessingRequest.OaMotivation.ODS_DELETING.equals(annotationProcessingRequest.getOaMotivation()) ||
-            AnnotationProcessingRequest.OaMotivation.ODS_ADDING.equals(annotationProcessingRequest.getOaMotivation()))
+            AnnotationProcessingRequest.OaMotivation.OA_EDITING.equals(
+                annotationProcessingRequest.getOaMotivation()) ||
+                AnnotationProcessingRequest.OaMotivation.ODS_DELETING.equals(
+                    annotationProcessingRequest.getOaMotivation()) ||
+                AnnotationProcessingRequest.OaMotivation.ODS_ADDING.equals(
+                    annotationProcessingRequest.getOaMotivation()))
         .map(this::toAnnotation).toList();
     var specimenTargets = getSpecimenTargets(annotationProcessingRequests);
     try {
@@ -86,7 +89,7 @@ public class AnnotationValidatorService {
             annotationProcessingRequest ->
                 "ods:DigitalSpecimen".equals(annotationProcessingRequest.getOaHasTarget().getType())
                     || fdoProperties.getSpecimenType().equals(
-                        annotationProcessingRequest.getOaHasTarget().getType()))
+                    annotationProcessingRequest.getOaHasTarget().getType()))
         .map(annotationProcessingRequest -> annotationProcessingRequest.getOaHasTarget().getId())
         .map(id -> id.replace(DOI_PROXY, ""))
         .collect(Collectors.toSet());
@@ -135,16 +138,14 @@ public class AnnotationValidatorService {
   private static AnnotationTarget getTarget(
       AnnotationProcessingRequest annotationProcessingRequest) {
     var target = new AnnotationTarget();
-    if (annotationProcessingRequest.getOaHasTarget() != null) {
-      target
-          .withDctermsIdentifier(
-              annotationProcessingRequest.getOaHasTarget().getDctermsIdentifier())
-          .withId(annotationProcessingRequest.getOaHasTarget().getId())
-          .withType(annotationProcessingRequest.getOaHasTarget().getType())
-          .withOdsFdoType(annotationProcessingRequest.getOaHasTarget().getOdsFdoType())
-          .withOaHasSelector(
-              toSelector(annotationProcessingRequest.getOaHasTarget().getOaHasSelector()));
-    }
+    target
+        .withDctermsIdentifier(
+            annotationProcessingRequest.getOaHasTarget().getDctermsIdentifier())
+        .withId(annotationProcessingRequest.getOaHasTarget().getId())
+        .withType(annotationProcessingRequest.getOaHasTarget().getType())
+        .withOdsFdoType(annotationProcessingRequest.getOaHasTarget().getOdsFdoType())
+        .withOaHasSelector(
+            toSelector(annotationProcessingRequest.getOaHasTarget().getOaHasSelector()));
     return target;
   }
 
