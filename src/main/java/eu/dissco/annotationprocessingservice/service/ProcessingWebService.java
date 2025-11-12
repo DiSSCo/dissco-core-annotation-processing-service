@@ -60,7 +60,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     log.info("New id has been generated for Annotation: {}", annotation.getId());
     try {
-      repository.createAnnotationRecord(annotation);
+      repository.createAnnotationRecord(annotation, false);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackService.rollbackNewAnnotations(List.of(annotation), false, false);
@@ -117,7 +117,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       throw new FailedProcessingException();
     }
     try {
-      repository.createAnnotationRecord(annotation);
+      repository.createAnnotationRecord(annotation, false);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, false, false);

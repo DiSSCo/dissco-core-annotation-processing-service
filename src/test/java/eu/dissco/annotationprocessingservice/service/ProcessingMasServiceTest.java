@@ -197,7 +197,7 @@ class ProcessingMasServiceTest {
     service.handleMessage(givenAnnotationEvent(annotationRequest));
 
     // Then
-    then(repository).should().createAnnotationRecordsHashed(List.of(givenHashedAnnotation()));
+    then(repository).should().createAnnotationRecordsHashed(List.of(givenHashedAnnotation()), false);
     then(rabbitMqPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
     then(annotationBatchRecordService).shouldHaveNoMoreInteractions();
@@ -231,7 +231,7 @@ class ProcessingMasServiceTest {
 
     // Then
     then(repository).should()
-        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
+        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)), false);
     then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), true);
@@ -531,7 +531,7 @@ class ProcessingMasServiceTest {
     // Then
     then(handleComponent).should().updateHandle(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
-    then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
+    then(repository).should(times(2)).createAnnotationRecordsHashed(anyList(), eq(false));
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(changedAnnotationOriginal, changedAnnotation);
     then(rabbitMqPublisherService).should().publishCreateEvent(givenAnnotationProcessed());
@@ -599,7 +599,7 @@ class ProcessingMasServiceTest {
     // Then
     then(handleComponent).should().updateHandle(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
-    then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
+    then(repository).should(times(2)).createAnnotationRecordsHashed(anyList(), eq(false));
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(changedAnnotationOriginal, changedAnnotation);
     then(rabbitMqPublisherService).should()
@@ -875,7 +875,7 @@ class ProcessingMasServiceTest {
 
     // Then
     then(repository).should()
-        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
+        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)), false);
     then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
@@ -912,7 +912,7 @@ class ProcessingMasServiceTest {
 
     // Then
     then(repository).should()
-        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
+        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)), false);
     then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
@@ -932,7 +932,8 @@ class ProcessingMasServiceTest {
         PROCESSOR_HANDLE);
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList());
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList(),
+        eq(false));
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
@@ -956,7 +957,8 @@ class ProcessingMasServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList());
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList(),
+        eq(false));
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 
@@ -999,7 +1001,7 @@ class ProcessingMasServiceTest {
 
     // Then
     then(repository).should()
-        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)));
+        .createAnnotationRecordsHashed(List.of(givenHashedAnnotation(BATCH_ID)), false);
     then(rabbitMqPublisherService).should()
         .publishCreateEvent(givenAnnotationProcessed().withOdsBatchID(BATCH_ID));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);

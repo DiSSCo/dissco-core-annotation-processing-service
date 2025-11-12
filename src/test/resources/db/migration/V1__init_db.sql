@@ -1,4 +1,4 @@
-create type annotation_status_enum as enum('ACCEPTED', 'REJECTED', 'PENDING');
+create type annotation_status_enum as enum('ACCEPTED', 'REJECTED', 'PENDING', 'MERGED');
 
 create table annotation
 (

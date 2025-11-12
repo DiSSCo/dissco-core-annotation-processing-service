@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.AnnotationStatusEnum;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
@@ -46,7 +47,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     context.truncate(ANNOTATION).execute();
   }
 
-  private static Stream<Arguments> annotationMergingDecisionStatus(){
+  private static Stream<Arguments> annotationMergingDecisionStatus() {
     return Stream.of(
         Arguments.of(OdsMergingDecisionStatus.APPROVED),
         Arguments.of(OdsMergingDecisionStatus.PENDING),
@@ -57,16 +58,31 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
   @ParameterizedTest
   @MethodSource("annotationMergingDecisionStatus")
-  void testCreateAnnotationRecord(OdsMergingDecisionStatus mergingDecisionStatus) throws DataBaseException {
+  void testCreateAnnotationRecord(OdsMergingDecisionStatus mergingDecisionStatus)
+      throws DataBaseException {
     // Given
     var expected = givenAnnotationProcessed(ID).withOdsMergingDecisionStatus(mergingDecisionStatus);
 
     // When
-    repository.createAnnotationRecord(expected);
+    repository.createAnnotationRecord(expected, false);
     var actual = getAnnotation(ID);
 
     // Then
     assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  void testCreateAnnotationRecordIsMerged() throws DataBaseException {
+    // Given
+    var annotation = givenAnnotationProcessed(ID);
+
+    // When
+    repository.createAnnotationRecord(annotation, true);
+    var result = context.select(ANNOTATION.ANNOTATION_STATUS).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(ID.replace(HANDLE_PROXY, ""))).fetchOneInto(AnnotationStatusEnum.class);
+
+    // Then
+    assertThat(result).isEqualTo(AnnotationStatusEnum.MERGED);
   }
 
   @Test
@@ -75,7 +91,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var expected = givenHashedAnnotation(BARE_ID);
 
     // When
-    repository.createAnnotationRecordsHashed(List.of(expected));
+    repository.createAnnotationRecordsHashed(List.of(expected), false);
     var result = getAnnotation(expected.annotation().getId());
 
     // Then
@@ -87,8 +103,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var expected = givenAnnotationProcessed();
     var altAnnotation = givenAnnotationProcessed("alt id", "alt user", "alt target");
-    repository.createAnnotationRecord(expected);
-    repository.createAnnotationRecord(altAnnotation);
+    repository.createAnnotationRecord(expected, false);
+    repository.createAnnotationRecord(altAnnotation, false);
 
     // When
     var result = repository.getAnnotationForUser(BARE_ID, CREATOR);
@@ -101,11 +117,11 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void updateAnnotationRecord() throws DataBaseException {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation, false);
     var updatedAnnotation = givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING);
 
     // When
-    repository.createAnnotationRecord(updatedAnnotation);
+    repository.createAnnotationRecord(updatedAnnotation, false);
     var actual = getAnnotation(annotation.getId());
 
     // Then
@@ -116,7 +132,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testUpdateLastChecked() {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation, false);
     var initInstant = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
         .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
         .fetchOne(Record1::value1);
@@ -137,7 +153,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withId("alt id"),
         ANNOTATION_HASH_2);
-    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation));
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation),
+        false);
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
@@ -150,7 +167,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetAnnotationFromHashEmpty() {
     // Given
-    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation()));
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation()), false);
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH_2));
@@ -164,13 +181,14 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var annotation = givenAnnotationProcessed(BARE_ID).withOdsMergingDecisionStatus(
         OdsMergingDecisionStatus.APPROVED);
-    repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation, false);
 
     // When
     repository.archiveAnnotation(givenTombstoneAnnotation());
 
     // Then
-    var result = context.select(ANNOTATION.TOMBSTONED, ANNOTATION.ANNOTATION_STATUS).from(ANNOTATION)
+    var result = context.select(ANNOTATION.TOMBSTONED, ANNOTATION.ANNOTATION_STATUS)
+        .from(ANNOTATION)
         .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne();
     assertThat(result.get(ANNOTATION.TOMBSTONED)).isNotNull();
     assertThat(result.get(ANNOTATION.ANNOTATION_STATUS)).isNull();
@@ -180,7 +198,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testRollbackAnnotation() {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation, false);
 
     // When
     repository.rollbackAnnotation(annotation.getId());
@@ -197,7 +215,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testRollbackAnnotationList() {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation);
+    repository.createAnnotationRecord(annotation, false);
 
     // When
     repository.rollbackAnnotations(List.of(annotation.getId()));

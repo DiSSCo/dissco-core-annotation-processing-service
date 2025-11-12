@@ -26,16 +26,13 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -163,7 +160,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     hashedAnnotations.forEach(annotation -> addBatchIds(annotation.annotation(), batchIds, event));
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
-      repository.createAnnotationRecordsHashed(hashedAnnotations);
+      repository.createAnnotationRecordsHashed(hashedAnnotations, false);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackService.rollbackNewAnnotationsHash(hashedAnnotations, false, false, batchIds);
@@ -202,7 +199,7 @@ public class ProcessingMasService extends AbstractProcessingService {
 
     try {
       repository.createAnnotationRecordsHashed(
-          updatedAnnotations.stream().map(UpdatedAnnotation::hashedAnnotation).toList());
+          updatedAnnotations.stream().map(UpdatedAnnotation::hashedAnnotation).toList(), false);
     } catch (DataAccessException e) {
       log.error("Unable to update annotations in database. Rolling back handle updates", e);
       rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, false, false);

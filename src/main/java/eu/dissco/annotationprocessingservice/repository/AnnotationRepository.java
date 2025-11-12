@@ -26,7 +26,6 @@ import org.jooq.InsertSetMoreStep;
 import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record;
-import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 @Slf4j
@@ -71,26 +70,27 @@ public class AnnotationRepository {
     );
   }
 
-  public void createAnnotationRecord(Annotation annotation) {
-    var insertQuery = insertAnnotation(annotation);
+  public void createAnnotationRecord(Annotation annotation, boolean isMerged) {
+    var insertQuery = insertAnnotation(annotation, isMerged);
     var fullQuery = onConflict(annotation, insertQuery);
     fullQuery.execute();
   }
 
-  public void createAnnotationRecords(List<Annotation> annotations) {
+  public void createAnnotationRecords(List<Annotation> annotations, boolean isMerged) {
     var queryList = new ArrayList<Query>();
     for (var annotation : annotations) {
-      var insertQuery = insertAnnotation(annotation);
+      var insertQuery = insertAnnotation(annotation, isMerged);
       var fullQuery = onConflict(annotation, insertQuery);
       queryList.add(fullQuery);
     }
     context.batch(queryList).execute();
   }
 
-  public void createAnnotationRecordsHashed(List<HashedAnnotation> hashedAnnotations) {
+  public void createAnnotationRecordsHashed(List<HashedAnnotation> hashedAnnotations,
+      boolean isMerged) {
     var queryList = new ArrayList<Query>();
     for (var hashedAnnotation : hashedAnnotations) {
-      var insertQuery = insertAnnotation(hashedAnnotation.annotation())
+      var insertQuery = insertAnnotation(hashedAnnotation.annotation(), isMerged)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
       var fullQuery = onConflict(hashedAnnotation.annotation(), insertQuery)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
@@ -99,7 +99,7 @@ public class AnnotationRepository {
     context.batch(queryList).execute();
   }
 
-  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
+  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation, boolean isMerged) {
     try {
       return context.insertInto(ANNOTATION)
           .set(ANNOTATION.ID, removeProxy(annotation))
@@ -113,7 +113,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
-          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation))
+          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged))
           .set(ANNOTATION.DATA, mapToJSONB(annotation));
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
@@ -121,7 +121,10 @@ public class AnnotationRepository {
     }
   }
 
-  private static AnnotationStatusEnum getAnnotationStatus(Annotation annotation){
+  private static AnnotationStatusEnum getAnnotationStatus(Annotation annotation, boolean isMerged) {
+    if (isMerged) {
+      return AnnotationStatusEnum.MERGED;
+    }
     switch (annotation.getOdsMergingDecisionStatus()){
       case APPROVED -> {
         return AnnotationStatusEnum.ACCEPTED;
