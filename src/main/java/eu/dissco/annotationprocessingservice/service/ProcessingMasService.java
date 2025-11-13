@@ -160,7 +160,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     hashedAnnotations.forEach(annotation -> addBatchIds(annotation.annotation(), batchIds, event));
     log.info("New ids have been generated for Annotations: {}", idList);
     try {
-      repository.createAnnotationRecordsHashed(hashedAnnotations, false);
+      repository.createAnnotationRecordsHashed(hashedAnnotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackService.rollbackNewAnnotationsHash(hashedAnnotations, false, false, batchIds);
@@ -199,7 +199,7 @@ public class ProcessingMasService extends AbstractProcessingService {
 
     try {
       repository.createAnnotationRecordsHashed(
-          updatedAnnotations.stream().map(UpdatedAnnotation::hashedAnnotation).toList(), false);
+          updatedAnnotations.stream().map(UpdatedAnnotation::hashedAnnotation).toList());
     } catch (DataAccessException e) {
       log.error("Unable to update annotations in database. Rolling back handle updates", e);
       rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, false, false);

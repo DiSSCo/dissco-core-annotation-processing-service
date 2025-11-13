@@ -9,7 +9,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotat
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotationAlt;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
@@ -223,7 +222,7 @@ class RollbackServiceTest {
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecordsHashed(previousVersion, false);
+    then(repository).should().createAnnotationRecordsHashed(previousVersion);
     then(elasticRepository).shouldHaveNoInteractions();
   }
 
@@ -239,7 +238,7 @@ class RollbackServiceTest {
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecordsHashed(previousVersion, false);
+    then(repository).should().createAnnotationRecordsHashed(previousVersion);
     then(elasticRepository).should().indexAnnotations(previousVersion.stream().map(
         HashedAnnotation::annotation).toList());
   }
@@ -257,7 +256,7 @@ class RollbackServiceTest {
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecordsHashed(previousVersion, false);
+    then(repository).should().createAnnotationRecordsHashed(previousVersion);
     then(elasticRepository).should().indexAnnotations(previousVersion.stream().map(
         HashedAnnotation::annotation).toList());
   }
@@ -267,8 +266,8 @@ class RollbackServiceTest {
     // Given
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     var updates = givenUpdatedAnnotations();
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList(),
-        eq(false));
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList()
+    );
 
     // When
     rollbackService.rollbackUpdatedAnnotations(updates, false, true);
@@ -316,7 +315,7 @@ class RollbackServiceTest {
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecord(givenAnnotationProcessed(), false);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessed());
     then(elasticRepository).shouldHaveNoInteractions();
   }
 
@@ -324,15 +323,15 @@ class RollbackServiceTest {
   void testRollbackUpdatedAnnotationPidRepoFailed() throws Exception {
     // Given
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(givenAnnotationProcessed(),
-        false);
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(givenAnnotationProcessed()
+    );
 
     // When
     rollbackService.rollbackUpdatedAnnotation(givenAnnotationProcessed(), givenAnnotationProcessedAlt(), false, true);
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecord(givenAnnotationProcessed(), false);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessed());
     then(elasticRepository).shouldHaveNoInteractions();
   }
 
@@ -346,7 +345,7 @@ class RollbackServiceTest {
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecord(givenAnnotationProcessed(), false);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessed());
     then(elasticRepository).should().indexAnnotation(givenAnnotationProcessed());
   }
 
@@ -361,7 +360,7 @@ class RollbackServiceTest {
 
     // Then
     then(handleComponent).should().rollbackHandleUpdate(any());
-    then(repository).should().createAnnotationRecord(givenAnnotationProcessed(), false);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessed());
     then(elasticRepository).should().indexAnnotation(givenAnnotationProcessed());
   }
 

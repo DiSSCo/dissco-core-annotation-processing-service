@@ -64,7 +64,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var expected = givenAnnotationProcessed(ID).withOdsMergingDecisionStatus(mergingDecisionStatus);
 
     // When
-    repository.createAnnotationRecord(expected, false);
+    repository.createAnnotationRecord(expected);
     var actual = getAnnotation(ID);
 
     // Then
@@ -77,7 +77,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var annotation = givenAnnotationProcessed(ID);
 
     // When
-    repository.createAnnotationRecord(annotation, true);
+    repository.createMergedAnnotationRecords(List.of(annotation));
     var result = context.select(ANNOTATION.ANNOTATION_STATUS).from(ANNOTATION)
         .where(ANNOTATION.ID.eq(ID.replace(HANDLE_PROXY, ""))).fetchOneInto(AnnotationStatusEnum.class);
 
@@ -91,7 +91,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var expected = givenHashedAnnotation(BARE_ID);
 
     // When
-    repository.createAnnotationRecordsHashed(List.of(expected), false);
+    repository.createAnnotationRecordsHashed(List.of(expected));
     var result = getAnnotation(expected.annotation().getId());
 
     // Then
@@ -103,8 +103,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var expected = givenAnnotationProcessed();
     var altAnnotation = givenAnnotationProcessed("alt id", "alt user", "alt target");
-    repository.createAnnotationRecord(expected, false);
-    repository.createAnnotationRecord(altAnnotation, false);
+    repository.createAnnotationRecord(expected);
+    repository.createAnnotationRecord(altAnnotation);
 
     // When
     var result = repository.getAnnotationForUser(BARE_ID, CREATOR);
@@ -117,11 +117,11 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void updateAnnotationRecord() throws DataBaseException {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation, false);
+    repository.createAnnotationRecord(annotation);
     var updatedAnnotation = givenAnnotationProcessed().withOaMotivation(OaMotivation.OA_EDITING);
 
     // When
-    repository.createAnnotationRecord(updatedAnnotation, false);
+    repository.createAnnotationRecord(updatedAnnotation);
     var actual = getAnnotation(annotation.getId());
 
     // Then
@@ -132,7 +132,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testUpdateLastChecked() {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation, false);
+    repository.createAnnotationRecord(annotation);
     var initInstant = context.select(ANNOTATION.LAST_CHECKED).from(ANNOTATION)
         .where(ANNOTATION.ID.eq(annotation.getId().replace(HANDLE_PROXY, "")))
         .fetchOne(Record1::value1);
@@ -153,8 +153,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withId("alt id"),
         ANNOTATION_HASH_2);
-    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation),
-        false);
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation)
+    );
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
@@ -167,7 +167,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testGetAnnotationFromHashEmpty() {
     // Given
-    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation()), false);
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation()));
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH_2));
@@ -181,7 +181,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var annotation = givenAnnotationProcessed(BARE_ID).withOdsMergingDecisionStatus(
         OdsMergingDecisionStatus.APPROVED);
-    repository.createAnnotationRecord(annotation, false);
+    repository.createAnnotationRecord(annotation);
 
     // When
     repository.archiveAnnotation(givenTombstoneAnnotation());
@@ -198,7 +198,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testRollbackAnnotation() {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation, false);
+    repository.createAnnotationRecord(annotation);
 
     // When
     repository.rollbackAnnotation(annotation.getId());
@@ -215,7 +215,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   void testRollbackAnnotationList() {
     // Given
     var annotation = givenAnnotationProcessed();
-    repository.createAnnotationRecord(annotation, false);
+    repository.createAnnotationRecord(annotation);
 
     // When
     repository.rollbackAnnotations(List.of(annotation.getId()));

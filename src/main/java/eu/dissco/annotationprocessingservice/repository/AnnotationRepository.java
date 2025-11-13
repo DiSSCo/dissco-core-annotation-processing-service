@@ -70,27 +70,26 @@ public class AnnotationRepository {
     );
   }
 
-  public void createAnnotationRecord(Annotation annotation, boolean isMerged) {
-    var insertQuery = insertAnnotation(annotation, isMerged);
+  public void createAnnotationRecord(Annotation annotation) {
+    var insertQuery = insertAnnotation(annotation, false);
     var fullQuery = onConflict(annotation, insertQuery);
     fullQuery.execute();
   }
 
-  public void createAnnotationRecords(List<Annotation> annotations, boolean isMerged) {
+  public void createMergedAnnotationRecords(List<Annotation> annotations) {
     var queryList = new ArrayList<Query>();
     for (var annotation : annotations) {
-      var insertQuery = insertAnnotation(annotation, isMerged);
+      var insertQuery = insertAnnotation(annotation, true);
       var fullQuery = onConflict(annotation, insertQuery);
       queryList.add(fullQuery);
     }
     context.batch(queryList).execute();
   }
 
-  public void createAnnotationRecordsHashed(List<HashedAnnotation> hashedAnnotations,
-      boolean isMerged) {
+  public void createAnnotationRecordsHashed(List<HashedAnnotation> hashedAnnotations) {
     var queryList = new ArrayList<Query>();
     for (var hashedAnnotation : hashedAnnotations) {
-      var insertQuery = insertAnnotation(hashedAnnotation.annotation(), isMerged)
+      var insertQuery = insertAnnotation(hashedAnnotation.annotation(), false)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
       var fullQuery = onConflict(hashedAnnotation.annotation(), insertQuery)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());

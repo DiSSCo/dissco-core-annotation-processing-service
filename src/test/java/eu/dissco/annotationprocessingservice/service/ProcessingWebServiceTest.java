@@ -129,7 +129,7 @@ class ProcessingWebServiceTest {
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getId()).isEqualTo(ID);
-    then(repository).should().createAnnotationRecord(givenAnnotationProcessedWeb(), false);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessedWeb());
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -156,7 +156,7 @@ class ProcessingWebServiceTest {
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getId()).isEqualTo(ID);
-    then(repository).should().createAnnotationRecord(expected, false);
+    then(repository).should().createAnnotationRecord(expected);
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -186,7 +186,7 @@ class ProcessingWebServiceTest {
     // Then
     assertThat(result).isNotNull().isInstanceOf(Annotation.class);
     assertThat(result.getId()).isEqualTo(ID);
-    then(repository).should().createAnnotationRecord(givenAnnotationProcessedWebBatch(), false);
+    then(repository).should().createAnnotationRecord(givenAnnotationProcessedWebBatch());
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -446,7 +446,7 @@ class ProcessingWebServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(DataAccessException.class).when(repository)
-        .createAnnotationRecord(any(Annotation.class), eq(false));
+        .createAnnotationRecord(any(Annotation.class));
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -464,7 +464,7 @@ class ProcessingWebServiceTest {
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     doThrow(DataAccessException.class).when(repository)
-        .createAnnotationRecord(any(Annotation.class), eq(false));
+        .createAnnotationRecord(any(Annotation.class));
 
     // When
     assertThrows(FailedProcessingException.class,
