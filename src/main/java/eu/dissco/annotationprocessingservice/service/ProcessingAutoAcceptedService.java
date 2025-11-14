@@ -74,7 +74,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
         .toList();
     log.info("New ids have been generated for {} Annotations", ids.size());
     try {
-      repository.createAnnotationRecords(annotations);
+      repository.createMergedAnnotationRecords(annotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackService.rollbackNewAnnotations(annotations, false, false);

@@ -130,7 +130,7 @@ class ProcessingAutoAcceptedServiceTest {
     service.handleMessage(List.of(annotationRequest));
 
     // Then
-    then(repository).should().createAnnotationRecords(List.of(givenAcceptedAnnotation()));
+    then(repository).should().createMergedAnnotationRecords(List.of(givenAcceptedAnnotation()));
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -156,7 +156,7 @@ class ProcessingAutoAcceptedServiceTest {
     service.handleMessage(List.of(annotationRequest));
 
     // Then
-    then(repository).should().createAnnotationRecords(List.of(expected));
+    then(repository).should().createMergedAnnotationRecords(List.of(expected));
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -192,7 +192,7 @@ class ProcessingAutoAcceptedServiceTest {
     service.handleMessage(annotationRequests);
 
     // Then
-    then(repository).should().createAnnotationRecords(expected);
+    then(repository).should().createMergedAnnotationRecords(expected);
     then(rabbitMqPublisherService).should(times(2)).publishCreateEvent(any(Annotation.class));
   }
 
@@ -205,7 +205,7 @@ class ProcessingAutoAcceptedServiceTest {
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
     doThrow(DataAccessException.class).when(repository)
-        .createAnnotationRecords(anyList());
+        .createMergedAnnotationRecords(anyList());
 
     // When
     assertThrows(FailedProcessingException.class,

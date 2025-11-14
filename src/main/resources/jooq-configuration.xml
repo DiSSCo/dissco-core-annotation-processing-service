@@ -19,6 +19,7 @@
         mjr_target_type |
         error_code |
         annotation_batch_record |
+        annotation_status_enum |
         digital_specimen
       </includes>
       <forcedTypes>

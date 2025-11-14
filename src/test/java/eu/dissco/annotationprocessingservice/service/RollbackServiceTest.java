@@ -266,7 +266,8 @@ class RollbackServiceTest {
     // Given
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     var updates = givenUpdatedAnnotations();
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList());
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList()
+    );
 
     // When
     rollbackService.rollbackUpdatedAnnotations(updates, false, true);
@@ -322,7 +323,8 @@ class RollbackServiceTest {
   void testRollbackUpdatedAnnotationPidRepoFailed() throws Exception {
     // Given
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(givenAnnotationProcessed());
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecord(givenAnnotationProcessed()
+    );
 
     // When
     rollbackService.rollbackUpdatedAnnotation(givenAnnotationProcessed(), givenAnnotationProcessedAlt(), false, true);

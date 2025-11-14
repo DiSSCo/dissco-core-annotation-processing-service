@@ -5,6 +5,7 @@ import eu.dissco.annotationprocessingservice.exception.AnnotationValidationExcep
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import java.io.IOException;
 import org.springframework.http.HttpStatus;
@@ -52,6 +53,14 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
         HttpStatus.BAD_REQUEST, "AnnotationValidationException", e.getMessage()
     );
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+  public ResponseEntity<ExceptionResponse> handleException(MethodNotAllowedException e){
+    var response = new ExceptionResponse(
+        HttpStatus.METHOD_NOT_ALLOWED, "MethodNotAllowedException", e.getMessage()
+    );
+    return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(response);
   }
 
   @ResponseStatus(HttpStatus.CONFLICT)

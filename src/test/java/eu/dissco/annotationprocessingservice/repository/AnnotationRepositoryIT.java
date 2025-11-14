@@ -14,17 +14,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.AnnotationStatusEnum;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.jooq.Record;
 import org.jooq.Record1;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AnnotationRepositoryIT extends BaseRepositoryIT {
 
@@ -41,10 +47,21 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     context.truncate(ANNOTATION).execute();
   }
 
-  @Test
-  void testCreateAnnotationRecord() throws DataBaseException {
+  private static Stream<Arguments> annotationMergingDecisionStatus() {
+    return Stream.of(
+        Arguments.of(OdsMergingDecisionStatus.APPROVED),
+        Arguments.of(OdsMergingDecisionStatus.PENDING),
+        Arguments.of(OdsMergingDecisionStatus.REJECTED),
+        Arguments.of((Object) null)
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("annotationMergingDecisionStatus")
+  void testCreateAnnotationRecord(OdsMergingDecisionStatus mergingDecisionStatus)
+      throws DataBaseException {
     // Given
-    var expected = givenAnnotationProcessed(ID);
+    var expected = givenAnnotationProcessed(ID).withOdsMergingDecisionStatus(mergingDecisionStatus);
 
     // When
     repository.createAnnotationRecord(expected);
@@ -52,6 +69,20 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  void testCreateAnnotationRecordIsMerged() throws DataBaseException {
+    // Given
+    var annotation = givenAnnotationProcessed(ID);
+
+    // When
+    repository.createMergedAnnotationRecords(List.of(annotation));
+    var result = context.select(ANNOTATION.ANNOTATION_STATUS).from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(ID.replace(HANDLE_PROXY, ""))).fetchOneInto(AnnotationStatusEnum.class);
+
+    // Then
+    assertThat(result).isEqualTo(AnnotationStatusEnum.MERGED);
   }
 
   @Test
@@ -122,7 +153,8 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     // Given
     var altHashedAnnotation = new HashedAnnotation(givenAnnotationProcessed().withId("alt id"),
         ANNOTATION_HASH_2);
-    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation));
+    repository.createAnnotationRecordsHashed(List.of(givenHashedAnnotation(), altHashedAnnotation)
+    );
 
     // When
     var result = repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH));
@@ -147,16 +179,19 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   @Test
   void testArchiveAnnotation() {
     // Given
-    var annotation = givenAnnotationProcessed(BARE_ID);
+    var annotation = givenAnnotationProcessed(BARE_ID).withOdsMergingDecisionStatus(
+        OdsMergingDecisionStatus.APPROVED);
     repository.createAnnotationRecord(annotation);
 
     // When
     repository.archiveAnnotation(givenTombstoneAnnotation());
 
     // Then
-    var deletedTimestamp = context.select(ANNOTATION.TOMBSTONED).from(ANNOTATION)
-        .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne(Record1::value1);
-    assertThat(deletedTimestamp).isNotNull();
+    var result = context.select(ANNOTATION.TOMBSTONED, ANNOTATION.ANNOTATION_STATUS)
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(annotation.getId())).fetchOne();
+    assertThat(result.get(ANNOTATION.TOMBSTONED)).isNotNull();
+    assertThat(result.get(ANNOTATION.ANNOTATION_STATUS)).isNull();
   }
 
   @Test

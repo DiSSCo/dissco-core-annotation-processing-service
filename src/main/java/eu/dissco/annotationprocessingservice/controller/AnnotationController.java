@@ -8,6 +8,7 @@ import eu.dissco.annotationprocessingservice.exception.AnnotationValidationExcep
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
@@ -108,7 +109,7 @@ public class AnnotationController {
       @Parameter(description = TARGET_ID_PREFIX_OAS) @PathVariable("prefix") String prefix,
       @Parameter(description = TARGET_ID_SUFFIX_OAS) @PathVariable("suffix") String suffix,
       @RequestBody AnnotationTombstoneWrapper annotationTombstoneWrapper)
-      throws IOException, FailedProcessingException {
+      throws IOException, FailedProcessingException, MethodNotAllowedException {
     var id = prefix + '/' + suffix;
     log.info("Received an archive request for annotations: {}", id);
     var annotation = annotationTombstoneWrapper.annotation();
