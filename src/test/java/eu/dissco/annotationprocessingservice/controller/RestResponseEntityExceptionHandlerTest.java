@@ -6,6 +6,7 @@ import eu.dissco.annotationprocessingservice.exception.AnnotationValidationExcep
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,5 +74,14 @@ class RestResponseEntityExceptionHandlerTest {
 
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void testMethodNotAllowedException(){
+    // When
+    var result = exceptionHandler.handleException(new MethodNotAllowedException(""));
+
+    // Then
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
   }
 }

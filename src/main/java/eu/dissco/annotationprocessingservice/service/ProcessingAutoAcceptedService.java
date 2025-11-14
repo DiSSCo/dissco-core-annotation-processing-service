@@ -9,14 +9,11 @@ import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.HashedAutoAcceptedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
-import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.time.Instant;
 import java.util.Date;
@@ -74,7 +71,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
         .toList();
     log.info("New ids have been generated for {} Annotations", ids.size());
     try {
-      repository.createAnnotationRecords(annotations);
+      repository.createMergedAnnotationRecords(annotations);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
       rollbackService.rollbackNewAnnotations(annotations, false, false);

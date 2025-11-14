@@ -58,6 +58,7 @@ import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -65,6 +66,7 @@ import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
@@ -815,6 +817,20 @@ class ProcessingMasServiceTest {
     then(repository).shouldHaveNoMoreInteractions();
   }
 
+  @Test
+  void testArchiveAnnotationNotPermitted() {
+    // Given
+
+    // When
+    assertThrows(MethodNotAllowedException.class,
+        () -> service.archiveAnnotation(givenAnnotationProcessed().withOdsMergingDecisionStatus(
+            OdsMergingDecisionStatus.APPROVED), givenProcessingAgent()));
+
+    // Then
+    then(elasticRepository).shouldHaveNoInteractions();
+    then(repository).shouldHaveNoMoreInteractions();
+  }
+
   private void givenBulkResponse() {
     var positiveResponse = mock(BulkResponseItem.class);
     given(positiveResponse.error()).willReturn(null);
@@ -916,7 +932,8 @@ class ProcessingMasServiceTest {
         PROCESSOR_HANDLE);
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList());
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList()
+    );
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
@@ -940,7 +957,8 @@ class ProcessingMasServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
-    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList());
+    doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList()
+    );
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 

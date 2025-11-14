@@ -5,6 +5,7 @@ import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProx
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.dissco.annotationprocessingservice.database.jooq.enums.AnnotationStatusEnum;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
@@ -70,15 +71,15 @@ public class AnnotationRepository {
   }
 
   public void createAnnotationRecord(Annotation annotation) {
-    var insertQuery = insertAnnotation(annotation);
+    var insertQuery = insertAnnotation(annotation, false);
     var fullQuery = onConflict(annotation, insertQuery);
     fullQuery.execute();
   }
 
-  public void createAnnotationRecords(List<Annotation> annotations) {
+  public void createMergedAnnotationRecords(List<Annotation> annotations) {
     var queryList = new ArrayList<Query>();
     for (var annotation : annotations) {
-      var insertQuery = insertAnnotation(annotation);
+      var insertQuery = insertAnnotation(annotation, true);
       var fullQuery = onConflict(annotation, insertQuery);
       queryList.add(fullQuery);
     }
@@ -88,7 +89,7 @@ public class AnnotationRepository {
   public void createAnnotationRecordsHashed(List<HashedAnnotation> hashedAnnotations) {
     var queryList = new ArrayList<Query>();
     for (var hashedAnnotation : hashedAnnotations) {
-      var insertQuery = insertAnnotation(hashedAnnotation.annotation())
+      var insertQuery = insertAnnotation(hashedAnnotation.annotation(), false)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
       var fullQuery = onConflict(hashedAnnotation.annotation(), insertQuery)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
@@ -97,7 +98,7 @@ public class AnnotationRepository {
     context.batch(queryList).execute();
   }
 
-  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation) {
+  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation, boolean isMerged) {
     try {
       return context.insertInto(ANNOTATION)
           .set(ANNOTATION.ID, removeProxy(annotation))
@@ -111,10 +112,28 @@ public class AnnotationRepository {
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
+          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged))
           .set(ANNOTATION.DATA, mapToJSONB(annotation));
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());
+    }
+  }
+
+  private static AnnotationStatusEnum getAnnotationStatus(Annotation annotation, boolean isMerged) {
+    if (isMerged) {
+      return AnnotationStatusEnum.MERGED;
+    }
+    switch (annotation.getOdsMergingDecisionStatus()){
+      case APPROVED -> {
+        return AnnotationStatusEnum.ACCEPTED;
+      } case PENDING ->  {
+        return AnnotationStatusEnum.PENDING;
+      } case REJECTED ->  {
+        return AnnotationStatusEnum.REJECTED;
+      } case null, default -> {
+        return null;
+      }
     }
   }
 
@@ -157,6 +176,7 @@ public class AnnotationRepository {
           .set(ANNOTATION.LAST_CHECKED, timestamp)
           .set(ANNOTATION.DATA, mapToJSONB(annotation))
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+          .setNull(ANNOTATION.ANNOTATION_STATUS)
           .where(ANNOTATION.ID.eq(removeProxy(annotation)))
           .execute();
     } catch (JsonProcessingException e) {
