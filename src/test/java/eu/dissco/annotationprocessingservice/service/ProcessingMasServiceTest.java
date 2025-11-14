@@ -128,7 +128,7 @@ class ProcessingMasServiceTest {
   @Mock
   private FdoProperties fdoProperties;
   @Mock
-  RollbackService rollbackService;
+  private RollbackService rollbackService;
   private ProcessingMasService service;
 
   private static Stream<Arguments> unequalAnnotations() {
@@ -208,7 +208,8 @@ class ProcessingMasServiceTest {
         BATCH_ID);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -291,7 +292,8 @@ class ProcessingMasServiceTest {
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(
-        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested), any())).willReturn(
+        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested),
+            any())).willReturn(
         Optional.empty());
 
     // When
@@ -310,7 +312,8 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = true;
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willThrow(PidCreationException.class);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
@@ -328,7 +331,8 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -361,7 +365,8 @@ class ProcessingMasServiceTest {
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     var event = givenAnnotationEvent();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -396,7 +401,8 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
@@ -405,7 +411,8 @@ class ProcessingMasServiceTest {
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(
-        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested), any())).willReturn(
+        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested),
+            any())).willReturn(
         Optional.empty());
 
     // When
@@ -447,7 +454,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -476,7 +484,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
@@ -654,7 +663,8 @@ class ProcessingMasServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(false);
@@ -677,7 +687,8 @@ class ProcessingMasServiceTest {
     // Given
     var annotation = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -689,7 +700,8 @@ class ProcessingMasServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
+    assertThatThrownBy(
+        () -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
@@ -753,7 +765,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotation = givenAnnotationRequest().withId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
@@ -767,7 +780,8 @@ class ProcessingMasServiceTest {
         "https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
+    assertThatThrownBy(
+        () -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
@@ -779,11 +793,13 @@ class ProcessingMasServiceTest {
 
   @Test
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
+
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest().withId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
@@ -876,7 +892,8 @@ class ProcessingMasServiceTest {
         JOB_ID, List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -913,7 +930,8 @@ class ProcessingMasServiceTest {
     var event = new AnnotationProcessingEvent(JOB_ID, List.of(annotationRequest), null, null);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -948,7 +966,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
         PROCESSOR_HANDLE);
@@ -976,7 +995,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
@@ -1002,7 +1022,8 @@ class ProcessingMasServiceTest {
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, ErrorCode.TIMEOUT);
     var event = givenAnnotationEvent(annotationRequest);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);

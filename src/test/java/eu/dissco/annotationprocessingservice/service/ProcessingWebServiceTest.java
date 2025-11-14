@@ -56,7 +56,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessingWebServiceTest {
@@ -90,8 +89,6 @@ class ProcessingWebServiceTest {
   private MockedStatic<Instant> mockedStatic;
   private MockedStatic<Clock> mockedClock;
   private ProcessingWebService service;
-  @Mock
-  Logger mockLogger;
 
   @BeforeEach
   void setup() {
