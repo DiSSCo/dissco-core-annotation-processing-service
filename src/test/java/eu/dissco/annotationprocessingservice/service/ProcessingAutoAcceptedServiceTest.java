@@ -58,9 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessingAutoAcceptedServiceTest {
 
-  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
-  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
+
   @Mock
   private AnnotationRepository repository;
   @Mock
@@ -90,6 +88,7 @@ class ProcessingAutoAcceptedServiceTest {
   @Mock
   private AnnotationHasher annotationHasher;
   private MockedStatic<Instant> mockedStatic;
+  private MockedStatic<Clock> mockedClock;
   private ProcessingAutoAcceptedService service;
 
   @BeforeEach
@@ -99,8 +98,11 @@ class ProcessingAutoAcceptedServiceTest {
         annotationValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService,
         fdoProperties, rollbackService, annotationHasher);
+    Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
+    Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
+    mockedClock = mockStatic(Clock.class);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
   }
 
@@ -135,9 +137,11 @@ class ProcessingAutoAcceptedServiceTest {
   @Test
   void testCreateAnnotationEditing() throws Exception {
     // Given
-    var annotation = givenAutoAcceptedRequest().annotation().withOaMotivation(OaMotivation.OA_EDITING);
-    var annotationRequest =new AutoAcceptedAnnotation(givenProcessingAgent(), annotation);
-    var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING).withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+    var annotation = givenAutoAcceptedRequest().annotation()
+        .withOaMotivation(OaMotivation.OA_EDITING);
+    var annotationRequest = new AutoAcceptedAnnotation(givenProcessingAgent(), annotation);
+    var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING)
+        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);

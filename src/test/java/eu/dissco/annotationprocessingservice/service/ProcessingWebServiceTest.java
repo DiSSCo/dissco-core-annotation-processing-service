@@ -56,13 +56,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessingWebServiceTest {
 
-  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
-  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
   @Mock
   private AnnotationRepository repository;
   @Mock
@@ -90,7 +88,10 @@ class ProcessingWebServiceTest {
   @Mock
   private AnnotationHasher annotationHasher;
   private MockedStatic<Instant> mockedStatic;
+  private MockedStatic<Clock> mockedClock;
   private ProcessingWebService service;
+  @Mock
+  Logger mockLogger;
 
   @BeforeEach
   void setup() {
@@ -98,8 +99,12 @@ class ProcessingWebServiceTest {
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         annotationValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
         fdoProperties, rollbackService, annotationHasher);
+
+    Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
+    Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
+    mockedClock = mockStatic(Clock.class);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
   }
 

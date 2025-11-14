@@ -88,8 +88,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -97,19 +95,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessingMasServiceTest {
 
-  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   @Mock
-  AnnotationHasher annotationHasher;
+  private AnnotationHasher annotationHasher;
   @Mock
-  AnnotationValidatorService annotationValidator;
+  private AnnotationValidatorService annotationValidator;
   @Mock
-  BatchAnnotationService batchAnnotationService;
+  private BatchAnnotationService batchAnnotationService;
   @Mock
-  AnnotationBatchRecordService annotationBatchRecordService;
-  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
-  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
-  MockedStatic<UUID> mockedUuid;
+  private AnnotationBatchRecordService annotationBatchRecordService;
+  private final Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
+  private MockedStatic<Clock> mockedClock;
+  private MockedStatic<UUID> mockedUuid;
+  private MockedStatic<Instant> mockedStatic;
   @Mock
   private AnnotationRepository repository;
   @Mock
@@ -130,9 +127,6 @@ class ProcessingMasServiceTest {
   private FdoProperties fdoProperties;
   @Mock
   RollbackService rollbackService;
-  @Captor
-  ArgumentCaptor<List<Annotation>> captor;
-  private MockedStatic<Instant> mockedStatic;
   private ProcessingMasService service;
 
   private static Stream<Arguments> unequalAnnotations() {
@@ -155,8 +149,11 @@ class ProcessingMasServiceTest {
         rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
         masJobRecordService, annotationHasher, annotationValidator, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
+    Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+    Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
+    mockedClock = mockStatic(Clock.class);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
     mockedUuid = mockStatic(UUID.class);
     mockedUuid.when(UUID::randomUUID).thenReturn(ANNOTATION_HASH_3);
@@ -348,7 +345,8 @@ class ProcessingMasServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(rollbackService).should().rollbackBatchIds(Optional.empty());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
@@ -384,7 +382,8 @@ class ProcessingMasServiceTest {
     then(rollbackService).should()
         .rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(rollbackService).should().rollbackBatchIds(Optional.of(givenBatchIdMap()));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
@@ -693,8 +692,10 @@ class ProcessingMasServiceTest {
 
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -738,8 +739,10 @@ class ProcessingMasServiceTest {
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -768,7 +771,8 @@ class ProcessingMasServiceTest {
     // Then
     then(handleComponent).should().updateHandle(anyList());
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -794,7 +798,8 @@ class ProcessingMasServiceTest {
         FailedProcessingException.class);
 
     // Then
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
   }
 
@@ -944,7 +949,8 @@ class ProcessingMasServiceTest {
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
 
     // Then
-    then(rollbackService).should().rollbackNewAnnotationsHash(anyList(), eq(false), eq(false), eq(Optional.empty()));
+    then(rollbackService).should()
+        .rollbackNewAnnotationsHash(anyList(), eq(false), eq(false), eq(Optional.empty()));
   }
 
   @Test
