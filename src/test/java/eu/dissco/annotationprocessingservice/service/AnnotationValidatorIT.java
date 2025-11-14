@@ -32,13 +32,11 @@ import io.github.dissco.core.annotationlogic.schema.Event;
 import io.github.dissco.core.annotationlogic.schema.Location;
 import java.util.List;
 import java.util.stream.Stream;
-import org.junit.experimental.runners.Enclosed;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -47,7 +45,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {AnnotationValidatorService.class,
     AnnotationLogicLibraryConfiguration.class})
-@RunWith(Enclosed.class)
 class AnnotationValidatorIT {
 
   @Autowired
