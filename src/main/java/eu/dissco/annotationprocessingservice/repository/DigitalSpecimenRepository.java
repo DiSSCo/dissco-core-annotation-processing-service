@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +45,10 @@ public class DigitalSpecimenRepository {
     try {
       return mapper.readValue(dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), DigitalSpecimen.class)
           .withDctermsIdentifier(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
-          .withId(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID));
+          .withId(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
+          .withOdsMidsLevel(Integer.valueOf(dbRecord.get(DIGITAL_SPECIMEN.MIDSLEVEL)))
+          .withOdsVersion(dbRecord.get(DIGITAL_SPECIMEN.VERSION))
+          .withDctermsCreated(Date.from(dbRecord.get(DIGITAL_SPECIMEN.CREATED)));
     } catch (JsonProcessingException e) {
       log.warn("Unable to map jsonb to digital specimen: {}",
           dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), e);

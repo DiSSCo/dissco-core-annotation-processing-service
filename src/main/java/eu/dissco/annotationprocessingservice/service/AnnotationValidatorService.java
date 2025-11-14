@@ -1,6 +1,8 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DOI_PROXY;
+import static eu.dissco.annotationprocessingservice.domain.AnnotationTargetType.DIGITAL_SPECIMEN;
+import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.isTransformativeMotivation;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -60,21 +62,25 @@ public class AnnotationValidatorService {
   private void validateAnnotationContents(
       List<AnnotationProcessingRequest> annotationProcessingRequests)
       throws AnnotationValidationException {
-    var annotations = annotationProcessingRequests.stream()
+    var specimenAnnotations = annotationProcessingRequests.stream()
+        .filter(annotationProcessingRequest -> DIGITAL_SPECIMEN.getFdoType()
+            .equals(annotationProcessingRequest.getOaHasTarget().getOdsFdoType()))
         .filter(annotationProcessingRequest ->
-            AnnotationProcessingRequest.OaMotivation.OA_EDITING.equals(
-                annotationProcessingRequest.getOaMotivation()) ||
-                AnnotationProcessingRequest.OaMotivation.ODS_DELETING.equals(
-                    annotationProcessingRequest.getOaMotivation()) ||
-                AnnotationProcessingRequest.OaMotivation.ODS_ADDING.equals(
-                    annotationProcessingRequest.getOaMotivation()))
+            isTransformativeMotivation(annotationProcessingRequest.getOaMotivation()))
         .map(this::toAnnotation).toList();
     var specimenTargets = getSpecimenTargets(annotationProcessingRequests);
     try {
-      for (var annotation : annotations) {
+      for (var annotation : specimenAnnotations) {
         var target = specimenTargets.get(annotation.getOaHasTarget().getDctermsIdentifier());
         if (target != null) {
           annotationValidator.applyAnnotation(target, annotation);
+        } else {
+          log.warn(
+              "Annotation attempting to target a specimen that does not exist. Can not find target {}",
+              annotation.getOaHasTarget().getDctermsIdentifier());
+          throw new InvalidAnnotationException(
+              "Target " + annotation.getOaHasTarget().getDctermsIdentifier()
+                  + " of incoming annotation does not exist");
         }
       }
     } catch (InvalidTargetException | InvalidAnnotationException e) {
@@ -88,25 +94,17 @@ public class AnnotationValidatorService {
     var specimenIds = annotationProcessingRequests.stream().filter(
             annotationProcessingRequest ->
                 "ods:DigitalSpecimen".equals(annotationProcessingRequest.getOaHasTarget().getType())
-                    || fdoProperties.getSpecimenType().equals(
+                    || DIGITAL_SPECIMEN.getFdoType().equals(
                     annotationProcessingRequest.getOaHasTarget().getType()))
         .map(annotationProcessingRequest -> annotationProcessingRequest.getOaHasTarget().getId())
         .map(id -> id.replace(DOI_PROXY, ""))
         .collect(Collectors.toSet());
     var specimens = digitalSpecimenRepository.getDigitalSpecimenTargets(specimenIds);
     return specimens.stream()
-        .map(AnnotationValidatorService::addMissingSpecimenFields)
         .collect(Collectors.toMap(
             DigitalSpecimen::getDctermsIdentifier,
             Function.identity()
         ));
-  }
-
-  // These required fields aren't stored in the db, so we use placeholders.
-  private static DigitalSpecimen addMissingSpecimenFields(DigitalSpecimen specimen) {
-    return specimen.withOdsVersion(PLACEHOLDER_VERSION)
-        .withDctermsCreated(Date.from(Instant.now()))
-        .withOdsMidsLevel(PLACEHOLDER_VERSION);
   }
 
   private Annotation toAnnotation(AnnotationProcessingRequest annotationProcessingRequest) {
@@ -213,13 +211,12 @@ public class AnnotationValidatorService {
     return identifierList;
   }
 
-  private static void validateId(AnnotationProcessingRequest annotation, Boolean isNewAnnotation)
+  private static void validateId(AnnotationProcessingRequest annotation, boolean isNewAnnotation)
       throws AnnotationValidationException {
-    if (Boolean.TRUE.equals(isNewAnnotation) && annotation.getId() != null) {
+    if (isNewAnnotation && annotation.getId() != null) {
       log.warn("Attempting overwrite annotation with \"@id\" {}", annotation.getId());
       throw new AnnotationValidationException("New annotations can not have @id");
-    }
-    if (Boolean.FALSE.equals(isNewAnnotation) && annotation.getId() == null) {
+    } else if (!isNewAnnotation && annotation.getId() == null) {
       log.error("\"@id\" not provided for annotation update");
       throw new AnnotationValidationException("Missing @id for annotation update");
     }

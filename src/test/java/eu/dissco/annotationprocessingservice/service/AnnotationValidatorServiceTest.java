@@ -42,7 +42,6 @@ class AnnotationValidatorServiceTest {
   void testValidateProcessResults() {
     // Given
 
-    //String id, String type, String odsID, String jobId, List<AnnotationProcessingRequest> annotations, List<AnnotationBatchMetadata> batchMetadata, UUID batchId
     var event = new AnnotationProcessingEvent()
         .withAnnotations(List.of(givenAnnotationRequest()))
         .withJobId(JOB_ID);

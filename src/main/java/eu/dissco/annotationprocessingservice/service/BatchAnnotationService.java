@@ -81,7 +81,6 @@ public class BatchAnnotationService {
         }
       }
     }
-
   }
 
   private AnnotationTargetType getTargetTypeFromList(List<Annotation> baseAnnotations)
@@ -93,7 +92,7 @@ public class BatchAnnotationService {
           types);
       throw new ConflictException();
     }
-    return AnnotationTargetType.fromString(types.get(0));
+    return AnnotationTargetType.fromString(types.getFirst());
   }
 
   private List<Annotation> getBaseAnnotation(Integer placeInBatch, List<Annotation> annotations)

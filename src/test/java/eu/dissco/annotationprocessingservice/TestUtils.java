@@ -224,7 +224,7 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
-        .withOdsFdoType(targetType.toString())
+        .withOdsFdoType(targetType.getFdoType())
         .withDctermsIdentifier(DOI_PROXY + targetId)
         .withOaHasSelector(selector);
   }
@@ -240,7 +240,7 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
-        .withOdsFdoType(targetType.toString())
+        .withOdsFdoType(targetType.getFdoType())
         .withDctermsIdentifier(DOI_PROXY + targetId)
         .withOaHasSelector(givenSelector());
   }
@@ -250,7 +250,7 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withDctermsIdentifier(DOI_PROXY + targetId)
-        .withOdsFdoType(targetType.toString())
+        .withOdsFdoType(targetType.getFdoType())
         .withOaHasSelector(selector)
         .withType("ods:DigitalSpecimen");
   }

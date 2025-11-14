@@ -55,7 +55,7 @@ class AnnotationHasherTest {
             new AnnotationTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
-                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.toString())));
+                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.getFdoType())));
 
     // Then
     assertThat(result).isEqualTo(expected);

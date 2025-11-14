@@ -14,9 +14,6 @@ public class FdoProperties {
   private String type = "https://doi.org/21.T11148/cf458ca9ee1d44a5608f";
 
   @NotBlank
-  private String specimenType = "https://doi.org/21.T11148/894b1e6cad57e921764e";
-
-  @NotBlank
   private String issuedForAgent = "https://ror.org/0566bfb96";
 
 }

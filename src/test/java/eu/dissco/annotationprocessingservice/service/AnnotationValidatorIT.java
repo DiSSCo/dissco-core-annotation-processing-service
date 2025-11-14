@@ -32,11 +32,13 @@ import io.github.dissco.core.annotationlogic.schema.Event;
 import io.github.dissco.core.annotationlogic.schema.Location;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.experimental.runners.Enclosed;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -45,6 +47,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {AnnotationValidatorService.class,
     AnnotationLogicLibraryConfiguration.class})
+@RunWith(Enclosed.class)
 class AnnotationValidatorIT {
 
   @Autowired
@@ -82,10 +85,12 @@ class AnnotationValidatorIT {
 
   @ParameterizedTest
   @MethodSource("validAnnotations")
-  void testValidateAnnotations(AnnotationProcessingRequest annotation, DigitalSpecimen digitalSpecimen) {
+  void testValidateAnnotations(AnnotationProcessingRequest annotation,
+      DigitalSpecimen digitalSpecimen) {
 
     // Given
-    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(List.of(digitalSpecimen));
+    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(
+        List.of(digitalSpecimen));
 
     // When / Then
     assertDoesNotThrow(
@@ -93,13 +98,25 @@ class AnnotationValidatorIT {
   }
 
   @Test
+  void testAnnotationTargetDoesNotExist() {
+    // Given
+    var annotation = givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING);
+
+    // When / Then
+    assertThrowsExactly(AnnotationValidationException.class,
+        () -> annotationValidatorService.validateAnnotationRequest(List.of(annotation), true));
+  }
+
+  @Test
   void testValidateAnnotationEvent() {
     // Given
     var digitalSpecimen = givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()));
-    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(List.of(digitalSpecimen));
+    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(
+        List.of(digitalSpecimen));
     var event = new AnnotationProcessingEvent()
         .withJobId(JOB_ID)
-            .withAnnotations(List.of(givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)));
+        .withAnnotations(
+            List.of(givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)));
 
     // When / Then
     assertDoesNotThrow(() -> annotationValidatorService.validateEvent(event));
@@ -108,13 +125,16 @@ class AnnotationValidatorIT {
   @Test
   void testInvalidAnnotationContents() {
     var digitalSpecimen = givenDigitalSpecimen();
-    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(List.of(digitalSpecimen));
+    given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(
+        List.of(digitalSpecimen));
     var event = new AnnotationProcessingEvent()
         .withJobId(JOB_ID)
-        .withAnnotations(List.of(givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)));
+        .withAnnotations(
+            List.of(givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING)));
 
     // When / Then
-    assertThrowsExactly(AnnotationValidationException.class, () -> annotationValidatorService.validateEvent(event));
+    assertThrowsExactly(AnnotationValidationException.class,
+        () -> annotationValidatorService.validateEvent(event));
   }
 
 
@@ -141,7 +161,8 @@ class AnnotationValidatorIT {
                             .withDctermsFormat(List.of("format"))
                             .withDctermsSubject(List.of("subject"))
                             .withOdsIsPartOfLabel(false)
-                            .withOdsGupriLevel(OdsGupriLevel.GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE)
+                            .withOdsGupriLevel(
+                                OdsGupriLevel.GLOBALLY_UNIQUE_STABLE_PERSISTENT_RESOLVABLE)
                             .withOdsIdentifierStatus(OdsIdentifierStatus.PREFERRED)
                             .withDctermsIdentifier(JOB_ID)
                     ))
@@ -175,10 +196,11 @@ class AnnotationValidatorIT {
             givenDigitalSpecimen()
         ),
         Arguments.of(
-            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_DELETING).withOaHasBody(new AnnotationBody().withOaValue(List.of())),
+            givenAnnotationRequest().withOaMotivation(OaMotivation.ODS_DELETING)
+                .withOaHasBody(new AnnotationBody().withOaValue(List.of())),
             givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()))
         ),
-        Arguments.of( givenAnnotationRequest()
+        Arguments.of(givenAnnotationRequest()
                 .withOaMotivation(OaMotivation.ODS_DELETING)
                 .withOaHasBody(null),
             givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent())))
@@ -187,12 +209,12 @@ class AnnotationValidatorIT {
 
   private static Event givenEvent() {
     return new Event()
-            .withDwcEventDate("2022-11-01T09:59:24.000Z")
+        .withDwcEventDate("2022-11-01T09:59:24.000Z")
         .withType("ods:Event")
-            .withOdsHasLocation(new Location()
-                .withType("ods:Location")
-                .withDwcCountry("England")
-                .withDwcLocality("London"));
+        .withOdsHasLocation(new Location()
+            .withType("ods:Location")
+            .withDwcCountry("England")
+            .withDwcLocality("London"));
   }
 
   private static AnnotationTarget localityTargetEdit() {

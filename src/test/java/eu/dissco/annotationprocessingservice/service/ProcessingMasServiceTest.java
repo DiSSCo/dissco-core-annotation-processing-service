@@ -88,8 +88,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -106,8 +104,6 @@ class ProcessingMasServiceTest {
   BatchAnnotationService batchAnnotationService;
   @Mock
   AnnotationBatchRecordService annotationBatchRecordService;
-  @Captor
-  ArgumentCaptor<List<Annotation>> captor;
   Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
   Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
   MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
