@@ -164,27 +164,26 @@ public class AnnotationValidatorService {
   private static Agent getAgent(
       eu.dissco.annotationprocessingservice.schema.Agent requestAgent) {
     var newAgent = new Agent();
-    if (requestAgent != null) {
-      newAgent
-          .withId(requestAgent.getId())
-          .withSchemaName(requestAgent.getSchemaName())
-          .withOdsHasIdentifiers(toIdentifiers(requestAgent.getOdsHasIdentifiers()));
-      if (requestAgent.getType() != null) {
-        newAgent.withType(Agent.Type.fromValue(
-            requestAgent.getType().value()));
-      }
-      var roles = new ArrayList<OdsHasRole>();
-      for (var role: requestAgent.getOdsHasRoles()){
-        roles.add(
-            new OdsHasRole()
-                .withSchemaRoleName(role.getSchemaRoleName())
-                .withSchemaStartDate(role.getSchemaStartDate())
-                .withSchemaEndDate(role.getSchemaEndDate())
-                .withType(role.getType())
-        );
-        newAgent.withOdsHasRoles(roles);
-      }
+    newAgent
+        .withId(requestAgent.getId())
+        .withSchemaName(requestAgent.getSchemaName())
+        .withOdsHasIdentifiers(toIdentifiers(requestAgent.getOdsHasIdentifiers()));
+    if (requestAgent.getType() != null) {
+      newAgent.withType(Agent.Type.fromValue(
+          requestAgent.getType().value()));
     }
+    var roles = new ArrayList<OdsHasRole>();
+    for (var role : requestAgent.getOdsHasRoles()) {
+      roles.add(
+          new OdsHasRole()
+              .withSchemaRoleName(role.getSchemaRoleName())
+              .withSchemaStartDate(role.getSchemaStartDate())
+              .withSchemaEndDate(role.getSchemaEndDate())
+              .withType(role.getType())
+      );
+      newAgent.withOdsHasRoles(roles);
+    }
+
     return newAgent;
   }
 
