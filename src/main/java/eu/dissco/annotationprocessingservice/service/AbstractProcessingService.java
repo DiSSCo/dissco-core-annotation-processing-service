@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.domain.AgentRoleType.PROCESSING_SERVICE;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
+import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.createGenerator;
 import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.isTransformativeMotivation;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -106,7 +107,7 @@ public abstract class AbstractProcessingService {
         .withOaHasBody(annotationRequest.getOaHasBody())
         .withDctermsCreator(annotationRequest.getDctermsCreator())
         .withDctermsCreated(annotationRequest.getDctermsCreated())
-        .withAsGenerator(createGenerator())
+        .withAsGenerator(createGenerator(applicationProperties))
         .withDctermsIssued(Date.from(timestamp))
         .withDctermsModified(Date.from(timestamp))
         .withOdsJobID(jobId)
@@ -130,12 +131,6 @@ public abstract class AbstractProcessingService {
             annotation.setOdsBatchID(event.getBatchId());
           }
         });
-  }
-
-  private Agent createGenerator() {
-    return AgentUtils.createAgent(applicationProperties.getProcessorName(),
-        applicationProperties.getProcessorHandle(), PROCESSING_SERVICE,
-        DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
   protected List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {

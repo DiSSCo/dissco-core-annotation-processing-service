@@ -59,8 +59,8 @@ public class TestUtils {
   public static final Instant UPDATED = Instant.parse("2024-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
-  public static final String PROCESSOR_NAME = "annotation-processing-service";
-  public static final String PROCESSOR_HANDLE = "https://hdl.handle.net/anno-process-service-pid";
+  public static final String PROCESSOR_NAME = "DiSSCo Annotation Processing Service";
+  public static final String PROCESSOR_HANDLE = "https://doi.org/10.5281/zenodo.7533428";
   public static final String FDO_TYPE = "https://doi.org/21.T11148/cf458ca9ee1d44a5608f";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
       "3a36d684-deb8-8779-2753-caef497e9ed8");

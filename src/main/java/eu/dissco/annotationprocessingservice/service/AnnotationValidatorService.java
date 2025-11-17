@@ -2,9 +2,11 @@ package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.domain.AnnotationTargetType.DIGITAL_SPECIMEN;
+import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.createGenerator;
 import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.isTransformativeMotivation;
 
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
+import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.DigitalSpecimenRepository;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
@@ -24,6 +26,7 @@ import io.github.dissco.core.annotationlogic.schema.Identifier.DctermsType;
 import io.github.dissco.core.annotationlogic.schema.Identifier.OdsGupriLevel;
 import io.github.dissco.core.annotationlogic.schema.Identifier.OdsIdentifierStatus;
 import io.github.dissco.core.annotationlogic.schema.OaHasSelector;
+import io.github.dissco.core.annotationlogic.schema.OdsHasRole;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -43,6 +46,7 @@ public class AnnotationValidatorService {
   private final AnnotationValidator annotationValidator;
   private final DigitalSpecimenRepository digitalSpecimenRepository;
   private final FdoProperties fdoProperties;
+  private final ApplicationProperties applicationProperties;
   private static final String PLACEHOLDER_HANDLE = "https://hdl.handle.net/20.5000.1025/AAA-BBB-CCC";
   private static final int PLACEHOLDER_VERSION = 1;
 
@@ -78,7 +82,7 @@ public class AnnotationValidatorService {
           log.warn(
               "Annotation attempting to target a specimen that does not exist. Can not find target {}",
               annotation.getOaHasTarget().getDctermsIdentifier());
-          throw new InvalidAnnotationException(
+          throw new AnnotationValidationException(
               "Target " + annotation.getOaHasTarget().getDctermsIdentifier()
                   + " of incoming annotation does not exist");
         }
@@ -119,8 +123,8 @@ public class AnnotationValidatorService {
         .withOaMotivatedBy(annotationProcessingRequest.getOaMotivatedBy())
         .withOaHasTarget(getTarget(annotationProcessingRequest))
         .withOaHasBody(getBody(annotationProcessingRequest))
-        .withDctermsCreator(getAgent(annotationProcessingRequest))
-        .withAsGenerator(getAgent(annotationProcessingRequest))
+        .withDctermsCreator(getAgent(annotationProcessingRequest.getDctermsCreator()))
+        .withAsGenerator(getAgent(createGenerator(applicationProperties)))
         .withDctermsIssued(Date.from(timestamp))
         .withDctermsModified(Date.from(timestamp))
         .withDctermsCreated(annotationProcessingRequest.getDctermsCreated())
@@ -157,16 +161,28 @@ public class AnnotationValidatorService {
     }
   }
 
-  private static Agent getAgent(AnnotationProcessingRequest annotationProcessingRequest) {
+  private static Agent getAgent(
+      eu.dissco.annotationprocessingservice.schema.Agent requestAgent) {
     var newAgent = new Agent();
-    if (annotationProcessingRequest.getDctermsCreator() != null) {
+    if (requestAgent != null) {
       newAgent
-          .withId(annotationProcessingRequest.getDctermsCreator().getId())
-          .withOdsHasIdentifiers(toIdentifiers(annotationProcessingRequest.getDctermsCreator()
-              .getOdsHasIdentifiers()));
-      if (annotationProcessingRequest.getDctermsCreator().getType() != null) {
+          .withId(requestAgent.getId())
+          .withSchemaName(requestAgent.getSchemaName())
+          .withOdsHasIdentifiers(toIdentifiers(requestAgent.getOdsHasIdentifiers()));
+      if (requestAgent.getType() != null) {
         newAgent.withType(Agent.Type.fromValue(
-            annotationProcessingRequest.getDctermsCreator().getType().value()));
+            requestAgent.getType().value()));
+      }
+      var roles = new ArrayList<OdsHasRole>();
+      for (var role: requestAgent.getOdsHasRoles()){
+        roles.add(
+            new OdsHasRole()
+                .withSchemaRoleName(role.getSchemaRoleName())
+                .withSchemaStartDate(role.getSchemaStartDate())
+                .withSchemaEndDate(role.getSchemaEndDate())
+                .withType(role.getType())
+        );
+        newAgent.withOdsHasRoles(roles);
       }
     }
     return newAgent;
@@ -185,8 +201,7 @@ public class AnnotationValidatorService {
       List<eu.dissco.annotationprocessingservice.schema.Identifier> requestIdentifiers) {
     var identifierList = new ArrayList<Identifier>();
     for (var identifier : requestIdentifiers) {
-      var newIdentifier = new Identifier();
-      new Identifier()
+      var newIdentifier = new Identifier()
           .withId(identifier.getId())
           .withType(identifier.getType())
           .withDctermsTitle(identifier.getDctermsTitle())

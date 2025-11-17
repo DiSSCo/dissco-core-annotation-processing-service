@@ -70,8 +70,6 @@ class ProcessingAutoAcceptedServiceTest {
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private ApplicationProperties applicationProperties;
-  @Mock
   private AnnotationValidatorService annotationValidator;
   @Mock
   private MasJobRecordService masJobRecordService;
@@ -94,7 +92,7 @@ class ProcessingAutoAcceptedServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingAutoAcceptedService(repository, elasticRepository,
-        rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        rabbitMqPublisherService, fdoRecordService, handleComponent, new ApplicationProperties(),
         annotationValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService,
         fdoProperties, rollbackService, annotationHasher);
@@ -120,10 +118,6 @@ class ProcessingAutoAcceptedServiceTest {
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -146,10 +140,6 @@ class ProcessingAutoAcceptedServiceTest {
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -182,10 +172,6 @@ class ProcessingAutoAcceptedServiceTest {
         Map.of(ANNOTATION_HASH, BARE_ID, ANNOTATION_HASH_2, TARGET_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -202,8 +188,6 @@ class ProcessingAutoAcceptedServiceTest {
     var annotationRequest = givenAutoAcceptedRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     doThrow(DataAccessException.class).when(repository)
         .createMergedAnnotationRecords(anyList());
 
@@ -239,10 +223,6 @@ class ProcessingAutoAcceptedServiceTest {
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     doThrow(IOException.class).when(elasticRepository).indexAnnotations(anyList());
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -260,14 +240,8 @@ class ProcessingAutoAcceptedServiceTest {
     var annotationRequest = givenAutoAcceptedRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     given(bulkResponse.errors()).willReturn(true);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -288,12 +262,8 @@ class ProcessingAutoAcceptedServiceTest {
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishCreateEvent(givenAcceptedAnnotation());
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When

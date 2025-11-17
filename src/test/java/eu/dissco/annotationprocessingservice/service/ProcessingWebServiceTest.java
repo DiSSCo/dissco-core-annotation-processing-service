@@ -71,8 +71,6 @@ class ProcessingWebServiceTest {
   @Mock
   private HandleComponent handleComponent;
   @Mock
-  private ApplicationProperties applicationProperties;
-  @Mock
   private AnnotationValidatorService annotationValidator;
   @Mock
   private MasJobRecordService masJobRecordService;
@@ -93,7 +91,7 @@ class ProcessingWebServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
-        rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
+        rabbitMqPublisherService, fdoRecordService, handleComponent, new ApplicationProperties(),
         annotationValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
         fdoProperties, rollbackService, annotationHasher);
 
@@ -119,10 +117,6 @@ class ProcessingWebServiceTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -143,10 +137,6 @@ class ProcessingWebServiceTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
     var expected = givenAnnotationProcessedWeb().withOaMotivation(
         Annotation.OaMotivation.OA_EDITING).withOdsMergingDecisionStatus(
@@ -171,15 +161,11 @@ class ProcessingWebServiceTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     doAnswer(invocation -> {
       var args = invocation.getArguments();
       ((Annotation) args[0]).withOdsBatchID(BATCH_ID);
       return null;
     }).when(annotationBatchRecordService).mintBatchId(any());
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -233,10 +219,6 @@ class ProcessingWebServiceTest {
     var annotationRequest = givenAnnotationRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_ID);
     doThrow(IOException.class).when(elasticRepository).indexAnnotation(any(Annotation.class));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -252,16 +234,10 @@ class ProcessingWebServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     given(handleComponent.postHandle(any())).willReturn(BARE_ID);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.NotFound);
     given(elasticRepository.indexAnnotation(givenAnnotationProcessedWeb())).willReturn(
         indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -280,12 +256,8 @@ class ProcessingWebServiceTest {
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Created);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishCreateEvent(givenAnnotationProcessedWeb());
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -323,10 +295,6 @@ class ProcessingWebServiceTest {
     given(indexResponse.result()).willReturn(Result.Updated);
     given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -443,10 +411,6 @@ class ProcessingWebServiceTest {
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -462,8 +426,6 @@ class ProcessingWebServiceTest {
   void testDataAccessExceptionNewAnnotation() throws Exception {
     var annotationRequest = givenAnnotationRequest();
     given(handleComponent.postHandle(any())).willReturn(ID);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     doThrow(DataAccessException.class).when(repository)
         .createAnnotationRecord(any(Annotation.class));
 
