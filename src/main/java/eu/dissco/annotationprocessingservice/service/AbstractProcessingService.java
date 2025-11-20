@@ -3,6 +3,8 @@ package eu.dissco.annotationprocessingservice.service;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.domain.AgentRoleType.PROCESSING_SERVICE;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
+import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.createGenerator;
+import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.isTransformativeMotivation;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
@@ -10,7 +12,6 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
@@ -60,17 +61,13 @@ public abstract class AbstractProcessingService {
   protected final FdoRecordService fdoRecordService;
   protected final HandleComponent handleComponent;
   protected final ApplicationProperties applicationProperties;
-  protected final AnnotationValidatorComponent schemaValidator;
+  protected final AnnotationValidatorService annotationValidator;
   protected final MasJobRecordService masJobRecordService;
   protected final BatchAnnotationService batchAnnotationService;
   protected final AnnotationBatchRecordService annotationBatchRecordService;
   protected final FdoProperties fdoProperties;
   protected final RollbackService rollbackService;
   private final AnnotationHasher annotationHasher;
-  private static final Set<AnnotationProcessingRequest.OaMotivation> TRANSFORMATIVE_MOTIVATIONS = Set.of(
-      AnnotationProcessingRequest.OaMotivation.ODS_ADDING,
-      AnnotationProcessingRequest.OaMotivation.OA_EDITING,
-      AnnotationProcessingRequest.OaMotivation.ODS_DELETING);
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {
@@ -110,18 +107,13 @@ public abstract class AbstractProcessingService {
         .withOaHasBody(annotationRequest.getOaHasBody())
         .withDctermsCreator(annotationRequest.getDctermsCreator())
         .withDctermsCreated(annotationRequest.getDctermsCreated())
-        .withAsGenerator(createGenerator())
+        .withAsGenerator(createGenerator(applicationProperties))
         .withDctermsIssued(Date.from(timestamp))
         .withDctermsModified(Date.from(timestamp))
         .withOdsJobID(jobId)
         .withOdsPlaceInBatch(annotationRequest.getOdsPlaceInBatch())
         .withOdsBatchID(annotationRequest.getOdsBatchID())
         .withOdsMergingDecisionStatus(mergingDecisionStatus);
-  }
-
-  private static boolean isTransformativeMotivation(
-      AnnotationProcessingRequest.OaMotivation oaMotivation) {
-    return TRANSFORMATIVE_MOTIVATIONS.contains(oaMotivation);
   }
 
   protected Annotation buildAnnotation(AnnotationProcessingRequest annotationRequest, String id,
@@ -139,12 +131,6 @@ public abstract class AbstractProcessingService {
             annotation.setOdsBatchID(event.getBatchId());
           }
         });
-  }
-
-  private Agent createGenerator() {
-    return AgentUtils.createAgent(applicationProperties.getProcessorName(),
-        applicationProperties.getProcessorHandle(), PROCESSING_SERVICE,
-        DctermsType.DOI.value(), Type.SCHEMA_SOFTWARE_APPLICATION);
   }
 
   protected List<String> processEqualAnnotations(Set<Annotation> currentAnnotations) {

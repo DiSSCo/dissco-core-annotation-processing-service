@@ -32,7 +32,7 @@ class AnnotationHasherTest {
     var result = annotationHasher.getAnnotationHash(givenAnnotationRequest());
 
     // Then
-    assertThat(result).isEqualTo(UUID.fromString("a738fa25-5709-06e7-6a0e-4232deb8c928"));
+    assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
   }
 
   @Test
@@ -55,7 +55,7 @@ class AnnotationHasherTest {
             new AnnotationTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
-                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.toString())));
+                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.getFdoType())));
 
     // Then
     assertThat(result).isEqualTo(expected);

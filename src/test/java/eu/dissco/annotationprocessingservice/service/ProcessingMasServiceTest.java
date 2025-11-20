@@ -10,7 +10,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID_ALT;
 import static eu.dissco.annotationprocessingservice.TestUtils.JOB_ID;
-import static eu.dissco.annotationprocessingservice.TestUtils.PROCESSOR_HANDLE;
 import static eu.dissco.annotationprocessingservice.TestUtils.UPDATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAggregationRating;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationBatchMetadataLatitudeSearch;
@@ -51,12 +50,12 @@ import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.MasJobRecord;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
+import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
@@ -90,8 +89,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -99,21 +96,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ProcessingMasServiceTest {
 
-  private final Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
   @Mock
-  AnnotationHasher annotationHasher;
+  private AnnotationHasher annotationHasher;
   @Mock
-  AnnotationValidatorComponent schemaValidator;
+  private AnnotationValidatorService annotationValidator;
   @Mock
-  BatchAnnotationService batchAnnotationService;
+  private BatchAnnotationService batchAnnotationService;
   @Mock
-  AnnotationBatchRecordService annotationBatchRecordService;
-  @Captor
-  ArgumentCaptor<List<Annotation>> captor;
-  Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-  Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
-  MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
-  MockedStatic<UUID> mockedUuid;
+  private AnnotationBatchRecordService annotationBatchRecordService;
+  private final Clock updatedClock = Clock.fixed(UPDATED, ZoneOffset.UTC);
+  private MockedStatic<Clock> mockedClock;
+  private MockedStatic<UUID> mockedUuid;
+  private MockedStatic<Instant> mockedStatic;
   @Mock
   private AnnotationRepository repository;
   @Mock
@@ -127,14 +121,11 @@ class ProcessingMasServiceTest {
   @Mock
   private MasJobRecordService masJobRecordService;
   @Mock
-  private ApplicationProperties applicationProperties;
-  @Mock
   private BulkResponse bulkResponse;
   @Mock
   private FdoProperties fdoProperties;
   @Mock
-  RollbackService rollbackService;
-  private MockedStatic<Instant> mockedStatic;
+  private RollbackService rollbackService;
   private ProcessingMasService service;
 
   private static Stream<Arguments> unequalAnnotations() {
@@ -154,11 +145,14 @@ class ProcessingMasServiceTest {
   @BeforeEach
   void setup() {
     service = new ProcessingMasService(repository, elasticRepository,
-        rabbitMqPublisherService, fdoRecordService, handleComponent, applicationProperties,
-        masJobRecordService, annotationHasher, schemaValidator, batchAnnotationService,
+        rabbitMqPublisherService, fdoRecordService, handleComponent, new ApplicationProperties(),
+        masJobRecordService, annotationHasher, annotationValidator, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService);
+    Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
+    Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
     mockedStatic = mockStatic(Instant.class);
     mockedStatic.when(Instant::now).thenReturn(instant);
+    mockedClock = mockStatic(Clock.class);
     mockedClock.when(Clock::systemUTC).thenReturn(clock);
     mockedUuid = mockStatic(UUID.class);
     mockedUuid.when(UUID::randomUUID).thenReturn(ANNOTATION_HASH_3);
@@ -182,15 +176,11 @@ class ProcessingMasServiceTest {
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(
         annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested), any())).willReturn(
         Optional.empty());
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -211,19 +201,14 @@ class ProcessingMasServiceTest {
         BATCH_ID);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(Optional.empty());
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -258,6 +243,23 @@ class ProcessingMasServiceTest {
   }
 
   @Test
+  void testAnnotationValidationFailed() throws Exception {
+    // Given
+    var annotationEvent = givenAnnotationEvent();
+    doThrow(AnnotationValidationException.class).when(annotationValidator)
+        .validateEvent(annotationEvent);
+
+    // When
+    assertThrows(AnnotationValidationException.class,
+        () -> service.handleMessage(annotationEvent));
+
+    // Then
+    then(rollbackService).shouldHaveNoMoreInteractions();
+    then(repository).shouldHaveNoInteractions();
+    then(elasticRepository).shouldHaveNoInteractions();
+  }
+
+  @Test
   void testNewMessagePartialElasticFailure() throws Exception {
     // Given
     var annotation = givenAnnotationRequest();
@@ -277,7 +279,8 @@ class ProcessingMasServiceTest {
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(
-        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested), any())).willReturn(
+        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested),
+            any())).willReturn(
         Optional.empty());
 
     // When
@@ -296,7 +299,8 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = true;
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willThrow(PidCreationException.class);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
@@ -314,16 +318,13 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishCreateEvent(any(
         Annotation.class));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 
@@ -333,7 +334,8 @@ class ProcessingMasServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(rollbackService).should().rollbackBatchIds(Optional.empty());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
@@ -346,16 +348,13 @@ class ProcessingMasServiceTest {
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     var event = givenAnnotationEvent();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishCreateEvent(any(
         Annotation.class));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
@@ -369,7 +368,8 @@ class ProcessingMasServiceTest {
     then(rollbackService).should()
         .rollbackNewAnnotations(anyList(), eq(true), eq(true));
     then(rollbackService).should().rollbackBatchIds(Optional.of(givenBatchIdMap()));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
@@ -380,16 +380,16 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(
-        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested), any())).willReturn(
+        annotationBatchRecordService.mintBatchIds(any(), eq(batchingRequested),
+            any())).willReturn(
         Optional.empty());
 
     // When
@@ -431,7 +431,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -460,7 +461,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
@@ -496,9 +498,6 @@ class ProcessingMasServiceTest {
     var equalAnnotationHashed = new HashedAnnotation(
         givenAnnotationProcessed().withId(equalId).withOdsVersion(1)
             .withOaHasTarget(givenOaTarget("equalTarget")), ANNOTATION_HASH_3);
-
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
     given(repository.getAnnotationFromHash(any())).willReturn(
@@ -517,8 +516,6 @@ class ProcessingMasServiceTest {
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(annotationBatchRecordService.mintBatchIds(anyList(),
         eq(batchingRequested), any())).willReturn(Optional.empty());
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     var event = new AnnotationProcessingEvent(JOB_ID,
@@ -578,7 +575,6 @@ class ProcessingMasServiceTest {
     given(fdoRecordService.buildPatchHandleRequest(
         List.of(new HashedAnnotation(changedAnnotation, any()))))
         .willReturn(givenPatchRequest());
-    given(applicationProperties.getProcessorHandle()).willReturn(PROCESSOR_HANDLE);
     given(fdoRecordService.buildPostHandleRequestHash(
         List.of(new HashedAnnotationRequest(newAnnotationRequest, any())))).willReturn(
         givenPostRequest());
@@ -589,8 +585,6 @@ class ProcessingMasServiceTest {
         new MasJobRecord(JOB_ID, batchingRequested, null));
     given(annotationBatchRecordService.mintBatchIds(eq(List.of(newAnnotation)),
         eq(batchingRequested), any())).willReturn(Optional.of(givenBatchIdMap()));
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -638,7 +632,8 @@ class ProcessingMasServiceTest {
     // Given
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(false);
@@ -661,7 +656,8 @@ class ProcessingMasServiceTest {
     // Given
     var annotation = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
@@ -669,17 +665,18 @@ class ProcessingMasServiceTest {
         List.of(givenRollbackCreationRequest()));
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, false, null));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
+    assertThatThrownBy(
+        () -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -710,10 +707,6 @@ class ProcessingMasServiceTest {
         List.of(givenRollbackCreationRequest()));
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, false, null));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -723,8 +716,10 @@ class ProcessingMasServiceTest {
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(false), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
@@ -733,7 +728,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotation = givenAnnotationRequest().withId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
@@ -743,26 +739,28 @@ class ProcessingMasServiceTest {
         List.of(givenRollbackCreationRequest()));
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        "https://hdl.handle.net/anno-process-service-pid");
 
     // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
+    assertThatThrownBy(
+        () -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
         FailedProcessingException.class);
 
     // Then
     then(handleComponent).should().updateHandle(anyList());
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
 
   @Test
   void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
+
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest().withId(ID);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
     doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
@@ -779,7 +777,8 @@ class ProcessingMasServiceTest {
         FailedProcessingException.class);
 
     // Then
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
+    then(masJobRecordService).should()
+        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
   }
 
@@ -854,20 +853,15 @@ class ProcessingMasServiceTest {
         JOB_ID, List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -891,20 +885,15 @@ class ProcessingMasServiceTest {
     var event = new AnnotationProcessingEvent(JOB_ID, List.of(annotationRequest), null, null);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
@@ -926,12 +915,9 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
     doThrow(DataAccessException.class).when(repository).createAnnotationRecordsHashed(anyList()
     );
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
@@ -944,7 +930,8 @@ class ProcessingMasServiceTest {
         () -> service.handleMessage(givenAnnotationEvent(annotationRequest)));
 
     // Then
-    then(rollbackService).should().rollbackNewAnnotationsHash(anyList(), eq(false), eq(false), eq(Optional.empty()));
+    then(rollbackService).should()
+        .rollbackNewAnnotationsHash(anyList(), eq(false), eq(false), eq(Optional.empty()));
   }
 
   @Test
@@ -953,7 +940,8 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
+    given(repository.getAnnotationFromHash(any())).willReturn(
+        List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
@@ -979,21 +967,15 @@ class ProcessingMasServiceTest {
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, ErrorCode.TIMEOUT);
     var event = givenAnnotationEvent(annotationRequest);
     given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
+    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
+        new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(applicationProperties.getProcessorHandle()).willReturn(
-        PROCESSOR_HANDLE);
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr
-    );
+    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
     given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
         eq(event))).willReturn(
         Optional.of(givenBatchIdMap()));
-    given(applicationProperties.getProcessorName()).willReturn(
-        "annotation-processing-service");
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When

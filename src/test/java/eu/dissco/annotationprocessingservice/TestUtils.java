@@ -34,6 +34,12 @@ import eu.dissco.annotationprocessingservice.schema.OdsHasAggregateRating;
 import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
 import eu.dissco.annotationprocessingservice.utils.AgentUtils;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsLivingOrPreserved;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsPhysicalSpecimenIDType;
+import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsTopicDiscipline;
+import io.github.dissco.core.annotationlogic.schema.Identification;
+import io.github.dissco.core.annotationlogic.schema.TaxonIdentification;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
@@ -53,8 +59,8 @@ public class TestUtils {
   public static final Instant UPDATED = Instant.parse("2024-02-17T09:50:27.391Z");
   public static final String CREATOR = "3fafe98f-1bf9-4927-b9c7-4ba070761a72";
   public static final String JOB_ID = "20.5000.1025/7YC-RGZ-LL1";
-  public static final String PROCESSOR_NAME = "annotation-processing-service";
-  public static final String PROCESSOR_HANDLE = "https://hdl.handle.net/anno-process-service-pid";
+  public static final String PROCESSOR_NAME = "DiSSCo Annotation Processing Service";
+  public static final String PROCESSOR_HANDLE = "https://doi.org/10.5281/zenodo.7533428";
   public static final String FDO_TYPE = "https://doi.org/21.T11148/cf458ca9ee1d44a5608f";
   public static final UUID ANNOTATION_HASH = UUID.fromString(
       "3a36d684-deb8-8779-2753-caef497e9ed8");
@@ -218,7 +224,7 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
-        .withOdsFdoType(targetType.toString())
+        .withOdsFdoType(targetType.getFdoType())
         .withDctermsIdentifier(DOI_PROXY + targetId)
         .withOaHasSelector(selector);
   }
@@ -226,7 +232,7 @@ public class TestUtils {
   public static OaHasSelector givenRequestSelector() {
     return new OaHasSelector()
         .withAdditionalProperty("ods:term",
-            "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
+            "$['ods:hasEvents'][0]['ods:hasLocation']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
@@ -234,7 +240,7 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withType("ods:DigitalSpecimen")
-        .withOdsFdoType(targetType.toString())
+        .withOdsFdoType(targetType.getFdoType())
         .withDctermsIdentifier(DOI_PROXY + targetId)
         .withOaHasSelector(givenSelector());
   }
@@ -244,7 +250,7 @@ public class TestUtils {
     return new AnnotationTarget()
         .withId(DOI_PROXY + targetId)
         .withDctermsIdentifier(DOI_PROXY + targetId)
-        .withOdsFdoType(targetType.toString())
+        .withOdsFdoType(targetType.getFdoType())
         .withOaHasSelector(selector)
         .withType("ods:DigitalSpecimen");
   }
@@ -252,7 +258,7 @@ public class TestUtils {
   public static OaHasSelector givenSelector() {
     return new OaHasSelector()
         .withAdditionalProperty("ods:term",
-            "$['ods:hasEvents'][1]['ods:hasLocation']['dwc:locality']")
+            "$['ods:hasEvents'][0]['ods:hasLocation']['dwc:locality']")
         .withAdditionalProperty("@type", "ods:TermSelector");
   }
 
@@ -513,7 +519,47 @@ public class TestUtils {
         JOB_ID,
         "MAS Failed"
     );
+  }
 
+  public static DigitalSpecimen givenDigitalSpecimen() {
+    return new DigitalSpecimen()
+        .withDctermsIdentifier(DOI_PROXY + TARGET_ID)
+        .withId(DOI_PROXY + TARGET_ID)
+        .withOdsMidsLevel(1)
+        .withOdsVersion(1)
+        .withType("ods:DigitalSpecimen")
+        .withOdsFdoType("https://doi.org/21.T11148/894b1e6cad57e921764e")
+        .withOdsOrganisationID("https://ror.org/0443cwa12")
+        .withOdsOrganisationName("National Museum of Natural History")
+        .withOdsPhysicalSpecimenIDType(OdsPhysicalSpecimenIDType.GLOBAL)
+        .withOdsPhysicalSpecimenID("https://geocollections.info/specimen/23602")
+        .withOdsNormalisedPhysicalSpecimenID("https://geocollections.info/specimen/23602")
+        .withOdsSpecimenName("specimen")
+        .withOdsTopicDiscipline(OdsTopicDiscipline.ZOOLOGY)
+        .withOdsSourceSystemID(ID_ALT)
+        .withOdsSourceSystemName("Source System")
+        .withOdsLivingOrPreserved(OdsLivingOrPreserved.PRESERVED)
+        .withDctermsLicense("http://creativecommons.org/licenses/by-nc/4.0/")
+        .withDctermsCreated(Date.from(CREATED))
+        .withOdsIsMarkedAsType(true)
+        .withOdsIsKnownToContainMedia(false)
+        .withDctermsModified("2022-11-01T09:59:24.000Z")
+        .withOdsHasIdentifications(List.of(
+            new Identification()
+                .withType("ods:Identification")
+                .withOdsIsVerifiedIdentification(true)
+                .withOdsHasTaxonIdentifications(List.of(
+                    new TaxonIdentification()
+                        .withType("ods:TaxonIdentification")
+                        .withDwcKingdom("Animalia")
+                        .withDwcPhylum("Chordata")
+                        .withDwcClass("Actinopterygii")
+                        .withDwcOrder("Tetraodontiformes")
+                        .withDwcFamily("Molidae")
+                        .withDwcGenus("Mola")
+                        .withDwcScientificName("Mola mola (Linnaeus, 1758)")
+                ))
+        ));
   }
 
 

@@ -1,6 +1,7 @@
 package eu.dissco.annotationprocessingservice.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -10,15 +11,16 @@ public enum AnnotationTargetType {
   @JsonProperty("https://doi.org/21.T11148/bbad8c4e101e8af01115") MEDIA_OBJECT(
       "https://doi.org/21.T11148/bbad8c4e101e8af01115");
 
-  private final String name;
+  @Getter
+  private final String fdoType;
 
-  AnnotationTargetType(String name) {
-    this.name = name;
+  AnnotationTargetType(String fdoType) {
+    this.fdoType = fdoType;
   }
 
   public static AnnotationTargetType fromString(String name) {
     for (AnnotationTargetType type : AnnotationTargetType.values()) {
-      if (type.name.equals(name)) {
+      if (type.fdoType.equals(name)) {
         return type;
       }
     }
@@ -26,8 +28,4 @@ public enum AnnotationTargetType {
     throw new IllegalStateException();
   }
 
-  @Override
-  public String toString() {
-    return this.name;
-  }
 }

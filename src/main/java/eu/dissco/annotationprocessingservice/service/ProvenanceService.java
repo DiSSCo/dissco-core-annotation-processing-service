@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ProvenanceService {
 
+
   private final ObjectMapper mapper;
   private final ApplicationProperties properties;
 

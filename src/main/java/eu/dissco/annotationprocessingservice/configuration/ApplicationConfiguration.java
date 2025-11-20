@@ -26,6 +26,8 @@ public class ApplicationConfiguration {
       "yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneOffset.UTC);
 
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
+  public static final String DOI_PROXY = "https://doi.org/";
+
 
   @Bean
   public ObjectMapper objectMapper() {

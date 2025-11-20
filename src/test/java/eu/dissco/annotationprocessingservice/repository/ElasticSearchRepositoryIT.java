@@ -177,7 +177,7 @@ class ElasticSearchRepositoryIT {
     var batchMetadata = new AnnotationBatchMetadata(1, List.of(
         givenSearchParamCountry(),
         new SearchParam(
-            "digitalSpecimenWrapper.thisFieldIsNotPresent",
+            "digitalspecimen.thisFieldIsNotPresent",
             ""
         )));
 

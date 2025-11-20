@@ -26,6 +26,7 @@ public class FdoRecordService {
   private static final String TYPE = "type";
   private static final String DATA = "data";
   private static final String ID = "id";
+
   private final ObjectMapper mapper;
   private final FdoProperties fdoProperties;
 

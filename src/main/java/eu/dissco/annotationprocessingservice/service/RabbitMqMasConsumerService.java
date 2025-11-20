@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 @AllArgsConstructor
 public class RabbitMqMasConsumerService {
 
+
   private final ObjectMapper mapper;
   private final ProcessingMasService service;
 

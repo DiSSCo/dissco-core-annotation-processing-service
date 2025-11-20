@@ -7,7 +7,6 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
-import eu.dissco.annotationprocessingservice.component.AnnotationValidatorComponent;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.FailedMasEvent;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
@@ -50,12 +49,13 @@ public class ProcessingMasService extends AbstractProcessingService {
       RabbitMqPublisherService rabbitMqPublisherService, FdoRecordService fdoRecordService,
       HandleComponent handleComponent, ApplicationProperties applicationProperties,
       MasJobRecordService masJobRecordService, AnnotationHasher annotationHasher,
-      AnnotationValidatorComponent schemaValidator, BatchAnnotationService batchAnnotationService,
+      AnnotationValidatorService schemaValidator, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
       RollbackService rollbackService) {
     super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
         handleComponent, applicationProperties, schemaValidator, masJobRecordService,
-        batchAnnotationService, annotationBatchRecordService, fdoProperties, rollbackService,  annotationHasher);
+        batchAnnotationService, annotationBatchRecordService, fdoProperties, rollbackService,
+        annotationHasher);
   }
 
   private static List<String> getIdListFromUpdates(Set<UpdatedAnnotation> updatedAnnotations) {
@@ -81,7 +81,7 @@ public class ProcessingMasService extends AbstractProcessingService {
       log.info("MAS job completed without any annotations");
       masJobRecordService.markEmptyMasJobRecordAsComplete(event.getJobId(), isBatchResult);
     } else {
-      schemaValidator.validateEvent(event);
+      annotationValidator.validateEvent(event);
       var masJobRecord = masJobRecordService.getMasJobRecord(event.getJobId());
       var processResult = processAnnotations(event);
       var equalIds = processEqualAnnotations(processResult.equalAnnotations());
@@ -99,7 +99,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     }
   }
 
-  private void checkForTimeoutErrors(ErrorCode errorCode, String jobId) {
+  private static void checkForTimeoutErrors(ErrorCode errorCode, String jobId) {
     if (ErrorCode.TIMEOUT.equals(errorCode)) {
       log.warn("MJR {} previously marked as timed out. Removing error.", jobId);
     }
