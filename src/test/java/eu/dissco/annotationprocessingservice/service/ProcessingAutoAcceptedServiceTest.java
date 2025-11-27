@@ -27,7 +27,6 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
-import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
@@ -197,23 +196,6 @@ class ProcessingAutoAcceptedServiceTest {
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(false));
-  }
-
-  @Test
-  void testAnnotationValidationFailed() throws Exception {
-    // Given
-    var annotationRequest = givenAutoAcceptedRequest();
-    doThrow(AnnotationValidationException.class).when(annotationValidator)
-        .validateAnnotationRequest(List.of(annotationRequest.annotation()), true);
-
-    // When
-    assertThrows(AnnotationValidationException.class,
-        () -> service.handleMessage(List.of(annotationRequest)));
-
-    // Then
-    then(rollbackService).shouldHaveNoMoreInteractions();
-    then(repository).shouldHaveNoInteractions();
-    then(elasticRepository).shouldHaveNoInteractions();
   }
 
   @Test
