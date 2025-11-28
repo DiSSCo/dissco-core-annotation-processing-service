@@ -1,7 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.HANDLE_PROXY;
-import static eu.dissco.annotationprocessingservice.domain.AgentRoleType.PROCESSING_SERVICE;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.createGenerator;
 import static eu.dissco.annotationprocessingservice.utils.ServiceUtils.isTransformativeMotivation;
@@ -25,16 +24,13 @@ import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Agent;
-import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
-import eu.dissco.annotationprocessingservice.schema.Identifier.DctermsType;
 import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
-import eu.dissco.annotationprocessingservice.utils.AgentUtils;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;

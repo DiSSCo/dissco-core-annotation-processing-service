@@ -7,7 +7,6 @@ import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.domain.HashedAutoAcceptedAnnotationRequest;
-import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -56,10 +55,8 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
   }
 
   public void handleMessage(List<AutoAcceptedAnnotation> autoAcceptedAnnotations)
-      throws FailedProcessingException, AnnotationValidationException {
+      throws FailedProcessingException {
     log.debug("Processing auto-accepted annotation: {}", autoAcceptedAnnotations);
-    annotationValidator.validateAnnotationRequest(autoAcceptedAnnotations.stream()
-        .map(AutoAcceptedAnnotation::annotation).toList(), true);
     var hashedAnnotations = autoAcceptedAnnotations.stream()
         .map(annotation -> new HashedAutoAcceptedAnnotationRequest(
             annotation.acceptingAgent(),
