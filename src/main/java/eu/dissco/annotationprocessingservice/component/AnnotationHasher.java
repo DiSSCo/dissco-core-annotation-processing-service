@@ -21,7 +21,7 @@ public class AnnotationHasher {
     ));
   }
 
-  private static String getAnnotationHashString(AnnotationProcessingRequest annotationRequest) {
+  private static String getAnnotationHashString(AnnotationProcessingRequest annotationRequest, boolean addValue) {
     String targetString = null;
     var selector = annotationRequest.getOaHasTarget().getOaHasSelector().getAdditionalProperties();
     var selectorType = SelectorType.fromString((String) selector.get("@type"));
@@ -30,14 +30,24 @@ public class AnnotationHasher {
       case FRAGMENT_SELECTOR -> targetString = selector.get("ac:hasROI").toString();
       case CLASS_SELECTOR -> targetString = (String) selector.get("ods:class");
     }
-
-    return annotationRequest.getOaHasTarget().getId() + "-" + targetString + "-" +
-        annotationRequest.getDctermsCreator().getId() + "-" + annotationRequest.getOaMotivation()
-        .value();
+    var stringToHash = new StringBuilder()
+        .append(annotationRequest.getOaHasTarget().getId())
+        .append("-")
+        .append(targetString)
+        .append("-")
+        .append(annotationRequest.getDctermsCreator().getId())
+        .append("-")
+        .append(annotationRequest.getOaMotivation().value());
+    if (addValue && annotationRequest.getOaHasBody() != null) {
+      stringToHash = stringToHash
+          .append("-")
+          .append(annotationRequest.getOaHasBody().getOaValue().getFirst());
+    }
+    return stringToHash.toString();
   }
 
-  public UUID getAnnotationHash(AnnotationProcessingRequest annotationRequest) {
-    var annotationString = getAnnotationHashString(annotationRequest);
+  public UUID getAnnotationHash(AnnotationProcessingRequest annotationRequest, boolean addValue) {
+    var annotationString = getAnnotationHashString(annotationRequest, addValue);
     var annotationHash = hashAnnotation(annotationString);
     return buildUuidFromHash(annotationHash);
   }

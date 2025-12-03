@@ -63,7 +63,7 @@ public abstract class AbstractProcessingService {
   protected final AnnotationBatchRecordService annotationBatchRecordService;
   protected final FdoProperties fdoProperties;
   protected final RollbackService rollbackService;
-  private final AnnotationHasher annotationHasher;
+  protected final AnnotationHasher annotationHasher;
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {
@@ -309,8 +309,8 @@ public abstract class AbstractProcessingService {
     rollbackService.rollbackNewAnnotations(annotationRollbacksElasticSuccess, true, true);
   }
 
-  protected UUID hashAnnotation(AnnotationProcessingRequest annotation) {
-    return annotationHasher.getAnnotationHash(annotation);
+  protected UUID hashAnnotation(AnnotationProcessingRequest annotation, boolean addValue) {
+    return annotationHasher.getAnnotationHash(annotation, addValue);
   }
 
   protected Map<UUID, String> postHandles(List<HashedAnnotationRequest> hashedAnnotations,

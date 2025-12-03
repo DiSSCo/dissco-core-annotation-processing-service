@@ -7,11 +7,13 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenRequestOaTarg
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +31,32 @@ class AnnotationHasherTest {
   @Test
   void hashTestFieldValueSelector() {
     // When
-    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest());
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest(), false);
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
+  }
+
+  @Test
+  void hashTestFieldValueSelectorWithValueNoBody() {
+    // When
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest().withOaHasBody(null), true);
+
+    // Then
+    assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
+  }
+
+  @Test
+  void hashTestFieldValueSelectorWithValue() {
+    // When
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest()
+        .withOaHasBody(
+            new AnnotationBody()
+                .withOaValue(List.of("value"))
+        ), true);
+
+    // Then
+    assertThat(result).isEqualTo(UUID.fromString("499f566b-a9d7-5e3d-9f54-9ca4f16c7dc1"));
   }
 
   @Test
@@ -55,7 +79,7 @@ class AnnotationHasherTest {
             new AnnotationTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
-                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.getFdoType())));
+                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.getFdoType())), false);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -71,7 +95,8 @@ class AnnotationHasherTest {
     // When
     var result = annotationHasher.getAnnotationHash(
         givenAnnotationRequest().withOaHasTarget(
-            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
+            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)),
+        false);
 
     // Then
     assertThat(result).isEqualTo(expected);

@@ -113,7 +113,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -135,7 +135,7 @@ class ProcessingAutoAcceptedServiceTest {
     var annotationRequest = new AutoAcceptedAnnotation(givenProcessingAgent(), annotation);
     var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING)
         .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -163,9 +163,9 @@ class ProcessingAutoAcceptedServiceTest {
     var annotationRequests = List.of(givenAutoAcceptedRequest(),
         new AutoAcceptedAnnotation(givenProcessingAgent(),
             givenAnnotationRequest().withOaHasBody(altBody)));
-    given(annotationHasher.getAnnotationHash(givenAutoAcceptedRequest().annotation())).willReturn(
+    given(annotationHasher.getAnnotationHash(givenAutoAcceptedRequest().annotation(), true)).willReturn(
         ANNOTATION_HASH);
-    given(annotationHasher.getAnnotationHash(annotationRequests.get(1).annotation())).willReturn(
+    given(annotationHasher.getAnnotationHash(annotationRequests.get(1).annotation(), true)).willReturn(
         ANNOTATION_HASH_2);
     given(handleComponent.postHandlesHashed(any())).willReturn(
         Map.of(ANNOTATION_HASH, BARE_ID, ANNOTATION_HASH_2, TARGET_ID));
@@ -185,7 +185,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testDataAccessExceptionNewAnnotation() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     doThrow(DataAccessException.class).when(repository)
         .createMergedAnnotationRecords(anyList());
@@ -202,7 +202,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationElasticIOException() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     doThrow(IOException.class).when(elasticRepository).indexAnnotations(anyList());
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
@@ -220,7 +220,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationElasticFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(true);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -240,7 +240,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationKafkaFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -261,7 +261,7 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     doThrow(PidCreationException.class).when(handleComponent).postHandlesHashed(any());
 
     // When
