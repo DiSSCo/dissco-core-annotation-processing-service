@@ -24,13 +24,16 @@ import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Agent;
+import eu.dissco.annotationprocessingservice.schema.Agent.Type;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
+import eu.dissco.annotationprocessingservice.schema.Identifier.DctermsType;
 import eu.dissco.annotationprocessingservice.schema.TombstoneMetadata;
+import eu.dissco.annotationprocessingservice.utils.AgentUtils;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
 import java.time.Instant;
@@ -63,7 +66,7 @@ public abstract class AbstractProcessingService {
   protected final AnnotationBatchRecordService annotationBatchRecordService;
   protected final FdoProperties fdoProperties;
   protected final RollbackService rollbackService;
-  private final AnnotationHasher annotationHasher;
+  protected final AnnotationHasher annotationHasher;
 
   protected static boolean annotationsAreEqual(Annotation currentAnnotation,
       Annotation annotation) {

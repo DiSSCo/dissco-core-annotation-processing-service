@@ -7,11 +7,13 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenRequestOaTarg
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
+import eu.dissco.annotationprocessingservice.schema.AnnotationBody;
 import eu.dissco.annotationprocessingservice.schema.AnnotationTarget;
 import eu.dissco.annotationprocessingservice.schema.OaHasSelector;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,28 @@ class AnnotationHasherTest {
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
+  }
+
+  @Test
+  void hashTestFieldValueSelectorWithValueNoBody() {
+    // When
+    var result = annotationHasher.getAnnotationHashWithValue(givenAnnotationRequest().withOaHasBody(null));
+
+    // Then
+    assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
+  }
+
+  @Test
+  void hashTestFieldValueSelectorWithValue() {
+    // When
+    var result = annotationHasher.getAnnotationHashWithValue(givenAnnotationRequest()
+        .withOaHasBody(
+            new AnnotationBody()
+                .withOaValue(List.of("value"))
+        ));
+
+    // Then
+    assertThat(result).isEqualTo(UUID.fromString("499f566b-a9d7-5e3d-9f54-9ca4f16c7dc1"));
   }
 
   @Test

@@ -13,6 +13,7 @@ import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.time.Instant;
 import java.util.Date;
@@ -80,6 +81,11 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
     log.info("Annotations have been successfully committed to database");
     indexElasticNewAnnotations(annotations);
     log.info("Annotations have been successfully indexed in elastic");
+  }
+
+  @Override
+  protected UUID hashAnnotation(AnnotationProcessingRequest annotation) {
+    return annotationHasher.getAnnotationHashWithValue(annotation);
   }
 
   private Annotation buildAutoAcceptedAnnotation(AutoAcceptedAnnotation autoAcceptedAnnotation,
