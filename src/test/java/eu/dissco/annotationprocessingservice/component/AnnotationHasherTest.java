@@ -31,7 +31,7 @@ class AnnotationHasherTest {
   @Test
   void hashTestFieldValueSelector() {
     // When
-    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest());
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest(), false);
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
@@ -40,7 +40,7 @@ class AnnotationHasherTest {
   @Test
   void hashTestFieldValueSelectorWithValueNoBody() {
     // When
-    var result = annotationHasher.getAnnotationHashWithValue(givenAnnotationRequest().withOaHasBody(null));
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest().withOaHasBody(null), true);
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("76db9609-87af-b6ae-9ac8-5f9c6eb0c56b"));
@@ -49,11 +49,11 @@ class AnnotationHasherTest {
   @Test
   void hashTestFieldValueSelectorWithValue() {
     // When
-    var result = annotationHasher.getAnnotationHashWithValue(givenAnnotationRequest()
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest()
         .withOaHasBody(
             new AnnotationBody()
                 .withOaValue(List.of("value"))
-        ));
+        ), true);
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("499f566b-a9d7-5e3d-9f54-9ca4f16c7dc1"));
@@ -79,7 +79,7 @@ class AnnotationHasherTest {
             new AnnotationTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
-                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.getFdoType())));
+                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.getFdoType())), false);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -95,7 +95,8 @@ class AnnotationHasherTest {
     // When
     var result = annotationHasher.getAnnotationHash(
         givenAnnotationRequest().withOaHasTarget(
-            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
+            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)),
+        false);
 
     // Then
     assertThat(result).isEqualTo(expected);

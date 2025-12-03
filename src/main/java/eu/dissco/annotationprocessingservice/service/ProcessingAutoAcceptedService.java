@@ -62,7 +62,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
         .map(annotation -> new HashedAutoAcceptedAnnotationRequest(
             annotation.acceptingAgent(),
             new HashedAnnotationRequest(annotation.annotation(),
-                hashAnnotation(annotation.annotation()))))
+                hashAnnotation(annotation.annotation(), true))))
         .collect(Collectors.toSet());
     var ids = postHandles(
         hashedAnnotations.stream().map(HashedAutoAcceptedAnnotationRequest::hashedRequest).toList(),
@@ -83,14 +83,9 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
     log.info("Annotations have been successfully indexed in elastic");
   }
 
-  @Override
-  protected UUID hashAnnotation(AnnotationProcessingRequest annotation) {
-    return annotationHasher.getAnnotationHashWithValue(annotation);
-  }
-
   private Annotation buildAutoAcceptedAnnotation(AutoAcceptedAnnotation autoAcceptedAnnotation,
       Map<UUID, String> ids) {
-    var id = HANDLE_PROXY + ids.get(hashAnnotation(autoAcceptedAnnotation.annotation()));
+    var id = HANDLE_PROXY + ids.get(hashAnnotation(autoAcceptedAnnotation.annotation(), true));
     var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), id, 1, null, true);
     addMergingInformation(autoAcceptedAnnotation, annotation);
     return annotation;

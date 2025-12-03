@@ -46,14 +46,8 @@ public class AnnotationHasher {
     return stringToHash.toString();
   }
 
-  public UUID getAnnotationHash(AnnotationProcessingRequest annotationRequest) {
-    var annotationString = getAnnotationHashString(annotationRequest, false);
-    var annotationHash = hashAnnotation(annotationString);
-    return buildUuidFromHash(annotationHash);
-  }
-
-  public UUID getAnnotationHashWithValue(AnnotationProcessingRequest annotationRequest){
-    var annotationString = getAnnotationHashString(annotationRequest, true);
+  public UUID getAnnotationHash(AnnotationProcessingRequest annotationRequest, boolean addValue) {
+    var annotationString = getAnnotationHashString(annotationRequest, addValue);
     var annotationHash = hashAnnotation(annotationString);
     return buildUuidFromHash(annotationHash);
   }
