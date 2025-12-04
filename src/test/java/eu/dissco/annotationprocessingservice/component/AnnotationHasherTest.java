@@ -29,7 +29,7 @@ class AnnotationHasherTest {
   @Test
   void hashTestFieldValueSelector() {
     // When
-    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest());
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest(), false);
 
     // Then
     assertThat(result).isEqualTo(UUID.fromString("a738fa25-5709-06e7-6a0e-4232deb8c928"));
@@ -55,7 +55,7 @@ class AnnotationHasherTest {
             new AnnotationTarget()
                 .withOaHasSelector(selector)
                 .withId(HANDLE_PROXY + TARGET_ID)
-                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.toString())));
+                .withType(AnnotationTargetType.DIGITAL_SPECIMEN.toString())), false);
 
     // Then
     assertThat(result).isEqualTo(expected);
@@ -71,10 +71,28 @@ class AnnotationHasherTest {
     // When
     var result = annotationHasher.getAnnotationHash(
         givenAnnotationRequest().withOaHasTarget(
-            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)));
+            givenRequestOaTarget(TARGET_ID, AnnotationTargetType.DIGITAL_SPECIMEN, selector)),
+        false);
 
     // Then
     assertThat(result).isEqualTo(expected);
   }
 
+  @Test
+  void hashTestFieldValueSelectorWithValueNoBody() {
+    // When
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest().withOaHasBody(null), true);
+
+    // Then
+    assertThat(result).isEqualTo(UUID.fromString("a738fa25-5709-06e7-6a0e-4232deb8c928"));
+  }
+
+  @Test
+  void hashTestFieldValueSelectorWithValue() {
+    // When
+    var result = annotationHasher.getAnnotationHash(givenAnnotationRequest(),true);
+
+    // Then
+    assertThat(result).isEqualTo(UUID.fromString("d1cee4d5-51e5-d51b-1dd1-b5e9ec21ed45"));
+  }
 }

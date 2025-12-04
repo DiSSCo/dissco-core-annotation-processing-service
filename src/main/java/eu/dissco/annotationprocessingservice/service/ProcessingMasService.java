@@ -110,7 +110,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     var changedAnnotations = new HashSet<UpdatedAnnotation>();
     var hashedAnnotations =
         event.getAnnotations().stream()
-            .map(annotation -> new HashedAnnotationRequest(annotation, hashAnnotation(annotation)))
+            .map(annotation -> new HashedAnnotationRequest(annotation, hashAnnotation(annotation, false)))
             .collect(Collectors.toSet());
     var existingAnnotations = repository.getAnnotationFromHash(
         hashedAnnotations.stream().map(HashedAnnotationRequest::hash).collect(Collectors.toSet()));

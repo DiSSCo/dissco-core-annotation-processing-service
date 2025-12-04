@@ -177,7 +177,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -210,7 +210,7 @@ class ProcessingMasServiceTest {
     var event = new AnnotationProcessingEvent(JOB_ID, List.of(givenAnnotationRequest()), null,
         BATCH_ID);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -268,7 +268,7 @@ class ProcessingMasServiceTest {
         null);
     Map<UUID, String> idMap = Map.of(ANNOTATION_HASH, BARE_ID, ANNOTATION_HASH_2,
         "20.5000.1025/ZZZ-YYY-XXX");
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2);
     given(handleComponent.postHandlesHashed(any())).willReturn(idMap);
     given(repository.getAnnotationFromHash(any())).willReturn(Collections.emptyList());
@@ -295,7 +295,7 @@ class ProcessingMasServiceTest {
   void testNewMessageHandleFailureBatchingRequested() throws Exception {
     // Given
     boolean batchingRequested = true;
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willThrow(PidCreationException.class);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
@@ -313,7 +313,7 @@ class ProcessingMasServiceTest {
       throws Exception {
     // Given
     boolean batchingRequested = false;
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -345,7 +345,7 @@ class ProcessingMasServiceTest {
     boolean batchingRequested = true;
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
     var event = givenAnnotationEvent();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -379,7 +379,7 @@ class ProcessingMasServiceTest {
       throws Exception {
     // Given
     boolean batchingRequested = false;
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
@@ -409,7 +409,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotation = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotation()));
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
@@ -430,7 +430,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
@@ -459,7 +459,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
@@ -499,7 +499,7 @@ class ProcessingMasServiceTest {
 
     given(applicationProperties.getProcessorHandle()).willReturn(
         "https://hdl.handle.net/anno-process-service-pid");
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(changedAnnotationOriginalHashed, equalAnnotationHashed));
@@ -570,7 +570,7 @@ class ProcessingMasServiceTest {
         List.of(givenBaseAnnotationForBatch(1, ID, BATCH_ID)),
         JOB_ID, List.of(batchMetadata), null);
 
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2).willReturn(ANNOTATION_HASH_3);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(changedAnnotationOriginalHashed, equalAnnotationHashed));
@@ -614,7 +614,7 @@ class ProcessingMasServiceTest {
   void testAnnotationsAreNotEqual(Annotation currentAnnotation) throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(new HashedAnnotation(currentAnnotation, ANNOTATION_HASH)));
     given(bulkResponse.errors()).willReturn(false);
@@ -637,7 +637,7 @@ class ProcessingMasServiceTest {
   void testUpdateMessageHandleDoesNotNeedUpdate() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
@@ -660,7 +660,7 @@ class ProcessingMasServiceTest {
   void testUpdateMessageElasticException() throws Exception {
     // Given
     var annotation = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(elasticRepository.indexAnnotations(anyList())).willThrow(
         IOException.class);
@@ -699,7 +699,7 @@ class ProcessingMasServiceTest {
         ANNOTATION_HASH_2);
     var event = new AnnotationProcessingEvent(JOB_ID, List.of(annotation, secondAnnotation), null,
         null);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH)
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH)
         .willReturn(ANNOTATION_HASH_2);
     given(repository.getAnnotationFromHash(any())).willReturn(
         List.of(givenHashedAnnotationAlt(), secondAnnotationCurrentHashed));
@@ -732,7 +732,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotation = givenAnnotationRequest().withId(ID);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
@@ -761,7 +761,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest().withId(ID);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(bulkResponse.errors()).willReturn(false);
     given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
@@ -853,7 +853,7 @@ class ProcessingMasServiceTest {
         List.of(givenAnnotationProcessed().withOdsBatchID(BATCH_ID)),
         JOB_ID, List.of(givenAnnotationBatchMetadataLatitudeSearch()), null);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -890,7 +890,7 @@ class ProcessingMasServiceTest {
     var annotationRequest = givenAnnotationRequest();
     var event = new AnnotationProcessingEvent(JOB_ID, List.of(annotationRequest), null, null);
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);
@@ -925,7 +925,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, ID));
     given(applicationProperties.getProcessorHandle()).willReturn(
@@ -952,7 +952,7 @@ class ProcessingMasServiceTest {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(any())).willReturn(List.of(givenHashedAnnotationAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
@@ -978,7 +978,7 @@ class ProcessingMasServiceTest {
     var annotationRequest = givenAnnotationRequest();
     var mjr = new MasJobRecord(JOB_ID, batchingRequested, ErrorCode.TIMEOUT);
     var event = givenAnnotationEvent(annotationRequest);
-    given(annotationHasher.getAnnotationHash(any())).willReturn(ANNOTATION_HASH);
+    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(new ArrayList<>());
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     given(bulkResponse.errors()).willReturn(false);

@@ -327,8 +327,8 @@ public abstract class AbstractProcessingService {
     rollbackService.rollbackNewAnnotations(annotationRollbacksElasticSuccess, true, true);
   }
 
-  protected UUID hashAnnotation(AnnotationProcessingRequest annotation) {
-    return annotationHasher.getAnnotationHash(annotation);
+  protected UUID hashAnnotation(AnnotationProcessingRequest annotation, boolean addValue) {
+    return annotationHasher.getAnnotationHash(annotation, addValue);
   }
 
   protected Map<UUID, String> postHandles(List<HashedAnnotationRequest> hashedAnnotations,
