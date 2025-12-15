@@ -26,4 +26,7 @@ public class ApplicationProperties {
   @NotBlank
   private String createUpdateTombstoneEventType = "https://doi.org/21.T11148/d7570227982f70256af3";
 
+  @NotNull
+  private boolean validateAnnotations = false;
+
 }
