@@ -15,7 +15,7 @@ public class RabbitMqProperties {
   @Positive
   private int batchSize = 500;
   @NotNull
-  private CreateUpdateTombstone createUpdateTombstone = new CreateUpdateTombstone();
+  private Provenance provenance = new Provenance();
   @NotNull
   private AutoAcceptedAnnotation autoAcceptedAnnotation = new AutoAcceptedAnnotation();
   @NotNull
@@ -23,13 +23,13 @@ public class RabbitMqProperties {
 
   @Data
   @Validated
-  public static class CreateUpdateTombstone {
+  public static class Provenance {
 
     @NotBlank
-    private String exchangeName = "create-update-tombstone-exchange";
+    private String exchangeName = "provenance-exchange";
 
     @NotNull
-    private String routingKeyName = "create-update-tombstone";
+    private String routingKeyName = "provenance";
   }
 
   @Data
