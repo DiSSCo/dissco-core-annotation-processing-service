@@ -4,13 +4,9 @@ import io.github.dissco.annotationlogic.configuration.AnnotationLogicLibraryConf
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableCaching
-@EnableScheduling
 @Import({AnnotationLogicLibraryConfiguration.class})
 @ConfigurationPropertiesScan
 public class AnnotationProcessingServiceApplication {
