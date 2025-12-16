@@ -38,6 +38,7 @@ public class WebClientConfiguration {
     return authorizedClientManager;
   }
 
+  @Bean
   public WebClient handleClient(OAuth2AuthorizedClientManager authorizedClientManager) {
     var oauth2Client = new ServletOAuth2AuthorizedClientExchangeFilterFunction(
         authorizedClientManager);
