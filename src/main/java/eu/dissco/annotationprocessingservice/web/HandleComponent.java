@@ -27,8 +27,7 @@ import reactor.util.retry.Retry;
 @RequiredArgsConstructor
 @Slf4j
 public class HandleComponent {
-
-  @Qualifier("handleClient")
+  
   private final WebClient handleClient;
 
   private static final String UNEXPECTED_LOG = "Unexpected response from handle API: {}";
