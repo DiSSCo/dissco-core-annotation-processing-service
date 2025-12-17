@@ -11,8 +11,5 @@ import org.springframework.validation.annotation.Validated;
 public class WebConnectionProperties {
 
   @NotBlank
-  private String tokenEndpoint;
-
-  @NotBlank
   private String handleEndpoint;
 }

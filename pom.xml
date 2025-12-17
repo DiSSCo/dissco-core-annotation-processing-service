@@ -22,6 +22,7 @@
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <testcontainers.version>1.21.2</testcontainers.version>
     <ok-http.version>4.12.0</ok-http.version>
+    <dissco-annotation-logic.version>0.1.18</dissco-annotation-logic.version>
     <sonar.organization>dissco</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <json-schema-validator.version>1.5.1</json-schema-validator.version>
@@ -70,6 +71,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -132,7 +137,7 @@
     <dependency>
       <groupId>io.github.dissco</groupId>
       <artifactId>annotation-logic</artifactId>
-      <version>0.1.18</version>
+      <version>${dissco-annotation-logic.version}</version>
     </dependency>
 
     <dependency>

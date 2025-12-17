@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -34,8 +33,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @ExtendWith(MockitoExtension.class)
 class HandleComponentTest {
 
-  @Mock
-  private TokenAuthenticator tokenAuthenticator;
   private HandleComponent handleComponent;
 
   private static MockWebServer mockHandleServer;
@@ -50,7 +47,7 @@ class HandleComponentTest {
   void setup() {
     WebClient webClient = WebClient.create(
         String.format("http://%s:%s", mockHandleServer.getHostName(), mockHandleServer.getPort()));
-    handleComponent = new HandleComponent(webClient, tokenAuthenticator);
+    handleComponent = new HandleComponent(webClient);
 
   }
 
