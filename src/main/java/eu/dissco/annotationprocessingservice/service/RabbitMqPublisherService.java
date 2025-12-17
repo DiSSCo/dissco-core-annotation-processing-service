@@ -44,8 +44,8 @@ public class RabbitMqPublisherService {
 
   private void publishMessage(CreateUpdateTombstoneEvent event) throws JsonProcessingException {
     batchTemplate.convertAndSend(
-        rabbitMqProperties.getCreateUpdateTombstone().getExchangeName(),
-        rabbitMqProperties.getCreateUpdateTombstone().getRoutingKeyName(),
+        rabbitMqProperties.getProvenance().getExchangeName(),
+        rabbitMqProperties.getProvenance().getRoutingKeyName() + ".annotation",
         mapper.writeValueAsString(event));
   }
 

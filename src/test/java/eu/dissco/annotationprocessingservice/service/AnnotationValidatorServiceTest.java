@@ -66,6 +66,8 @@ class AnnotationValidatorServiceTest {
   private AnnotationValidator annotationValidator;
   @Mock
   private DigitalSpecimenRepository digitalSpecimenRepository;
+  @Mock
+  ApplicationProperties applicationProperties;
   private final Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
   private final Instant instant = Instant.now(clock);
 
@@ -73,7 +75,7 @@ class AnnotationValidatorServiceTest {
   @BeforeEach
   void setup() {
     annotationValidatorService = new AnnotationValidatorService(annotationValidator,
-        digitalSpecimenRepository, new FdoProperties(), new ApplicationProperties());
+        digitalSpecimenRepository, new FdoProperties(), applicationProperties);
   }
 
   @Test
@@ -125,6 +127,9 @@ class AnnotationValidatorServiceTest {
     var digitalSpecimen = givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()));
     given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(
         List.of(digitalSpecimen));
+    given(applicationProperties.isValidateAnnotations()).willReturn(true);
+    given(applicationProperties.getProcessorHandle()).willReturn(PROCESSOR_HANDLE);
+    given(applicationProperties.getProcessorName()).willReturn(PROCESSOR_NAME);
     try (
         MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
         MockedStatic<Instant> mockedInstant = mockStatic(Instant.class)
@@ -144,6 +149,7 @@ class AnnotationValidatorServiceTest {
   void testValidateAnnotationsTargetNotFound() {
     // Given
     var annotationRequest = givenAnnotationRequest().withOaMotivation(OaMotivation.OA_EDITING);
+    given(applicationProperties.isValidateAnnotations()).willReturn(true);
 
     // When / Then
     assertThrows(AnnotationValidationException.class,
@@ -159,6 +165,9 @@ class AnnotationValidatorServiceTest {
     var digitalSpecimen = givenDigitalSpecimen().withOdsHasEvents(List.of(givenEvent()));
     given(digitalSpecimenRepository.getDigitalSpecimenTargets(anySet())).willReturn(
         List.of(digitalSpecimen));
+    given(applicationProperties.isValidateAnnotations()).willReturn(true);
+    given(applicationProperties.getProcessorHandle()).willReturn(PROCESSOR_HANDLE);
+    given(applicationProperties.getProcessorName()).willReturn(PROCESSOR_NAME);
     try (
         MockedStatic<Clock> mockedClock = mockStatic(Clock.class);
         MockedStatic<Instant> mockedInstant = mockStatic(Instant.class)

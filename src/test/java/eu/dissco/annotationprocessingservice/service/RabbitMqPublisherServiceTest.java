@@ -44,13 +44,13 @@ class RabbitMqPublisherServiceTest {
     // Declare auto annotation exchange, queue and binding
     declareRabbitResources("auto-accepted-annotation-exchange-dlq",
         "auto-accepted-annotation-queue-dlq",
-        "auto-accepted-annotation-dlq");
+        "auto-accepted-annotation-dlq", "direct");
     // Declare create update tombstone exchange, queue and binding
-    declareRabbitResources("create-update-tombstone-exchange", "create-update-tombstone-queue",
-        "create-update-tombstone");
+    declareRabbitResources("provenance-exchange", "provenance-queue",
+        "provenance.#", "topic");
     // Declare create mas annotation exchange, queue and binding
     declareRabbitResources("mas-annotation-exchange", "mas-annotation-queue",
-        "mas-annotation");
+        "mas-annotation", "direct");
 
     CachingConnectionFactory factory = new CachingConnectionFactory(container.getHost());
     factory.setPort(container.getAmqpPort());
@@ -62,10 +62,10 @@ class RabbitMqPublisherServiceTest {
 
 
   private static void declareRabbitResources(String exchangeName, String queueName,
-      String routingKey)
+      String routingKey, String exchangeType)
       throws IOException, InterruptedException {
     container.execInContainer("rabbitmqadmin", "declare", "exchange", "name=" + exchangeName,
-        "type=direct", "durable=true");
+        "type=" + exchangeType, "durable=true");
     container.execInContainer("rabbitmqadmin", "declare", "queue", "name=" + queueName,
         "queue_type=quorum", "durable=true");
     container.execInContainer("rabbitmqadmin", "declare", "binding", "source=" + exchangeName,
@@ -93,7 +93,7 @@ class RabbitMqPublisherServiceTest {
     rabbitMqPublisherService.publishCreateEvent(givenAnnotationProcessed());
 
     // Then
-    var result = rabbitTemplate.receive("create-update-tombstone-queue");
+    var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
   }
@@ -109,7 +109,7 @@ class RabbitMqPublisherServiceTest {
     rabbitMqPublisherService.publishUpdateEvent(givenAnnotationProcessed(), updatedAnnotation);
 
     // Then
-    var result = rabbitTemplate.receive("create-update-tombstone-queue");
+    var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()),
         CreateUpdateTombstoneEvent.class).getId()).isEqualTo(ID);
   }
@@ -125,7 +125,7 @@ class RabbitMqPublisherServiceTest {
         givenAnnotationProcessed());
 
     // Then
-    var result = rabbitTemplate.receive("create-update-tombstone-queue");
+    var result = rabbitTemplate.receive("provenance-queue");
     assertThat(MAPPER.readValue(new String(result.getBody()), CreateUpdateTombstoneEvent.class)
         .getId()).isEqualTo(ID);
   }
