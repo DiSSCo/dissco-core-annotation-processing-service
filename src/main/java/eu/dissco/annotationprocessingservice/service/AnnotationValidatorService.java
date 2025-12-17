@@ -56,11 +56,15 @@ public class AnnotationValidatorService {
     for (var annotationProcessingRequest : annotationProcessingRequests) {
       validateId(annotationProcessingRequest, isNewAnnotation);
     }
-    validateAnnotationContents(annotationProcessingRequests);
+    if (applicationProperties.isValidateAnnotations()) {
+      validateAnnotationContents(annotationProcessingRequests);
+    }
   }
 
   public void validateEvent(AnnotationProcessingEvent event) throws AnnotationValidationException {
-    validateAnnotationContents(event.getAnnotations());
+    if (applicationProperties.isValidateAnnotations()) {
+      validateAnnotationContents(event.getAnnotations());
+    }
   }
 
   private void validateAnnotationContents(
