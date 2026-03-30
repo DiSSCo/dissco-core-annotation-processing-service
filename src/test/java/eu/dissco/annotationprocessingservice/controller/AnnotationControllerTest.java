@@ -1,9 +1,12 @@
 package eu.dissco.annotationprocessingservice.controller;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAgent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,6 +84,18 @@ class AnnotationControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+  }
+
+  @Test
+  void testMarkAnnotationAsAccepted() throws Exception {
+    // Given
+    var agent = givenCreator(CREATOR);
+
+    // When
+    controller.acceptAnnotation("20.5000.1025", "KZL-VC0-ZK2", agent);
+
+    // Then
+    then(service).should().acceptAnnotation(agent, BARE_ID);
   }
 
   @Test

@@ -6,6 +6,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -18,11 +19,15 @@ import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
+import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -35,17 +40,20 @@ import org.springframework.stereotype.Service;
 @Profile(Profiles.WEB)
 public class ProcessingWebService extends AbstractProcessingService {
 
+  private final ObjectMapper mapper;
+
   public ProcessingWebService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository, RabbitMqPublisherService rabbitMqPublisherService,
       FdoRecordService fdoRecordService, HandleComponent handleComponent,
       ApplicationProperties applicationProperties, AnnotationValidatorService schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
-      RollbackService rollbackService, AnnotationHasher annotationHasher) {
+      RollbackService rollbackService, AnnotationHasher annotationHasher, ObjectMapper mapper) {
     super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
         handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService, annotationHasher);
+    this.mapper = mapper;
   }
 
   public Annotation persistNewAnnotation(AnnotationProcessingRequest annotationRequest,
@@ -114,6 +122,26 @@ public class ProcessingWebService extends AbstractProcessingService {
       log.error("Unable to post update for annotations {}", currentAnnotation.getId(), e);
       throw new FailedProcessingException();
     }
+    insertUpdatedAnnotation(annotation, currentAnnotation);
+    return annotation;
+  }
+
+  public void acceptAnnotation(Agent acceptingAgent, String annotationId)
+      throws FailedProcessingException {
+    var annotation = repository.getAnnotation(annotationId);
+    Annotation currentAnnotation;
+    try {
+      var jsonNodeAnnotation = mapper.valueToTree(annotation);
+      currentAnnotation = mapper.treeToValue(jsonNodeAnnotation, Annotation.class);
+    } catch (JsonProcessingException e) {
+      throw new FailedProcessingException();
+    }
+    markAnnotationAsAccepted(annotation, acceptingAgent);
+    insertUpdatedAnnotation(annotation, currentAnnotation);
+  }
+
+  private void insertUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)
+      throws FailedProcessingException {
     try {
       repository.createAnnotationRecord(annotation);
     } catch (DataAccessException e) {
@@ -124,9 +152,14 @@ public class ProcessingWebService extends AbstractProcessingService {
     log.info("Annotation: {} has been successfully committed to database",
         currentAnnotation.getId());
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
-    return annotation;
   }
 
+  private static void markAnnotationAsAccepted(Annotation annotation, Agent acceptingAgent) {
+    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+    annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
+    annotation.setOdsHasMergingStateChangedBy(acceptingAgent);
+    annotation.setOdsVersion(annotation.getOdsVersion() + 1);
+  }
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,
       Annotation annotation) throws PidCreationException {

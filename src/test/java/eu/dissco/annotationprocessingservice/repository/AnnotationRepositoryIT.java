@@ -114,6 +114,21 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   @Test
+  void testGetAnnotation() {
+    // Given
+    var expected = givenAnnotationProcessed();
+    var altAnnotation = givenAnnotationProcessed("alt id", "alt user", "alt target");
+    repository.createAnnotationRecord(expected);
+    repository.createAnnotationRecord(altAnnotation);
+
+    // When
+    var result = repository.getAnnotation(BARE_ID);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
   void updateAnnotationRecord() throws DataBaseException {
     // Given
     var annotation = givenAnnotationProcessed();

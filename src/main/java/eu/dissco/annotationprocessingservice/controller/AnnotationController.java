@@ -10,6 +10,7 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
+import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
@@ -99,6 +100,25 @@ public class AnnotationController {
     var result = processingService.updateAnnotation(annotation);
     return ResponseEntity.ok(result);
   }
+
+  @Operation(summary = "Mark an existing annotation as accepted")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Annotation successfully updated", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = Annotation.class))
+      })
+  })
+  @PutMapping(value = "/{prefix}/{suffix}/accept", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> acceptAnnotation(
+      @Parameter(description = TARGET_ID_PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = TARGET_ID_SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @RequestBody Agent acceptingAgent)
+      throws FailedProcessingException {
+    var id = prefix + "/" + suffix;
+    log.info("Marking annotation {} as accepted", id);
+    processingService.acceptAnnotation(acceptingAgent, id);
+    return ResponseEntity.ok().build();
+  }
+
 
   @Operation(summary = "Tombstone a given annotation")
   @ApiResponses(value = {
