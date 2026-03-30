@@ -3,6 +3,7 @@ package eu.dissco.annotationprocessingservice.controller;
 import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenAcceptedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
@@ -17,6 +18,7 @@ import static org.mockito.BDDMockito.then;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTombstoneWrapper;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,13 +91,14 @@ class AnnotationControllerTest {
   @Test
   void testMarkAnnotationAsAccepted() throws Exception {
     // Given
-    var agent = givenCreator(CREATOR);
 
     // When
-    controller.acceptAnnotation("20.5000.1025", "KZL-VC0-ZK2", agent);
+    controller.updateMergingDecisionStatus("20.5000.1025", "KZL-VC0-ZK2",
+        OdsMergingDecisionStatus.APPROVED, givenCreator(CREATOR));
 
     // Then
-    then(service).should().acceptAnnotation(agent, BARE_ID);
+    then(service).should().updateMergingDecisionStatus(givenCreator(CREATOR), BARE_ID,
+        OdsMergingDecisionStatus.APPROVED);
   }
 
   @Test

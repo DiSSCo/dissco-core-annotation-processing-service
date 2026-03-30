@@ -381,10 +381,10 @@ public class TestUtils {
   }
 
   public static Annotation givenAcceptedAnnotation() {
-    var annotation = givenAnnotationProcessedWeb();
-    annotation.setOdsMergingStateChangeDate(Date.from(CREATED));
-    annotation.setOdsHasMergingStateChangedBy(givenProcessingAgent());
-    return annotation;
+    return givenAnnotationProcessedWeb()
+        .withOdsMergingStateChangeDate(Date.from(CREATED))
+        .withOdsHasMergingStateChangedBy(givenProcessingAgent())
+        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
   }
 
   public static Annotation givenAcceptedAnnotation(String id) {

@@ -126,18 +126,19 @@ public class ProcessingWebService extends AbstractProcessingService {
     return annotation;
   }
 
-  public void acceptAnnotation(Agent acceptingAgent, String annotationId)
+  public Annotation updateMergingDecisionStatus(Agent decisionAgent, String annotationId,
+      OdsMergingDecisionStatus mergingDecisionStatus)
       throws FailedProcessingException {
     var annotation = repository.getAnnotation(annotationId);
     Annotation currentAnnotation;
     try {
-      var jsonNodeAnnotation = mapper.valueToTree(annotation);
-      currentAnnotation = mapper.treeToValue(jsonNodeAnnotation, Annotation.class);
+      currentAnnotation = mapper.treeToValue(mapper.valueToTree(annotation), Annotation.class);
     } catch (JsonProcessingException e) {
       throw new FailedProcessingException();
     }
-    markAnnotationAsAccepted(annotation, acceptingAgent);
+    updateMergingDecisionStatus(annotation, decisionAgent, mergingDecisionStatus);
     insertUpdatedAnnotation(annotation, currentAnnotation);
+    return annotation;
   }
 
   private void insertUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)
@@ -154,10 +155,11 @@ public class ProcessingWebService extends AbstractProcessingService {
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
   }
 
-  private static void markAnnotationAsAccepted(Annotation annotation, Agent acceptingAgent) {
-    annotation.setOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+  private static void updateMergingDecisionStatus(Annotation annotation, Agent decisionAgent,
+      OdsMergingDecisionStatus mergingDecisionStatus) {
+    annotation.withOdsHasMergingStateChangedBy(decisionAgent);
+    annotation.setOdsMergingDecisionStatus(mergingDecisionStatus);
     annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
-    annotation.setOdsHasMergingStateChangedBy(acceptingAgent);
     annotation.setOdsVersion(annotation.getOdsVersion() + 1);
   }
 

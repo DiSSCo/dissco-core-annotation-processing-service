@@ -312,27 +312,29 @@ class ProcessingWebServiceTest {
   }
 
   @Test
-  void testAcceptAnnotation() throws Exception {
+  void testUpdateMergingDecisionStatus() throws Exception {
     // Given
-    var annotation = givenAnnotationProcessedWeb()
+    var expected = givenAnnotationProcessedWeb()
         .withOdsVersion(2)
         .withOdsHasMergingStateChangedBy(givenCreator(CREATOR))
         .withOdsMergingStateChangeDate(Date.from(CREATED))
         .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
-    given(repository.getAnnotation(BARE_ID)).willReturn(givenAnnotationProcessedWeb());
     var indexResponse = mock(IndexResponse.class);
     given(indexResponse.result()).willReturn(Result.Updated);
-    given(elasticRepository.indexAnnotation(annotation)).willReturn(indexResponse);
+    given(repository.getAnnotation(BARE_ID)).willReturn(givenAnnotationProcessedWeb());
+    given(elasticRepository.indexAnnotation(expected)).willReturn(indexResponse);
 
     // When
-    service.acceptAnnotation(givenCreator(CREATOR), BARE_ID);
+    var result = service.updateMergingDecisionStatus(givenCreator(CREATOR), BARE_ID,
+        OdsMergingDecisionStatus.APPROVED);
 
     // Then
-    then(repository).should().createAnnotationRecord(annotation);
+    assertThat(result).isEqualTo(expected);
+    then(repository).should().createAnnotationRecord(expected);
     then(fdoRecordService).shouldHaveNoInteractions();
     then(handleComponent).shouldHaveNoInteractions();
     then(rabbitMqPublisherService).should()
-        .publishUpdateEvent(givenAnnotationProcessedWeb(), annotation);
+        .publishUpdateEvent(givenAnnotationProcessedWeb(), expected);
   }
 
   @Test
