@@ -13,10 +13,8 @@ import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
-import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,12 +45,6 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
         applicationProperties, annotationValidator, masJobRecordService, batchAnnotationService,
         annotationBatchRecordService, fdoProperties, rollbackService,
         annotationHasher);
-  }
-
-  private static void addMergingInformation(AutoAcceptedAnnotation autoAcceptedAnnotation,
-      Annotation annotation) {
-    annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
-    annotation.setOdsHasMergingStateChangedBy(autoAcceptedAnnotation.acceptingAgent());
   }
 
   public void handleMessage(List<AutoAcceptedAnnotation> autoAcceptedAnnotations)
@@ -87,7 +79,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       Map<UUID, String> ids) {
     var id = HANDLE_PROXY + ids.get(hashAnnotation(autoAcceptedAnnotation.annotation(), true));
     var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), id, 1, null, true);
-    addMergingInformation(autoAcceptedAnnotation, annotation);
+    addMergingDecisionStatus(annotation, autoAcceptedAnnotation.acceptingAgent(), OdsMergingDecisionStatus.APPROVED, false);
     return annotation;
   }
 

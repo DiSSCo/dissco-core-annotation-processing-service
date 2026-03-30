@@ -26,8 +26,6 @@ import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
 import java.io.IOException;
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -136,7 +134,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     } catch (JsonProcessingException e) {
       throw new FailedProcessingException();
     }
-    updateMergingDecisionStatus(annotation, decisionAgent, mergingDecisionStatus);
+    addMergingDecisionStatus(annotation, decisionAgent, mergingDecisionStatus, true);
     insertUpdatedAnnotation(annotation, currentAnnotation);
     return annotation;
   }
@@ -153,14 +151,6 @@ public class ProcessingWebService extends AbstractProcessingService {
     log.info("Annotation: {} has been successfully committed to database",
         currentAnnotation.getId());
     indexElasticUpdatedAnnotation(annotation, currentAnnotation);
-  }
-
-  private static void updateMergingDecisionStatus(Annotation annotation, Agent decisionAgent,
-      OdsMergingDecisionStatus mergingDecisionStatus) {
-    annotation.withOdsHasMergingStateChangedBy(decisionAgent);
-    annotation.setOdsMergingDecisionStatus(mergingDecisionStatus);
-    annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
-    annotation.setOdsVersion(annotation.getOdsVersion() + 1);
   }
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,

@@ -154,10 +154,10 @@ class ProcessingAutoAcceptedServiceTest {
     // Given
     var altBody = new AnnotationBody().withOaValue(List.of("another value"));
     var expected = List.of(
-        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID)
-            .withOdsMergingDecisionStatus(null),
-        givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID).
-            withOdsMergingStateChangeDate(Date.from(CREATED))
+        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID),
+        givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID)
+            .withOdsMergingStateChangeDate(Date.from(CREATED))
+            .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED)
             .withOdsHasMergingStateChangedBy(givenProcessingAgent())
             .withOaHasBody(altBody));
     var annotationRequests = List.of(givenAutoAcceptedRequest(),

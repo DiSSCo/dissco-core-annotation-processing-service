@@ -340,4 +340,14 @@ public abstract class AbstractProcessingService {
     }
   }
 
+  protected static void addMergingDecisionStatus(Annotation annotation, Agent decisionAgent,
+      OdsMergingDecisionStatus mergingDecisionStatus, boolean incrementVersion) {
+    annotation.withOdsHasMergingStateChangedBy(decisionAgent);
+    annotation.setOdsMergingDecisionStatus(mergingDecisionStatus);
+    annotation.setOdsMergingStateChangeDate(Date.from(Instant.now()));
+    if (incrementVersion){
+      annotation.setOdsVersion(annotation.getOdsVersion() + 1);
+    }
+  }
+
 }
