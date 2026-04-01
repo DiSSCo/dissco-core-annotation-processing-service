@@ -30,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -109,7 +110,7 @@ public class AnnotationController {
           @Content(mediaType = "application/json", schema = @Schema(implementation = Annotation.class))
       })
   })
-  @PutMapping(value = "/{prefix}/{suffix}/accept", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PatchMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Annotation> updateMergingDecisionStatus(
       @Parameter(description = TARGET_ID_PREFIX_OAS) @PathVariable("prefix") String prefix,
       @Parameter(description = TARGET_ID_SUFFIX_OAS) @PathVariable("suffix") String suffix,
