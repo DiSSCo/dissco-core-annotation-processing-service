@@ -118,7 +118,7 @@ public class AnnotationController {
       @RequestBody Agent decisionAgent)
       throws FailedProcessingException {
     var id = prefix + "/" + suffix;
-    log.info("Marking annotation {} as accepted", id);
+    log.info("Marking annotation {} as {}", id, mergingDecisionStatus.value());
     var result = processingService.updateMergingDecisionStatus(decisionAgent, id,
         mergingDecisionStatus);
     return ResponseEntity.ok(result);
