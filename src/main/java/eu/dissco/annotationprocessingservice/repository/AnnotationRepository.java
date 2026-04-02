@@ -10,6 +10,7 @@ import eu.dissco.annotationprocessingservice.database.jooq.tables.records.Annota
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.utils.HandleUtils;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -53,6 +54,13 @@ public class AnnotationRepository {
         .map(this::mapAnnotation);
   }
 
+  public Annotation getAnnotation(String annotationId){
+    return context.select(ANNOTATION.asterisk())
+        .from(ANNOTATION)
+        .where(ANNOTATION.ID.eq(removeProxy(annotationId)))
+        .fetchSingle(this::mapAnnotation);
+  }
+
   private Annotation mapAnnotation(Record dbRecord) {
     try {
       return mapper.readValue(dbRecord.get(ANNOTATION.DATA).data(),
@@ -72,7 +80,7 @@ public class AnnotationRepository {
 
   public void createAnnotationRecord(Annotation annotation) {
     var insertQuery = insertAnnotation(annotation, false);
-    var fullQuery = onConflict(annotation, insertQuery);
+    var fullQuery = onConflict(annotation, insertQuery, false);
     fullQuery.execute();
   }
 
@@ -80,7 +88,7 @@ public class AnnotationRepository {
     var queryList = new ArrayList<Query>();
     for (var annotation : annotations) {
       var insertQuery = insertAnnotation(annotation, true);
-      var fullQuery = onConflict(annotation, insertQuery);
+      var fullQuery = onConflict(annotation, insertQuery, true);
       queryList.add(fullQuery);
     }
     context.batch(queryList).execute();
@@ -91,7 +99,7 @@ public class AnnotationRepository {
     for (var hashedAnnotation : hashedAnnotations) {
       var insertQuery = insertAnnotation(hashedAnnotation.annotation(), false)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
-      var fullQuery = onConflict(hashedAnnotation.annotation(), insertQuery)
+      var fullQuery = onConflict(hashedAnnotation.annotation(), insertQuery, false)
           .set(ANNOTATION.ANNOTATION_HASH, hashedAnnotation.hash());
       queryList.add(fullQuery);
     }
@@ -139,7 +147,7 @@ public class AnnotationRepository {
 
   private @NotNull InsertOnDuplicateSetMoreStep<AnnotationRecord> onConflict(
       Annotation annotation,
-      InsertSetMoreStep<AnnotationRecord> query) {
+      InsertSetMoreStep<AnnotationRecord> query, boolean isMerged) {
     try {
       return query.onConflict(ANNOTATION.ID).doUpdate()
           .set(ANNOTATION.VERSION, annotation.getOdsVersion())
@@ -152,7 +160,8 @@ public class AnnotationRepository {
           .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
           .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
           .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
-          .set(ANNOTATION.DATA, mapToJSONB(annotation));
+          .set(ANNOTATION.DATA, mapToJSONB(annotation))
+          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged));
     } catch (JsonProcessingException e) {
       log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
       throw new DataBaseException(e.getMessage());

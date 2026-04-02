@@ -6,12 +6,14 @@ import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.FDO_TYPE;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationBatchMetadataTwoParam;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedAlt;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWeb;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessedWebBatch;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,6 +48,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.jooq.exception.DataAccessException;
@@ -55,6 +58,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,28 +89,24 @@ class ProcessingWebServiceTest {
   @Mock
   private AnnotationHasher annotationHasher;
   private MockedStatic<Instant> mockedStatic;
-  private MockedStatic<Clock> mockedClock;
   private ProcessingWebService service;
 
   @BeforeEach
   void setup() {
     service = new ProcessingWebService(repository, elasticRepository,
         rabbitMqPublisherService, fdoRecordService, handleComponent, new ApplicationProperties(),
-        annotationValidator, masJobRecordService, batchAnnotationService, annotationBatchRecordService,
-        fdoProperties, rollbackService, annotationHasher);
+        annotationValidator, masJobRecordService, batchAnnotationService,
+        annotationBatchRecordService,
+        fdoProperties, rollbackService, annotationHasher, MAPPER);
 
     Instant instant = Instant.now(Clock.fixed(CREATED, ZoneOffset.UTC));
-    Clock clock = Clock.fixed(CREATED, ZoneOffset.UTC);
-    mockedStatic = mockStatic(Instant.class);
+    mockedStatic = mockStatic(Instant.class, Mockito.CALLS_REAL_METHODS);
     mockedStatic.when(Instant::now).thenReturn(instant);
-    mockedClock = mockStatic(Clock.class);
-    mockedClock.when(Clock::systemUTC).thenReturn(clock);
   }
 
   @AfterEach
   void destroy() {
     mockedStatic.close();
-    mockedClock.close();
   }
 
   @Test
@@ -309,6 +309,32 @@ class ProcessingWebServiceTest {
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
+  }
+
+  @Test
+  void testUpdateMergingDecisionStatus() throws Exception {
+    // Given
+    var expected = givenAnnotationProcessedWeb()
+        .withOdsVersion(2)
+        .withOdsHasMergingStateChangedBy(givenCreator(CREATOR))
+        .withOdsMergingStateChangeDate(Date.from(CREATED))
+        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
+    var indexResponse = mock(IndexResponse.class);
+    given(indexResponse.result()).willReturn(Result.Updated);
+    given(repository.getAnnotation(BARE_ID)).willReturn(givenAnnotationProcessedWeb());
+    given(elasticRepository.indexAnnotation(expected)).willReturn(indexResponse);
+
+    // When
+    var result = service.updateMergingDecisionStatus(givenCreator(CREATOR), BARE_ID,
+        OdsMergingDecisionStatus.APPROVED);
+
+    // Then
+    assertThat(result).isEqualTo(expected);
+    then(repository).should().createAnnotationRecord(expected);
+    then(fdoRecordService).shouldHaveNoInteractions();
+    then(handleComponent).shouldHaveNoInteractions();
+    then(rabbitMqPublisherService).should()
+        .publishUpdateEvent(givenAnnotationProcessedWeb(), expected);
   }
 
   @Test

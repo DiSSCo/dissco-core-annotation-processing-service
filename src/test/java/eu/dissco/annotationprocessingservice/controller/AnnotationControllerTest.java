@@ -1,9 +1,12 @@
 package eu.dissco.annotationprocessingservice.controller;
 
+import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationEvent;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationRequest;
+import static eu.dissco.annotationprocessingservice.TestUtils.givenCreator;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAgent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,6 +17,7 @@ import static org.mockito.BDDMockito.then;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTombstoneWrapper;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,6 +85,19 @@ class AnnotationControllerTest {
     // Then
     assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(result.getBody()).isEqualTo(givenAnnotationProcessed());
+  }
+
+  @Test
+  void testMarkAnnotationAsAccepted() throws Exception {
+    // Given
+
+    // When
+    controller.updateMergingDecisionStatus("20.5000.1025", "KZL-VC0-ZK2",
+        OdsMergingDecisionStatus.APPROVED, givenCreator(CREATOR));
+
+    // Then
+    then(service).should().updateMergingDecisionStatus(givenCreator(CREATOR), BARE_ID,
+        OdsMergingDecisionStatus.APPROVED);
   }
 
   @Test

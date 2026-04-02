@@ -10,7 +10,9 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
+import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
+import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingEvent;
 import eu.dissco.annotationprocessingservice.schema.AnnotationProcessingRequest;
 import eu.dissco.annotationprocessingservice.service.ProcessingWebService;
@@ -28,11 +30,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -97,6 +101,26 @@ public class AnnotationController {
     log.info("Received hashedAnnotation update request for annotations {}",
         annotation.getDctermsIdentifier());
     var result = processingService.updateAnnotation(annotation);
+    return ResponseEntity.ok(result);
+  }
+
+  @Operation(summary = "Update the merging decision status of an annotation")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Annotation successfully updated", content = {
+          @Content(mediaType = "application/json", schema = @Schema(implementation = Annotation.class))
+      })
+  })
+  @PatchMapping(value = "/{prefix}/{suffix}", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Annotation> updateMergingDecisionStatus(
+      @Parameter(description = TARGET_ID_PREFIX_OAS) @PathVariable("prefix") String prefix,
+      @Parameter(description = TARGET_ID_SUFFIX_OAS) @PathVariable("suffix") String suffix,
+      @RequestParam OdsMergingDecisionStatus mergingDecisionStatus,
+      @RequestBody Agent decisionAgent)
+      throws FailedProcessingException {
+    var id = prefix + "/" + suffix;
+    log.info("Marking annotation {} as {}", id, mergingDecisionStatus.value());
+    var result = processingService.updateMergingDecisionStatus(decisionAgent, id,
+        mergingDecisionStatus);
     return ResponseEntity.ok(result);
   }
 
