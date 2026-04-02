@@ -130,6 +130,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     var annotation = repository.getAnnotation(annotationId);
     Annotation currentAnnotation;
     try {
+      // Create a deep copy of the annotation we retrieved
       currentAnnotation = mapper.treeToValue(mapper.valueToTree(annotation), Annotation.class);
     } catch (JsonProcessingException e) {
       throw new FailedProcessingException();
