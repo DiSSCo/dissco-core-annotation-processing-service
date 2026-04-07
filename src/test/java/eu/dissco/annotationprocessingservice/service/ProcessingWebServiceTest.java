@@ -28,7 +28,6 @@ import static org.mockito.Mockito.mockStatic;
 
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -249,26 +248,6 @@ class ProcessingWebServiceTest {
   }
 
   @Test
-  void testCreateAnnotationKafkaFailure() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(BARE_ID);
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Created);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
-        .publishCreateEvent(givenAnnotationProcessedWeb());
-    given(fdoProperties.getType()).willReturn(FDO_TYPE);
-
-    // When
-    assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest, false));
-
-    // Then
-    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-  }
-
-  @Test
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
@@ -421,30 +400,6 @@ class ProcessingWebServiceTest {
 
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotation(any(), any(), eq(false), eq(true));
-
-  }
-
-  @Test
-  void testUpdateAnnotationKafkaFailure() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withId(BARE_ID);
-    given(repository.getAnnotationForUser(BARE_ID, CREATOR)).willReturn(
-        Optional.of(givenAnnotationProcessedAlt()));
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Updated);
-    given(elasticRepository.indexAnnotation(any())).willReturn(indexResponse);
-    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
-        .publishUpdateEvent(givenAnnotationProcessedAlt(),
-            givenAnnotationProcessedWeb().withOdsVersion(2));
-    given(fdoProperties.getType()).willReturn(FDO_TYPE);
-
-    // When
-    assertThrows(FailedProcessingException.class,
-        () -> service.updateAnnotation(annotationRequest));
-
-    // Then
-    then(rollbackService).should().rollbackUpdatedAnnotation(any(), any(), eq(true), eq(true));
 
   }
 

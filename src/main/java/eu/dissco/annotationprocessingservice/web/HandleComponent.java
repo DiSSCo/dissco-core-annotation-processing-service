@@ -1,6 +1,5 @@
 package eu.dissco.annotationprocessingservice.web;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -21,6 +20,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import tools.jackson.databind.JsonNode;
 
 @Component
 @RequiredArgsConstructor
@@ -104,7 +104,7 @@ public class HandleComponent {
   private JsonNode validateResponse(Mono<JsonNode> response) throws PidCreationException {
     try {
       return response.toFuture().get();
-    } catch (InterruptedException e) {
+    } catch (InterruptedException _) {
       Thread.currentThread().interrupt();
       log.error("Interrupted exception has occurred.");
       throw new PidCreationException(
@@ -126,8 +126,8 @@ public class HandleComponent {
         log.error(UNEXPECTED_LOG, jsonResponse);
         throw new PidCreationException(UNEXPECTED_ERR);
       }
-      return dataNodeArray.get(0).get("id").asText();
-    } catch (NullPointerException e) {
+      return dataNodeArray.get(0).get("id").asString();
+    } catch (NullPointerException _) {
       log.error(UNEXPECTED_LOG, jsonResponse);
       throw new PidCreationException(UNEXPECTED_ERR);
     }
@@ -142,11 +142,11 @@ public class HandleComponent {
       }
       for (var dataNode : dataNodeArray) {
         handleNames.put(
-            UUID.fromString(dataNode.get("attributes").get("annotationHash").asText()),
-            dataNode.get("id").asText());
+            UUID.fromString(dataNode.get("attributes").get("annotationHash").asString()),
+            dataNode.get("id").asString());
       }
       return handleNames;
-    } catch (NullPointerException e) {
+    } catch (NullPointerException _) {
       log.error(UNEXPECTED_LOG, jsonResponse);
       throw new PidCreationException(UNEXPECTED_ERR);
     }
@@ -163,11 +163,11 @@ public class HandleComponent {
       }
       for (var dataNode : dataNodeArray) {
         handleNames.put(
-            dataNode.get("attributes").get("targetPid").asText(),
-            dataNode.get("id").asText());
+            dataNode.get("attributes").get("targetPid").asString(),
+            dataNode.get("id").asString());
       }
       return handleNames;
-    } catch (NullPointerException e) {
+    } catch (NullPointerException _) {
       log.error(UNEXPECTED_LOG, jsonResponse);
       throw new PidCreationException(UNEXPECTED_ERR);
     }

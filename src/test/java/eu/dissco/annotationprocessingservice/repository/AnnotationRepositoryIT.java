@@ -6,14 +6,13 @@ import static eu.dissco.annotationprocessingservice.TestUtils.BARE_ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.CREATOR;
 import static eu.dissco.annotationprocessingservice.TestUtils.HANDLE_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
+import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenHashedAnnotation;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneAnnotation;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.AnnotationStatusEnum;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
@@ -34,12 +33,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class AnnotationRepositoryIT extends BaseRepositoryIT {
 
-  private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
   private AnnotationRepository repository;
 
   @BeforeEach
   void setup() {
-    repository = new AnnotationRepository(mapper, context);
+    repository = new AnnotationRepository(MAPPER, context);
   }
 
   @AfterEach
@@ -255,11 +253,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
   }
 
   private Annotation mapAnnotation(Record dbRecord) {
-    try {
-      return mapper.readValue(dbRecord.get(ANNOTATION.DATA).data(), Annotation.class);
-    } catch (JsonProcessingException ignored) {
-      return null;
-    }
+    return MAPPER.readValue(dbRecord.get(ANNOTATION.DATA).data(), Annotation.class);
   }
 
 }

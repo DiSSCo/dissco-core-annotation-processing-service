@@ -18,32 +18,32 @@ import org.springframework.web.reactive.result.method.annotation.ResponseEntityE
 @ControllerAdvice
 public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler(FailedProcessingException.class)
   public ResponseEntity<ExceptionResponse> handleException(
       FailedProcessingException e) {
     var response = new ExceptionResponse(
-        HttpStatus.UNPROCESSABLE_ENTITY, "FailedPocessingException", e.getMessage()
+        HttpStatus.UNPROCESSABLE_CONTENT, "FailedPocessingException", e.getMessage()
     );
-    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(response);
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler(IOException.class)
   public ResponseEntity<ExceptionResponse> handleException(IOException e) {
     var response = new ExceptionResponse(
-        HttpStatus.UNPROCESSABLE_ENTITY, "IOException", e.getMessage()
+        HttpStatus.UNPROCESSABLE_CONTENT, "IOException", e.getMessage()
     );
-    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(response);
   }
 
-  @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+  @ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
   @ExceptionHandler(DataBaseException.class)
   public ResponseEntity<ExceptionResponse> handleException(DataBaseException e) {
     var response = new ExceptionResponse(
-        HttpStatus.UNPROCESSABLE_ENTITY, DataBaseException.class.getSimpleName(), e.getMessage()
+        HttpStatus.UNPROCESSABLE_CONTENT, DataBaseException.class.getSimpleName(), e.getMessage()
     );
-    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(response);
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)

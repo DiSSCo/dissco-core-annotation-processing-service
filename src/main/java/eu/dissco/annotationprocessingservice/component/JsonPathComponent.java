@@ -4,9 +4,6 @@ import static com.jayway.jsonpath.Criteria.where;
 import static com.jayway.jsonpath.Filter.filter;
 import static com.jayway.jsonpath.JsonPath.using;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.Filter;
@@ -31,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -39,7 +38,7 @@ public class JsonPathComponent {
 
   private static final String TYPE = "@type";
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final Configuration jsonPathConfig;
 
   private final Pattern lastKeyPattern = Pattern.compile("\\[(?!.*\\[')(.*)");
@@ -57,8 +56,8 @@ public class JsonPathComponent {
         return Collections.emptyList();
       }
       var targetPaths = getAnnotationTargetPaths(commonIndexes, baseTarget, context);
-      return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("@id").asText());
-    } catch (JsonProcessingException | InvalidPathException e) {
+      return buildOaTargets(targetPaths, baseTarget, annotatedObject.get("@id").asString());
+    } catch (InvalidPathException e) {
       log.error("Unable to read jsonPath", e);
       throw new BatchingException();
     }
@@ -161,7 +160,7 @@ public class JsonPathComponent {
     // Then we would only be able to look at the indexes for occurrence
     // If this is the case, we log the ambiguity but annotate all localities
     var targetIndexSublist = foundIndexesInTargetJsonPath
-        .subList(0, validInputIndexes.getRight().get(0).size());
+        .subList(0, validInputIndexes.getRight().getFirst().size());
     return (validInputIndexes.getRight().contains(targetIndexSublist));
   }
 
@@ -364,11 +363,11 @@ public class JsonPathComponent {
     }
     var previousCompound = compoundPreviousFieldIndex(
         new ArrayList<>(lst.subList(0, lst.size() - 1)));
-    FieldIndex currentFieldIndex = lst.get(lst.size() - 1);
+    FieldIndex currentFieldIndex = lst.getLast();
     var compoundedField = new ArrayList<>(
-        previousCompound.get(previousCompound.size() - 1).fields());
+        previousCompound.getLast().fields());
     var compoundedIndex = new ArrayList<>(
-        previousCompound.get(previousCompound.size() - 1).indexes());
+        previousCompound.getLast().indexes());
     compoundedField.addAll(currentFieldIndex.fields());
     compoundedIndex.addAll(currentFieldIndex.indexes());
     previousCompound.add(new FieldIndex(compoundedField, compoundedIndex));

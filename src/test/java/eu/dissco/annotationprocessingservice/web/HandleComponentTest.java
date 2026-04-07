@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.exception.PidCreationException;
 import java.io.IOException;
 import java.util.List;
@@ -29,6 +27,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @ExtendWith(MockitoExtension.class)
 class HandleComponentTest {
@@ -121,7 +121,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testUnauthorized() throws Exception {
+  void testUnauthorized() {
     // Given
     var requestBody = givenPostRequest();
 
@@ -133,7 +133,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testBadRequest() throws Exception {
+  void testBadRequest() {
     // Given
     var requestBody = givenPostRequest();
 
@@ -176,7 +176,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testRollbackHandleUpdate() throws Exception {
+  void testRollbackHandleUpdate() {
     // Given
     var requestBody = givenPostRequest();
     mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
@@ -187,7 +187,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testUpdateHandle() throws Exception {
+  void testUpdateHandle() {
     // Given
     var requestBody = givenPostRequest();
     mockHandleServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
@@ -209,7 +209,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testInterruptedException() throws Exception {
+  void testInterruptedException() {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = givenHandleResponse();
@@ -230,7 +230,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testRetriesFail() throws Exception {
+  void testRetriesFail() {
     // Given
     var requestBody = givenPostRequest();
     int requestCount = mockHandleServer.getRequestCount();
@@ -246,7 +246,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testDataNodeNotArray() throws Exception {
+  void testDataNodeNotArray() {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = MAPPER.createObjectNode();
@@ -259,7 +259,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testDataMissingId() throws Exception {
+  void testDataMissingId() {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = givenHandleResponse();
@@ -287,7 +287,7 @@ class HandleComponentTest {
   }
 
   @Test
-  void testEmptyResponse() throws Exception {
+  void testEmptyResponse() {
     // Given
     var requestBody = givenPostRequest();
     var responseBody = MAPPER.createObjectNode();
@@ -299,12 +299,12 @@ class HandleComponentTest {
     assertThrows(PidCreationException.class, () -> handleComponent.postHandle(requestBody));
   }
 
-  private JsonNode removeGivenAttribute(String targetAttribute) throws Exception {
+  private JsonNode removeGivenAttribute(String targetAttribute) {
     var response = (ObjectNode) givenHandleResponse();
     return ((ObjectNode) response.get("data").get(0).get("attributes")).remove(targetAttribute);
   }
 
-  private JsonNode givenHandleResponse() throws Exception {
+  private JsonNode givenHandleResponse() {
     return MAPPER.readTree("""
         {
           "data": [{

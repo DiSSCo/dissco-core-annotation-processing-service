@@ -44,7 +44,7 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testVerifyMasJobIdKafka() {
+  void testVerifyMasJobIdRabbitMq() {
     // Given
     given(environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)).willReturn(
         true);
@@ -75,7 +75,7 @@ class MasJobRecordServiceTest {
   }
 
   @Test
-  void testVerifyMasJobIdKafkaFails() {
+  void testVerifyMasJobIdRabbitMqFails() {
     // Given
     given(environment.matchesProfiles(Profiles.RABBIT_MQ_MAS, Profiles.RABBIT_MQ_AUTO)).willReturn(
         true);

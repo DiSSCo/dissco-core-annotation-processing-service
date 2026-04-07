@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
@@ -233,28 +232,6 @@ class ProcessingAutoAcceptedServiceTest {
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
     then(rabbitMqPublisherService).shouldHaveNoInteractions();
-  }
-
-
-  @Test
-  void testCreateAnnotationKafkaFailure() throws Exception {
-    // Given
-    var annotationRequest = givenAutoAcceptedRequest();
-    given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
-    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
-    given(bulkResponse.errors()).willReturn(false);
-    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
-        .publishCreateEvent(givenAcceptedAnnotation());
-    given(fdoProperties.getType()).willReturn(FDO_TYPE);
-
-    // When
-    assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(List.of(annotationRequest)));
-
-    // Then
-    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(rabbitMqPublisherService).shouldHaveNoMoreInteractions();
   }
 
   @Test

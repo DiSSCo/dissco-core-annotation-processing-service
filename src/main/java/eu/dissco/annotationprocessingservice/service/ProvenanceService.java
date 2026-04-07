@@ -1,9 +1,6 @@
 package eu.dissco.annotationprocessingservice.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonpatch.diff.JsonDiff;
+import com.flipkart.zjsonpatch.Jackson3JsonDiff;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.CreateUpdateTombstoneEvent;
@@ -21,13 +18,16 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @RequiredArgsConstructor
 public class ProvenanceService {
 
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final ApplicationProperties properties;
 
   private static String getRdfsComment(ProvActivity.Type activityType) {
@@ -109,6 +109,6 @@ public class ProvenanceService {
   }
 
   private JsonNode createJsonPatch(Annotation annotation, Annotation currentAnnotation) {
-    return JsonDiff.asJson(mapper.valueToTree(currentAnnotation), mapper.valueToTree(annotation));
+    return Jackson3JsonDiff.asJson(mapper.valueToTree(currentAnnotation), mapper.valueToTree(annotation));
   }
 }

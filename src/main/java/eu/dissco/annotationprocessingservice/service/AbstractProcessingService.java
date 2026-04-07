@@ -9,7 +9,6 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
@@ -245,15 +244,7 @@ public abstract class AbstractProcessingService {
     }
     if (!bulkResponse.errors()) {
       log.info("{} annotations have been successfully indexed in elastic", annotations.size());
-      try {
-        for (var annotation : annotations) {
-          rabbitMqPublisherService.publishCreateEvent(annotation);
-        }
-      } catch (JsonProcessingException e) {
-        log.error("Unable to publish annotations to rabbitmq, rolling back");
-        rollbackService.rollbackNewAnnotations(annotations, true, true);
-        throw new FailedProcessingException();
-      }
+      annotations.forEach(rabbitMqPublisherService::publishCreateEvent);
     } else {
       partiallyFailedElasticInsert(annotations, bulkResponse);
       throw new FailedProcessingException();
@@ -272,13 +263,7 @@ public abstract class AbstractProcessingService {
     }
     if (indexDocument.result().equals(Result.Created)) {
       log.info("Annotation: {} has been successfully indexed", id);
-      try {
-        rabbitMqPublisherService.publishCreateEvent(annotation);
-      } catch (JsonProcessingException e) {
-        log.error("Unable to publish create event to rabbitmq.");
-        rollbackService.rollbackNewAnnotations(List.of(annotation), true, true);
-        throw new FailedProcessingException();
-      }
+      rabbitMqPublisherService.publishCreateEvent(annotation);
     } else {
       log.error("Elasticsearch did not create annotations: {}", id);
       rollbackService.rollbackNewAnnotations(List.of(annotation), false, true);

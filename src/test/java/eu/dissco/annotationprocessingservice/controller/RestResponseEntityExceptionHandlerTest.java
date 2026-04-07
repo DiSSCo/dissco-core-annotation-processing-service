@@ -28,7 +28,7 @@ class RestResponseEntityExceptionHandlerTest {
     var result = exceptionHandler.handleException(new FailedProcessingException());
 
     // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
   }
 
   @Test
@@ -37,7 +37,7 @@ class RestResponseEntityExceptionHandlerTest {
     var result = exceptionHandler.handleException(new IOException());
 
     // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
   }
 
   @Test
@@ -46,7 +46,7 @@ class RestResponseEntityExceptionHandlerTest {
     var result = exceptionHandler.handleException(new DataBaseException(""));
 
     // Then
-    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+    assertThat(result.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
   }
 
   @Test

@@ -4,8 +4,6 @@ import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TARGET_PID;
 import static eu.dissco.annotationprocessingservice.domain.FdoProfileAttributes.TARGET_TYPE;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotationRequest;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
@@ -17,6 +15,8 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,7 @@ public class FdoRecordService {
   private static final String DATA = "data";
   private static final String ID = "id";
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final FdoProperties fdoProperties;
 
   public List<JsonNode> buildPostHandleRequest(List<AnnotationProcessingRequest> annotationRequest) {

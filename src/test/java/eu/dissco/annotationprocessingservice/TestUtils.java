@@ -1,16 +1,10 @@
 package eu.dissco.annotationprocessingservice;
 
+import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DATE_STRING;
 import static eu.dissco.annotationprocessingservice.domain.AgentRoleType.PROCESSING_SERVICE;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import eu.dissco.annotationprocessingservice.configuration.DateDeserializer;
-import eu.dissco.annotationprocessingservice.configuration.DateSerializer;
-import eu.dissco.annotationprocessingservice.configuration.InstantDeserializer;
-import eu.dissco.annotationprocessingservice.configuration.InstantSerializer;
+import com.fasterxml.jackson.annotation.JsonSetter.Value;
+import com.fasterxml.jackson.annotation.Nulls;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.FailedMasEvent;
@@ -40,16 +34,32 @@ import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsPhysicalS
 import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen.OdsTopicDiscipline;
 import io.github.dissco.core.annotationlogic.schema.Identification;
 import io.github.dissco.core.annotationlogic.schema.TaxonIdentification;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestUtils {
 
-  public static final ObjectMapper MAPPER;
+  public static final JsonMapper MAPPER = JsonMapper.builder()
+      .findAndAddModules()
+      .defaultDateFormat(new SimpleDateFormat(DATE_STRING))
+      .defaultTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC))
+      .withConfigOverride(List.class,
+          cfg -> cfg.setNullHandling(Value.forValueNulls(Nulls.AS_EMPTY)))
+      .withConfigOverride(Map.class,
+          cfg -> cfg.setNullHandling(Value.forValueNulls(Nulls.AS_EMPTY)))
+      .withConfigOverride(Set.class,
+          cfg -> cfg.setNullHandling(Value.forValueNulls(Nulls.AS_EMPTY)))
+      .build();
 
   public static final String ID = "https://hdl.handle.net/20.5000.1025/KZL-VC0-ZK2";
   public static final String BARE_ID = "20.5000.1025/KZL-VC0-ZK2";
@@ -79,18 +89,6 @@ public class TestUtils {
   public static final String HANDLE_PROXY = "https://hdl.handle.net/";
   public static final String DOI_PROXY = "https://doi.org/";
   public static final String COMMENT = "a comment";
-
-  static {
-    var mapper = new ObjectMapper().findAndRegisterModules();
-    SimpleModule dateModule = new SimpleModule();
-    dateModule.addSerializer(Instant.class, new InstantSerializer());
-    dateModule.addDeserializer(Instant.class, new InstantDeserializer());
-    dateModule.addSerializer(Date.class, new DateSerializer());
-    dateModule.addDeserializer(Date.class, new DateDeserializer());
-    mapper.registerModule(dateModule);
-    mapper.setSerializationInclusion(Include.NON_NULL);
-    MAPPER = mapper.copy();
-  }
 
   public static HashedAnnotation givenHashedAnnotation() {
     return new HashedAnnotation(givenAnnotationProcessed(), ANNOTATION_HASH);
@@ -308,7 +306,7 @@ public class TestUtils {
         .withAnnotations(List.of(annotation));
   }
 
-  public static List<JsonNode> givenPostRequest() throws Exception {
+  public static List<JsonNode> givenPostRequest() {
     return List.of(MAPPER.readTree("""
         {
             "data": {
@@ -322,7 +320,7 @@ public class TestUtils {
         """));
   }
 
-  public static List<JsonNode> givenPatchRequest() throws Exception {
+  public static List<JsonNode> givenPatchRequest() {
     return List.of(MAPPER.readTree("""
         {
             "data": {
@@ -337,7 +335,7 @@ public class TestUtils {
         """));
   }
 
-  public static JsonNode givenRollbackCreationRequest() throws Exception {
+  public static JsonNode givenRollbackCreationRequest() {
     return MAPPER.readTree("""
         {
           "data": [
@@ -413,83 +411,80 @@ public class TestUtils {
   }
 
   public static JsonNode givenElasticDocument(String country, String id) {
-    try {
-      return MAPPER.readTree(
-          """
-              {
-               "@id":  \"""" + id + """
-              ",
-               "@type": "ods:DigitalSpecimen",
-               "dcterms:identifier": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
-               "ods:fdoType": "https://doi.org/21.T11148/894b1e6cad57e921764e",
-               "ods:midsLevel": 0,
-               "ods:version": 4,
-               "dcterms:created": "2022-11-01T09:59:24.000Z",
-               "ods:physicalSpecimenID": "123",
-               "ods:physicalSpecimenIDType": "Resolvable",
-               "ods:isMarkedAsType": true,
-               "ods:isKnownToContainMedia": true,
-               "ods:specimenName": "Abyssothyris Thomson, 1927",
-               "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
-               "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
-               "dcterms:modified": "03/12/2012",
-               "dwc:preparations": "",
-               "ods:organisationID": "https://ror.org/0349vqz63",
-               "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
-               "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
-               "ods:hasEvents": [
-                 {
-                   "dwc:eventRemarks": "Correct",
-                   "annotateTarget": "this",
-                   "ods:hasLocation": {
-                     "dwc:country": \"""" + country + """
-              ",
-                  "dwc:continent": "Europe",
-                  "ods:hasGeoreference": {
-                    "dwc:decimalLatitude": "52.123",
-                    "dwc:decimalLongitude": 10.1233,
-                    "dwc": [
-                      "1"
-                    ]
-                  },
-                  "dwc:locality": "known"
-                }
-              },
-              {
-                "dwc:eventRemarks": "Incorrect",
-                "annotateTarget": "this",
-                "ods:hasLocation": {
-                  "dwc:country": "Unknown",
-                  "dwc:continent": "Error",
-                  "ods:hasGeoreference": {
-                    "dwc:decimalLatitude": "51.123",
-                    "dwc:decimalLongitude": 10.5233
-                  },
-                  "dwc:locality": "unknown"
-                }
-              },
-              {
-                "dwc:eventRemarks": "Half Correct",
-                "annotateTarget": "this",
-                "ods:hasLocation": {
-                  "dwc:country": \"""" + country + """
-              ",
-                            "dwc:continent": "Unknown",
-                            "ods:hasGeoreference": {
-                              "dwc:decimalLatitude": "52.123",
-                              "dwc:decimalLongitude": 10.1233,
-                              "test": "hello"
-                            },
-                            "dwc:locality": "unknown"
-                          }
+
+    return MAPPER.readTree(
+        """
+            {
+             "@id":  \"""" + id + """
+            ",
+             "@type": "ods:DigitalSpecimen",
+             "dcterms:identifier": "https://doi.org/20.5000.1025/KZL-VC0-ZK2",
+             "ods:fdoType": "https://doi.org/21.T11148/894b1e6cad57e921764e",
+             "ods:midsLevel": 0,
+             "ods:version": 4,
+             "dcterms:created": "2022-11-01T09:59:24.000Z",
+             "ods:physicalSpecimenID": "123",
+             "ods:physicalSpecimenIDType": "Resolvable",
+             "ods:isMarkedAsType": true,
+             "ods:isKnownToContainMedia": true,
+             "ods:specimenName": "Abyssothyris Thomson, 1927",
+             "ods:sourceSystemID": "https://hdl.handle.net/20.5000.1025/3XA-8PT-SAY",
+             "dcterms:license": "http://creativecommons.org/licenses/by/4.0/legalcode",
+             "dcterms:modified": "03/12/2012",
+             "dwc:preparations": "",
+             "ods:organisationID": "https://ror.org/0349vqz63",
+             "ods:organisationName": "Royal Botanic Garden Edinburgh Herbarium",
+             "dwc:datasetName": "Royal Botanic Garden Edinburgh Herbarium",
+             "ods:hasEvents": [
+               {
+                 "dwc:eventRemarks": "Correct",
+                 "annotateTarget": "this",
+                 "ods:hasLocation": {
+                   "dwc:country": \"""" + country + """
+            ",
+                "dwc:continent": "Europe",
+                "ods:hasGeoreference": {
+                  "dwc:decimalLatitude": "52.123",
+                  "dwc:decimalLongitude": 10.1233,
+                  "dwc": [
+                    "1"
+                  ]
+                },
+                "dwc:locality": "known"
+              }
+            },
+            {
+              "dwc:eventRemarks": "Incorrect",
+              "annotateTarget": "this",
+              "ods:hasLocation": {
+                "dwc:country": "Unknown",
+                "dwc:continent": "Error",
+                "ods:hasGeoreference": {
+                  "dwc:decimalLatitude": "51.123",
+                  "dwc:decimalLongitude": 10.5233
+                },
+                "dwc:locality": "unknown"
+              }
+            },
+            {
+              "dwc:eventRemarks": "Half Correct",
+              "annotateTarget": "this",
+              "ods:hasLocation": {
+                "dwc:country": \"""" + country + """
+            ",
+                          "dwc:continent": "Unknown",
+                          "ods:hasGeoreference": {
+                            "dwc:decimalLatitude": "52.123",
+                            "dwc:decimalLongitude": 10.1233,
+                            "test": "hello"
+                          },
+                          "dwc:locality": "unknown"
                         }
-                      ]
-                    }
-              """
-      );
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException();
-    }
+                      }
+                    ]
+                  }
+            """
+    );
   }
 
   public static Map<String, UUID> givenBatchIdMap() {

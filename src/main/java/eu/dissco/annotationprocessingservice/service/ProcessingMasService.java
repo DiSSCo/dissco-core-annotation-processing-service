@@ -4,7 +4,6 @@ import static eu.dissco.annotationprocessingservice.configuration.ApplicationCon
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
@@ -178,7 +177,7 @@ public class ProcessingMasService extends AbstractProcessingService {
       rollbackService.rollbackBatchIds(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           "Unable to index annotation in elastic");
-      throw new FailedProcessingException();
+      throw e;
     }
     return hashedAnnotations.stream().map(HashedAnnotation::annotation).toList();
   }
@@ -212,7 +211,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     } catch (FailedProcessingException e) {
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           "Unable to index annotation in elastic");
-      throw new FailedProcessingException();
+      throw e;
     }
     return idList;
   }
@@ -234,17 +233,11 @@ public class ProcessingMasService extends AbstractProcessingService {
     }
     if (!bulkResponse.errors()) {
       log.info("Annotations: {} have been successfully indexed", idList);
-      try {
-        for (var updatedAnnotation : updatedAnnotations) {
+      updatedAnnotations.forEach(updatedAnnotation ->
           rabbitMqPublisherService.publishUpdateEvent(
               updatedAnnotation.hashedCurrentAnnotation().annotation(),
               updatedAnnotation.hashedAnnotation()
-                  .annotation());
-        }
-      } catch (JsonProcessingException e) {
-        rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, true, true);
-        throw new FailedProcessingException();
-      }
+                  .annotation()));
     } else {
       partiallyFailedElasticUpdate(updatedAnnotations, bulkResponse);
       throw new FailedProcessingException();

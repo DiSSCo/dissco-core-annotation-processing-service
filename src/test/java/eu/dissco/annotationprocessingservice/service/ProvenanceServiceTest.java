@@ -11,7 +11,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneAnno
 import static eu.dissco.annotationprocessingservice.TestUtils.givenTombstoneMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.schema.Agent;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsStatus;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.type.TypeReference;
 
 @ExtendWith(MockitoExtension.class)
 class ProvenanceServiceTest {
@@ -114,7 +114,7 @@ class ProvenanceServiceTest {
 
     // Then
     assertThat(event.getDctermsIdentifier()).isEqualTo(ID + "/" + 2);
-    assertThat(event.getProvActivity().getOdsChangeValue()).isEqualTo(givenTombstoneChangeValue());
+    assertThat(event.getProvActivity().getOdsChangeValue()).hasSameElementsAs(givenTombstoneChangeValue());
     assertThat(event.getProvEntity().getProvValue()).isNotNull();
     assertThat(event.getProvActivity().getRdfsComment()).isEqualTo("Annotation tombstoned");
     assertThat(event.getOdsHasAgents()).isEqualTo(givenExpectedAgents());

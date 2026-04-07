@@ -29,7 +29,7 @@ public class AnnotationBatchRecordService {
     if (batchingRequested && event.getBatchId() == null) {
       batchIds = Optional.of(newAnnotations.stream().collect(Collectors.toMap(
           Annotation::getId,
-          value -> UUID.randomUUID()
+          _ -> UUID.randomUUID()
       )));
       createNewAnnotationBatchRecord(batchIds.get(), newAnnotations);
     } else if (event.getBatchId() != null) {

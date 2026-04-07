@@ -90,7 +90,7 @@ public class RollbackService {
       try {
         repository.createAnnotationRecordsHashed(currentAnnotationsHashed);
       } catch (DataAccessException e) {
-        log.error("Fatal database exception. Unable to rollback annotations to original state");
+        log.error("Fatal database exception. Unable to rollback annotations to original state", e);
       }
     }
   }
@@ -116,7 +116,7 @@ public class RollbackService {
       try {
         repository.createAnnotationRecord(currentAnnotation);
       } catch (DataAccessException e) {
-        log.error("Fatal database exception. Unable to rollback annotation to original state");
+        log.error("Fatal database exception. Unable to rollback annotation to original state", e);
       }
     }
   }
@@ -137,7 +137,7 @@ public class RollbackService {
     } catch (PidCreationException e) {
       log.error("Unable to rollback handle update for annotations {}",
           updatedAnnotations.stream().map(p -> p.hashedCurrentAnnotation().annotation().getId())
-              .toList());
+              .toList(), e);
     }
   }
 

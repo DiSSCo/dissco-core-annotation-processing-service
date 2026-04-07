@@ -3,11 +3,8 @@ package eu.dissco.annotationprocessingservice.repository;
 import static eu.dissco.annotationprocessingservice.configuration.ApplicationConfiguration.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.DIGITAL_SPECIMEN;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
-import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +14,7 @@ import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.exception.DataAccessException;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Repository
@@ -25,7 +23,7 @@ public class DigitalSpecimenRepository {
 
   private final DSLContext context;
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
 
 
   public List<DigitalSpecimen> getDigitalSpecimenTargets(Set<String> specimenIds) {
@@ -42,19 +40,12 @@ public class DigitalSpecimenRepository {
   }
 
   private DigitalSpecimen mapToDigitalSpecimen(Record dbRecord) {
-    try {
-      return mapper.readValue(dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), DigitalSpecimen.class)
-          .withDctermsIdentifier(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
-          .withId(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
-          .withOdsMidsLevel(Integer.valueOf(dbRecord.get(DIGITAL_SPECIMEN.MIDSLEVEL)))
-          .withOdsVersion(dbRecord.get(DIGITAL_SPECIMEN.VERSION))
-          .withDctermsCreated(Date.from(dbRecord.get(DIGITAL_SPECIMEN.CREATED)));
-    } catch (JsonProcessingException e) {
-      log.warn("Unable to map jsonb to digital specimen: {}",
-          dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), e);
-      throw new DataBaseException(
-          "Unable to map jsonb to digital specimen. Validation not possible.");
-    }
+    return mapper.readValue(dbRecord.get(DIGITAL_SPECIMEN.DATA).data(), DigitalSpecimen.class)
+        .withDctermsIdentifier(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
+        .withId(DOI_PROXY + dbRecord.get(DIGITAL_SPECIMEN.ID))
+        .withOdsMidsLevel(Integer.valueOf(dbRecord.get(DIGITAL_SPECIMEN.MIDSLEVEL)))
+        .withOdsVersion(dbRecord.get(DIGITAL_SPECIMEN.VERSION))
+        .withDctermsCreated(Date.from(dbRecord.get(DIGITAL_SPECIMEN.CREATED)));
   }
 
 }
