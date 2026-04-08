@@ -9,7 +9,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenOaTarget;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenSearchParamCountry;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenSelector;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.Option;

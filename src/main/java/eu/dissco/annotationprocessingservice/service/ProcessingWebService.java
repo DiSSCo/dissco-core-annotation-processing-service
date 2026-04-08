@@ -12,7 +12,7 @@ import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -115,7 +115,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to post update for annotations {}", currentAnnotation.getId(), e);
       throw new FailedProcessingException();
     }
@@ -150,12 +150,12 @@ public class ProcessingWebService extends AbstractProcessingService {
   }
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,
-      Annotation annotation) throws PidCreationException {
+      Annotation annotation) throws PidException {
     if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
       return;
     }
     var requestBody = fdoRecordService.buildPatchHandleRequest(annotation);
-    handleComponent.updateHandle(requestBody);
+    handleComponent.updateHandles(requestBody);
   }
 
   private void indexElasticUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)

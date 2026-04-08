@@ -17,7 +17,7 @@ import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -154,7 +154,7 @@ public abstract class AbstractProcessingService {
     var requestBody = fdoRecordService.buildTombstoneHandleRequest(handle);
     try {
       handleComponent.archiveHandle(requestBody, handle);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to archive annotations in handle system for annotations {}",
           currentAnnotation.getId(), e);
       throw new FailedProcessingException();
@@ -303,7 +303,7 @@ public abstract class AbstractProcessingService {
     var requestBody = fdoRecordService.buildPostHandleRequestHash(hashedAnnotations);
     try {
       return handleComponent.postHandlesHashed(requestBody);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to create handle for given annotations. ", e);
       if (jobId != null) {
         masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult,
@@ -319,7 +319,7 @@ public abstract class AbstractProcessingService {
     var requestBody = fdoRecordService.buildPostHandleRequest(List.of(annotationRequest));
     try {
       return handleComponent.postHandle(requestBody);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to create handle for given annotations. ", e);
       throw new FailedProcessingException();
     }

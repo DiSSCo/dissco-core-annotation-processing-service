@@ -27,7 +27,7 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.AutoAcceptedAnnotation;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -239,7 +239,7 @@ class ProcessingAutoAcceptedServiceTest {
     // Given
     var annotationRequest = givenAutoAcceptedRequest();
     given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
-    doThrow(PidCreationException.class).when(handleComponent).postHandlesHashed(any());
+    doThrow(PidException.class).when(handleComponent).postHandlesHashed(any());
 
     // When
     assertThrows(FailedProcessingException.class,

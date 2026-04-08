@@ -17,7 +17,7 @@ import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -190,7 +190,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     var idList = getIdListFromUpdates(updatedAnnotations);
     try {
       filterUpdatesAndUpdateHandleRecord(updatedAnnotations);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to post update for annotations {}", idList, e);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           e.getMessage());
@@ -245,7 +245,7 @@ public class ProcessingMasService extends AbstractProcessingService {
   }
 
   private void filterUpdatesAndUpdateHandleRecord(Set<UpdatedAnnotation> updatedAnnotations)
-      throws PidCreationException {
+      throws PidException {
     var handleNeedsUpdate = updatedAnnotations.stream()
         .filter(p -> fdoRecordService.handleNeedsUpdate(p.hashedCurrentAnnotation().annotation(),
             p.hashedAnnotation().annotation()))
@@ -256,7 +256,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     }
     var requestBody = fdoRecordService.buildPatchHandleRequest(handleNeedsUpdate);
     if (!requestBody.isEmpty()) {
-      handleComponent.updateHandle(requestBody);
+      handleComponent.updateHandles(requestBody);
     }
   }
 

@@ -33,7 +33,7 @@ import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -251,7 +251,7 @@ class ProcessingWebServiceTest {
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    doThrow(PidCreationException.class).when(handleComponent).postHandle(any());
+    doThrow(PidException.class).when(handleComponent).postHandle(any());
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -284,7 +284,7 @@ class ProcessingWebServiceTest {
     assertThat(result.getId()).isEqualTo(ID);
     then(fdoRecordService).should()
         .buildPatchHandleRequest(annotation);
-    then(handleComponent).should().updateHandle(any());
+    then(handleComponent).should().updateHandles(any());
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
@@ -353,7 +353,7 @@ class ProcessingWebServiceTest {
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(PidCreationException.class).when(handleComponent).updateHandle(any());
+    doThrow(PidException.class).when(handleComponent).updateHandles(any());
 
     // When
     assertThrows(FailedProcessingException.class,

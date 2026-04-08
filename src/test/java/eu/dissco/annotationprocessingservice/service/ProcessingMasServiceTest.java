@@ -57,7 +57,7 @@ import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -300,7 +300,7 @@ class ProcessingMasServiceTest {
     given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
         new ArrayList<>());
-    given(handleComponent.postHandlesHashed(any())).willThrow(PidCreationException.class);
+    given(handleComponent.postHandlesHashed(any())).willThrow(PidException.class);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 
@@ -384,7 +384,7 @@ class ProcessingMasServiceTest {
     // Then
     then(fdoRecordService).should()
         .buildPatchHandleRequest(anyList());
-    then(handleComponent).should().updateHandle(any());
+    then(handleComponent).should().updateHandles(any());
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
@@ -403,7 +403,7 @@ class ProcessingMasServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
-    doThrow(PidCreationException.class).when(handleComponent).updateHandle(any());
+    doThrow(PidException.class).when(handleComponent).updateHandles(any());
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 
@@ -463,7 +463,7 @@ class ProcessingMasServiceTest {
     service.handleMessage(event);
 
     // Then
-    then(handleComponent).should().updateHandle(givenPatchRequest());
+    then(handleComponent).should().updateHandles(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
     then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
     then(rabbitMqPublisherService).should()
@@ -528,7 +528,7 @@ class ProcessingMasServiceTest {
     service.handleMessage(event);
 
     // Then
-    then(handleComponent).should().updateHandle(givenPatchRequest());
+    then(handleComponent).should().updateHandles(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
     then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
     then(rabbitMqPublisherService).should()
@@ -682,7 +682,7 @@ class ProcessingMasServiceTest {
   @Test
   void testArchiveAnnotationHandleFailed() throws Exception {
     // Given
-    doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any(), eq(BARE_ID));
+    doThrow(PidException.class).when(handleComponent).archiveHandle(any(), eq(BARE_ID));
 
     // When
     assertThrows(FailedProcessingException.class,
