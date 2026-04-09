@@ -16,6 +16,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenProcessingAge
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -44,6 +45,7 @@ import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jooq.exception.DataAccessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +53,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -119,10 +122,10 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    service.handleMessage(List.of(annotationRequest));
+    service.handleMessage(Set.of(annotationRequest));
 
     // Then
-    then(repository).should().createMergedAnnotationRecords(List.of(givenAcceptedAnnotation()));
+    then(repository).should().createMergedAnnotationRecords(Map.of(givenAcceptedAnnotation(), Boolean.TRUE));
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -131,7 +134,8 @@ class ProcessingAutoAcceptedServiceTest {
     // Given
     var annotation = givenAutoAcceptedRequest().annotation()
         .withOaMotivation(OaMotivation.OA_EDITING);
-    var annotationRequest = new AutoAcceptedAnnotation(givenProcessingAgent(), annotation);
+    var annotationRequest = new AutoAcceptedAnnotation(givenProcessingAgent(), annotation,
+        Boolean.TRUE);
     var expected = givenAcceptedAnnotation().withOaMotivation(Annotation.OaMotivation.OA_EDITING)
         .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED);
     given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
@@ -141,10 +145,10 @@ class ProcessingAutoAcceptedServiceTest {
     given(fdoProperties.getType()).willReturn(FDO_TYPE);
 
     // When
-    service.handleMessage(List.of(annotationRequest));
+    service.handleMessage(Set.of(annotationRequest));
 
     // Then
-    then(repository).should().createMergedAnnotationRecords(List.of(expected));
+    then(repository).should().createMergedAnnotationRecords(Map.of(expected, Boolean.TRUE));
     then(rabbitMqPublisherService).should().publishCreateEvent(any(Annotation.class));
   }
 
@@ -152,19 +156,22 @@ class ProcessingAutoAcceptedServiceTest {
   void testCreateAnnotations() throws Exception {
     // Given
     var altBody = new AnnotationBody().withOaValue(List.of("another value"));
-    var expected = List.of(
-        givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID),
-        givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID)
-            .withOdsMergingStateChangeDate(Date.from(CREATED))
-            .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED)
-            .withOdsHasMergingStateChangedBy(givenProcessingAgent())
-            .withOaHasBody(altBody));
-    var annotationRequests = List.of(givenAutoAcceptedRequest(),
-        new AutoAcceptedAnnotation(givenProcessingAgent(),
-            givenAnnotationRequest().withOaHasBody(altBody)));
-    given(annotationHasher.getAnnotationHash(givenAutoAcceptedRequest().annotation(), true)).willReturn(
+    var annotation1 = givenAcceptedAnnotation(HANDLE_PROXY + BARE_ID);
+    var annotation2 = givenAnnotationProcessedWeb(HANDLE_PROXY + TARGET_ID, CREATOR, TARGET_ID)
+        .withOdsMergingStateChangeDate(Date.from(CREATED))
+        .withOdsMergingDecisionStatus(OdsMergingDecisionStatus.APPROVED)
+        .withOdsHasMergingStateChangedBy(givenProcessingAgent())
+        .withOaHasBody(altBody);
+    var annotationRequest1 = givenAutoAcceptedRequest();
+    var annotationRequest2 =  new AutoAcceptedAnnotation(givenProcessingAgent(),
+        givenAnnotationRequest().withOaHasBody(altBody),
+        null);
+    var annotationRequests = Set.of(annotationRequest1, annotationRequest2);
+    given(annotationHasher.getAnnotationHash(annotationRequest1.annotation(),
+        true)).willReturn(
         ANNOTATION_HASH);
-    given(annotationHasher.getAnnotationHash(annotationRequests.get(1).annotation(), true)).willReturn(
+    given(annotationHasher.getAnnotationHash(annotationRequest2.annotation(),
+        true)).willReturn(
         ANNOTATION_HASH_2);
     given(handleComponent.postHandlesHashed(any())).willReturn(
         Map.of(ANNOTATION_HASH, BARE_ID, ANNOTATION_HASH_2, TARGET_ID));
@@ -176,7 +183,10 @@ class ProcessingAutoAcceptedServiceTest {
     service.handleMessage(annotationRequests);
 
     // Then
-    then(repository).should().createMergedAnnotationRecords(expected);
+    then(repository).should().createMergedAnnotationRecords(Mockito.argThat(argument ->
+        argument.containsKey(annotation2)));
+    then(repository).should().createMergedAnnotationRecords(Mockito.argThat(argument ->
+        argument.containsKey(annotation1)));
     then(rabbitMqPublisherService).should(times(2)).publishCreateEvent(any(Annotation.class));
   }
 
@@ -187,11 +197,11 @@ class ProcessingAutoAcceptedServiceTest {
     given(annotationHasher.getAnnotationHash(any(), eq(true))).willReturn(ANNOTATION_HASH);
     given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
     doThrow(DataAccessException.class).when(repository)
-        .createMergedAnnotationRecords(anyList());
+        .createMergedAnnotationRecords(anyMap());
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(List.of(annotationRequest)));
+        () -> service.handleMessage(Set.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(false));
@@ -208,7 +218,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(List.of(annotationRequest)));
+        () -> service.handleMessage(Set.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
@@ -227,7 +237,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(List.of(annotationRequest)));
+        () -> service.handleMessage(Set.of(annotationRequest)));
 
     // Then
     then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(false), eq(true));
@@ -243,7 +253,7 @@ class ProcessingAutoAcceptedServiceTest {
 
     // When
     assertThrows(FailedProcessingException.class,
-        () -> service.handleMessage(List.of(annotationRequest)));
+        () -> service.handleMessage(Set.of(annotationRequest)));
 
     // Then
     then(repository).shouldHaveNoInteractions();

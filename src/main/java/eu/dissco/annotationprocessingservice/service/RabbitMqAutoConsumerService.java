@@ -6,6 +6,7 @@ import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -29,7 +30,7 @@ public class RabbitMqAutoConsumerService {
       throws DataBaseException, FailedProcessingException {
     var events = messages.stream()
         .map(message -> mapper.readValue(message, AutoAcceptedAnnotation.class))
-        .filter(Objects::nonNull).toList();
+        .filter(Objects::nonNull).collect(Collectors.toSet());
     autoAcceptedService.handleMessage(events);
   }
 

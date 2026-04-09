@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -76,11 +77,12 @@ public class AnnotationRepository {
     fullQuery.execute();
   }
 
-  public void createMergedAnnotationRecords(List<Annotation> annotations) {
+  public void createMergedAnnotationRecords(Map<Annotation, Boolean> annotationMap) {
     var queryList = new ArrayList<Query>();
-    for (var annotation : annotations) {
-      var insertQuery = insertAnnotation(annotation, true);
-      var fullQuery = onConflict(annotation, insertQuery, true);
+    // Entry has key of annotation, value of isDataFromSourceSystem (i.e. if we should mark as merge)
+    for (var entry : annotationMap.entrySet()) {
+      var insertQuery = insertAnnotation(entry.getKey(), entry.getValue());
+      var fullQuery = onConflict(entry.getKey(), insertQuery, entry.getValue());
       queryList.add(fullQuery);
     }
     context.batch(queryList).execute();
