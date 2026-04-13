@@ -4,7 +4,6 @@ import static eu.dissco.annotationprocessingservice.configuration.ApplicationCon
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
@@ -18,7 +17,7 @@ import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -178,7 +177,7 @@ public class ProcessingMasService extends AbstractProcessingService {
       rollbackService.rollbackBatchIds(batchIds);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           "Unable to index annotation in elastic");
-      throw new FailedProcessingException();
+      throw e;
     }
     return hashedAnnotations.stream().map(HashedAnnotation::annotation).toList();
   }
@@ -191,7 +190,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     var idList = getIdListFromUpdates(updatedAnnotations);
     try {
       filterUpdatesAndUpdateHandleRecord(updatedAnnotations);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to post update for annotations {}", idList, e);
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           e.getMessage());
@@ -212,7 +211,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     } catch (FailedProcessingException e) {
       masJobRecordService.markMasJobRecordAsFailed(jobId, isBatchResult, ErrorCode.DISSCO_EXCEPTION,
           "Unable to index annotation in elastic");
-      throw new FailedProcessingException();
+      throw e;
     }
     return idList;
   }
@@ -234,17 +233,11 @@ public class ProcessingMasService extends AbstractProcessingService {
     }
     if (!bulkResponse.errors()) {
       log.info("Annotations: {} have been successfully indexed", idList);
-      try {
-        for (var updatedAnnotation : updatedAnnotations) {
+      updatedAnnotations.forEach(updatedAnnotation ->
           rabbitMqPublisherService.publishUpdateEvent(
               updatedAnnotation.hashedCurrentAnnotation().annotation(),
               updatedAnnotation.hashedAnnotation()
-                  .annotation());
-        }
-      } catch (JsonProcessingException e) {
-        rollbackService.rollbackUpdatedAnnotations(updatedAnnotations, true, true);
-        throw new FailedProcessingException();
-      }
+                  .annotation()));
     } else {
       partiallyFailedElasticUpdate(updatedAnnotations, bulkResponse);
       throw new FailedProcessingException();
@@ -252,7 +245,7 @@ public class ProcessingMasService extends AbstractProcessingService {
   }
 
   private void filterUpdatesAndUpdateHandleRecord(Set<UpdatedAnnotation> updatedAnnotations)
-      throws PidCreationException {
+      throws PidException {
     var handleNeedsUpdate = updatedAnnotations.stream()
         .filter(p -> fdoRecordService.handleNeedsUpdate(p.hashedCurrentAnnotation().annotation(),
             p.hashedAnnotation().annotation()))
@@ -263,7 +256,7 @@ public class ProcessingMasService extends AbstractProcessingService {
     }
     var requestBody = fdoRecordService.buildPatchHandleRequest(handleNeedsUpdate);
     if (!requestBody.isEmpty()) {
-      handleComponent.updateHandle(requestBody);
+      handleComponent.updateHandles(requestBody);
     }
   }
 

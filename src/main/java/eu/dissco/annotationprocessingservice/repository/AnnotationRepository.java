@@ -3,14 +3,10 @@ package eu.dissco.annotationprocessingservice.repository;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.ANNOTATION;
 import static eu.dissco.annotationprocessingservice.utils.HandleUtils.removeProxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.AnnotationStatusEnum;
 import eu.dissco.annotationprocessingservice.database.jooq.tables.records.AnnotationRecord;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
-import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
-import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.utils.HandleUtils;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -28,13 +24,14 @@ import org.jooq.JSONB;
 import org.jooq.Query;
 import org.jooq.Record;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Repository
 @RequiredArgsConstructor
 public class AnnotationRepository {
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
   private final DSLContext context;
 
   public List<HashedAnnotation> getAnnotationFromHash(Set<UUID> annotationHashes) {
@@ -54,7 +51,7 @@ public class AnnotationRepository {
         .map(this::mapAnnotation);
   }
 
-  public Annotation getAnnotation(String annotationId){
+  public Annotation getAnnotation(String annotationId) {
     return context.select(ANNOTATION.asterisk())
         .from(ANNOTATION)
         .where(ANNOTATION.ID.eq(removeProxy(annotationId)))
@@ -62,13 +59,8 @@ public class AnnotationRepository {
   }
 
   private Annotation mapAnnotation(Record dbRecord) {
-    try {
-      return mapper.readValue(dbRecord.get(ANNOTATION.DATA).data(),
-          Annotation.class);
-    } catch (JsonProcessingException e) {
-      log.error("Failed to get data from database, Unable to parse JSONB to JSON", e);
-      throw new DataBaseException(e.getMessage());
-    }
+    return mapper.readValue(dbRecord.get(ANNOTATION.DATA).data(),
+        Annotation.class);
   }
 
   private HashedAnnotation mapHashedAnnotation(Record dbRecord) {
@@ -106,40 +98,39 @@ public class AnnotationRepository {
     context.batch(queryList).execute();
   }
 
-  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation, boolean isMerged) {
-    try {
-      return context.insertInto(ANNOTATION)
-          .set(ANNOTATION.ID, removeProxy(annotation))
-          .set(ANNOTATION.VERSION, annotation.getOdsVersion())
-          .set(ANNOTATION.TYPE, annotation.getOdsFdoType())
-          .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
-          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
-          .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
-          .set(ANNOTATION.CREATOR, annotation.getDctermsCreator().getId())
-          .set(ANNOTATION.CREATED, annotation.getDctermsCreated().toInstant())
-          .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
-          .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
-          .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
-          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged))
-          .set(ANNOTATION.DATA, mapToJSONB(annotation));
-    } catch (JsonProcessingException e) {
-      log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
-      throw new DataBaseException(e.getMessage());
-    }
+  private InsertSetMoreStep<AnnotationRecord> insertAnnotation(Annotation annotation,
+      boolean isMerged) {
+    return context.insertInto(ANNOTATION)
+        .set(ANNOTATION.ID, removeProxy(annotation))
+        .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+        .set(ANNOTATION.TYPE, annotation.getOdsFdoType())
+        .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
+        .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
+        .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
+        .set(ANNOTATION.CREATOR, annotation.getDctermsCreator().getId())
+        .set(ANNOTATION.CREATED, annotation.getDctermsCreated().toInstant())
+        .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
+        .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
+        .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
+        .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged))
+        .set(ANNOTATION.DATA, mapToJSONB(annotation));
   }
 
   private static AnnotationStatusEnum getAnnotationStatus(Annotation annotation, boolean isMerged) {
     if (isMerged) {
       return AnnotationStatusEnum.MERGED;
     }
-    switch (annotation.getOdsMergingDecisionStatus()){
+    switch (annotation.getOdsMergingDecisionStatus()) {
       case APPROVED -> {
         return AnnotationStatusEnum.ACCEPTED;
-      } case PENDING ->  {
+      }
+      case PENDING -> {
         return AnnotationStatusEnum.PENDING;
-      } case REJECTED ->  {
+      }
+      case REJECTED -> {
         return AnnotationStatusEnum.REJECTED;
-      } case null, default -> {
+      }
+      case null, default -> {
         return null;
       }
     }
@@ -148,24 +139,19 @@ public class AnnotationRepository {
   private @NotNull InsertOnDuplicateSetMoreStep<AnnotationRecord> onConflict(
       Annotation annotation,
       InsertSetMoreStep<AnnotationRecord> query, boolean isMerged) {
-    try {
-      return query.onConflict(ANNOTATION.ID).doUpdate()
-          .set(ANNOTATION.VERSION, annotation.getOdsVersion())
-          .set(ANNOTATION.TYPE, annotation.getOdsFdoType())
-          .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
-          .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
-          .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
-          .set(ANNOTATION.CREATOR, annotation.getDctermsCreator().getId())
-          .set(ANNOTATION.CREATED, annotation.getDctermsCreated().toInstant())
-          .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
-          .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
-          .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
-          .set(ANNOTATION.DATA, mapToJSONB(annotation))
-          .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged));
-    } catch (JsonProcessingException e) {
-      log.error("Failed to post data to database, unable to parse JSON to JSONB", e);
-      throw new DataBaseException(e.getMessage());
-    }
+    return query.onConflict(ANNOTATION.ID).doUpdate()
+        .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+        .set(ANNOTATION.TYPE, annotation.getOdsFdoType())
+        .set(ANNOTATION.MOTIVATION, annotation.getOaMotivation().value())
+        .set(ANNOTATION.MJR_JOB_ID, annotation.getOdsJobID())
+        .set(ANNOTATION.BATCH_ID, annotation.getOdsBatchID())
+        .set(ANNOTATION.CREATOR, annotation.getDctermsCreator().getId())
+        .set(ANNOTATION.CREATED, annotation.getDctermsCreated().toInstant())
+        .set(ANNOTATION.MODIFIED, annotation.getDctermsModified().toInstant())
+        .set(ANNOTATION.LAST_CHECKED, annotation.getDctermsCreated().toInstant())
+        .set(ANNOTATION.TARGET_ID, annotation.getOaHasTarget().getId())
+        .set(ANNOTATION.DATA, mapToJSONB(annotation))
+        .set(ANNOTATION.ANNOTATION_STATUS, getAnnotationStatus(annotation, isMerged));
   }
 
   public void updateLastChecked(List<String> idList) {
@@ -178,21 +164,15 @@ public class AnnotationRepository {
 
   public void archiveAnnotation(Annotation annotation) {
     var timestamp = annotation.getOdsHasTombstoneMetadata().getOdsTombstoneDate().toInstant();
-    try {
-      context.update(ANNOTATION)
-          .set(ANNOTATION.TOMBSTONED, timestamp)
-          .set(ANNOTATION.MODIFIED, timestamp)
-          .set(ANNOTATION.LAST_CHECKED, timestamp)
-          .set(ANNOTATION.DATA, mapToJSONB(annotation))
-          .set(ANNOTATION.VERSION, annotation.getOdsVersion())
-          .setNull(ANNOTATION.ANNOTATION_STATUS)
-          .where(ANNOTATION.ID.eq(removeProxy(annotation)))
-          .execute();
-    } catch (JsonProcessingException e) {
-      log.error("Unable to map data mapping to jsonb. Need to archive annotation {} manually",
-          annotation.getId(), e);
-      throw new DataBaseException(e.getMessage());
-    }
+    context.update(ANNOTATION)
+        .set(ANNOTATION.TOMBSTONED, timestamp)
+        .set(ANNOTATION.MODIFIED, timestamp)
+        .set(ANNOTATION.LAST_CHECKED, timestamp)
+        .set(ANNOTATION.DATA, mapToJSONB(annotation))
+        .set(ANNOTATION.VERSION, annotation.getOdsVersion())
+        .setNull(ANNOTATION.ANNOTATION_STATUS)
+        .where(ANNOTATION.ID.eq(removeProxy(annotation)))
+        .execute();
   }
 
   public void rollbackAnnotation(String id) {
@@ -204,7 +184,7 @@ public class AnnotationRepository {
     context.delete(ANNOTATION).where(ANNOTATION.ID.in(list)).execute();
   }
 
-  private JSONB mapToJSONB(Annotation annotation) throws JsonProcessingException {
+  private JSONB mapToJSONB(Annotation annotation) {
     return JSONB.valueOf(mapper.writeValueAsString(annotation));
   }
 }

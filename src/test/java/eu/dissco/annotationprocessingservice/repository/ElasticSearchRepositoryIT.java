@@ -13,16 +13,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.json.jackson.Jackson3JsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
-import com.fasterxml.jackson.databind.JsonNode;
 import eu.dissco.annotationprocessingservice.domain.AnnotationTargetType;
 import eu.dissco.annotationprocessingservice.properties.ElasticSearchProperties;
 import eu.dissco.annotationprocessingservice.schema.AnnotationBatchMetadata;
 import eu.dissco.annotationprocessingservice.schema.SearchParam;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import org.apache.hc.core5.http.Header;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import tools.jackson.databind.JsonNode;
 
 @Testcontainers
 class ElasticSearchRepositoryIT {
@@ -48,7 +49,7 @@ class ElasticSearchRepositoryIT {
   private static final String ELASTICSEARCH_USERNAME = "elastic";
   private static final String ELASTICSEARCH_PASSWORD = "s3cret";
   private static final ElasticsearchContainer container = new ElasticsearchContainer(
-      ELASTIC_IMAGE).withPassword(ELASTICSEARCH_PASSWORD);
+      ELASTIC_IMAGE).withPassword(ELASTICSEARCH_PASSWORD).withStartupTimeout(Duration.ofMinutes(2));
   private static ElasticsearchClient client;
   private static Rest5Client restClient;
   private ElasticSearchRepository repository;
@@ -67,7 +68,7 @@ class ElasticSearchRepositoryIT {
         .setSSLContext(container.createSslContextFromCa()).build();
 
     ElasticsearchTransport transport = new Rest5ClientTransport(restClient,
-        new JacksonJsonpMapper(MAPPER));
+        new Jackson3JsonpMapper(MAPPER));
 
     client = new ElasticsearchClient(transport);
   }
@@ -120,8 +121,8 @@ class ElasticSearchRepositoryIT {
 
     // Then
     assertThat(result.errors()).isFalse();
-    assertThat(result.items().get(0).id()).isEqualTo(ID);
-    assertThat(result.items().get(0).result()).isEqualTo("created");
+    assertThat(result.items().getFirst().id()).isEqualTo(ID);
+    assertThat(result.items().getFirst().result()).isEqualTo("created");
   }
 
   @Test
@@ -148,8 +149,8 @@ class ElasticSearchRepositoryIT {
 
     // Then
     assertThat(result.errors()).isFalse();
-    assertThat(result.items().get(0).id()).isEqualTo(ID);
-    assertThat(result.items().get(0).result()).isEqualTo("deleted");
+    assertThat(result.items().getFirst().id()).isEqualTo(ID);
+    assertThat(result.items().getFirst().result()).isEqualTo("deleted");
   }
 
   @Test
@@ -193,7 +194,7 @@ class ElasticSearchRepositoryIT {
     var bulkRequest = new BulkRequest.Builder();
     for (var doc : docs) {
       bulkRequest.operations(op -> op.index(
-          idx -> idx.index(index).id(doc.get("@id").asText())
+          idx -> idx.index(index).id(doc.get("@id").asString())
               .document(doc)));
     }
     client.bulk(bulkRequest.build());

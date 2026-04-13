@@ -15,7 +15,7 @@ import static org.mockito.Mockito.doThrow;
 
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
@@ -102,7 +102,7 @@ class RollbackServiceTest {
   void testRollbackNewAnnotationsPidFailed() throws Exception {
     // Given
     var annotations = List.of(givenAnnotationProcessed());
-    doThrow(PidCreationException.class).when(handleComponent).rollbackHandleCreation(any());
+    doThrow(PidException.class).when(handleComponent).rollbackHandleCreation(any());
 
     // When
     rollbackService.rollbackNewAnnotations(annotations, false, false);
@@ -200,7 +200,7 @@ class RollbackServiceTest {
   void testRollbackUpdatedAnnotationsPidFailed() throws Exception {
     // Given
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(PidCreationException.class).when(handleComponent).rollbackHandleUpdate(any());
+    doThrow(PidException.class).when(handleComponent).rollbackHandleUpdate(any());
 
     // When
     rollbackService.rollbackUpdatedAnnotations(givenUpdatedAnnotations(), false, false);

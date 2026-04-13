@@ -5,8 +5,6 @@ import static eu.dissco.annotationprocessingservice.configuration.ApplicationCon
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.dissco.annotationprocessingservice.Profiles;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
@@ -14,7 +12,7 @@ import eu.dissco.annotationprocessingservice.exception.BatchingException;
 import eu.dissco.annotationprocessingservice.exception.ConflictException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -32,13 +30,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.exception.DataAccessException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Service
 @Profile(Profiles.WEB)
 public class ProcessingWebService extends AbstractProcessingService {
 
-  private final ObjectMapper mapper;
+  private final JsonMapper mapper;
 
   public ProcessingWebService(AnnotationRepository repository,
       ElasticSearchRepository elasticRepository, RabbitMqPublisherService rabbitMqPublisherService,
@@ -46,7 +45,7 @@ public class ProcessingWebService extends AbstractProcessingService {
       ApplicationProperties applicationProperties, AnnotationValidatorService schemaValidator,
       MasJobRecordService masJobRecordService, BatchAnnotationService batchAnnotationService,
       AnnotationBatchRecordService annotationBatchRecordService, FdoProperties fdoProperties,
-      RollbackService rollbackService, AnnotationHasher annotationHasher, ObjectMapper mapper) {
+      RollbackService rollbackService, AnnotationHasher annotationHasher, JsonMapper mapper) {
     super(repository, elasticRepository, rabbitMqPublisherService, fdoRecordService,
         handleComponent,
         applicationProperties, schemaValidator, masJobRecordService, batchAnnotationService,
@@ -116,7 +115,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     try {
       filterUpdatesAndUpdateHandleRecord(currentAnnotation, annotation);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to post update for annotations {}", currentAnnotation.getId(), e);
       throw new FailedProcessingException();
     }
@@ -129,12 +128,8 @@ public class ProcessingWebService extends AbstractProcessingService {
       throws FailedProcessingException {
     var annotation = repository.getAnnotation(annotationId);
     Annotation currentAnnotation;
-    try {
-      // Create a deep copy of the annotation we retrieved
-      currentAnnotation = mapper.treeToValue(mapper.valueToTree(annotation), Annotation.class);
-    } catch (JsonProcessingException e) {
-      throw new FailedProcessingException();
-    }
+    // Create a deep copy of the annotation we retrieved
+    currentAnnotation = mapper.treeToValue(mapper.valueToTree(annotation), Annotation.class);
     addMergingDecisionStatus(annotation, decisionAgent, mergingDecisionStatus, true);
     insertUpdatedAnnotation(annotation, currentAnnotation);
     return annotation;
@@ -155,12 +150,12 @@ public class ProcessingWebService extends AbstractProcessingService {
   }
 
   private void filterUpdatesAndUpdateHandleRecord(Annotation currentAnnotation,
-      Annotation annotation) throws PidCreationException {
+      Annotation annotation) throws PidException {
     if (!fdoRecordService.handleNeedsUpdate(currentAnnotation, annotation)) {
       return;
     }
     var requestBody = fdoRecordService.buildPatchHandleRequest(annotation);
-    handleComponent.updateHandle(requestBody);
+    handleComponent.updateHandles(requestBody);
   }
 
   private void indexElasticUpdatedAnnotation(Annotation annotation, Annotation currentAnnotation)
@@ -175,12 +170,7 @@ public class ProcessingWebService extends AbstractProcessingService {
     }
     if (indexDocument.result().equals(Result.Updated)) {
       log.info("Annotation: {} has been successfully indexed", currentAnnotation.getId());
-      try {
-        rabbitMqPublisherService.publishUpdateEvent(currentAnnotation, annotation);
-      } catch (JsonProcessingException e) {
-        rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, true, true);
-        throw new FailedProcessingException();
-      }
+      rabbitMqPublisherService.publishUpdateEvent(currentAnnotation, annotation);
     } else {
       log.info("Elastic update failed. Rolling back annotation {}", currentAnnotation.getId());
       rollbackService.rollbackUpdatedAnnotation(currentAnnotation, annotation, false, true);

@@ -28,13 +28,12 @@ import static org.mockito.Mockito.mockStatic;
 
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.NotFoundException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -249,30 +248,10 @@ class ProcessingWebServiceTest {
   }
 
   @Test
-  void testCreateAnnotationKafkaFailure() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest();
-    given(handleComponent.postHandle(any())).willReturn(BARE_ID);
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Created);
-    given(elasticRepository.indexAnnotation(any(Annotation.class))).willReturn(indexResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
-        .publishCreateEvent(givenAnnotationProcessedWeb());
-    given(fdoProperties.getType()).willReturn(FDO_TYPE);
-
-    // When
-    assertThrows(FailedProcessingException.class,
-        () -> service.persistNewAnnotation(annotationRequest, false));
-
-    // Then
-    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-  }
-
-  @Test
   void testCreateAnnotationPidFailure() throws Exception {
     // Given
     var annotationRequest = givenAnnotationRequest();
-    doThrow(PidCreationException.class).when(handleComponent).postHandle(any());
+    doThrow(PidException.class).when(handleComponent).postHandle(any());
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -305,7 +284,7 @@ class ProcessingWebServiceTest {
     assertThat(result.getId()).isEqualTo(ID);
     then(fdoRecordService).should()
         .buildPatchHandleRequest(annotation);
-    then(handleComponent).should().updateHandle(any());
+    then(handleComponent).should().updateHandles(any());
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(givenAnnotationProcessedAlt(),
             givenAnnotationProcessedWeb().withOdsVersion(2));
@@ -374,7 +353,7 @@ class ProcessingWebServiceTest {
     given(repository.getAnnotationForUser(ID, CREATOR)).willReturn(
         Optional.of(givenAnnotationProcessedAlt()));
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(PidCreationException.class).when(handleComponent).updateHandle(any());
+    doThrow(PidException.class).when(handleComponent).updateHandles(any());
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -421,30 +400,6 @@ class ProcessingWebServiceTest {
 
     // Then
     then(rollbackService).should().rollbackUpdatedAnnotation(any(), any(), eq(false), eq(true));
-
-  }
-
-  @Test
-  void testUpdateAnnotationKafkaFailure() throws Exception {
-    // Given
-    var annotationRequest = givenAnnotationRequest().withId(BARE_ID);
-    given(repository.getAnnotationForUser(BARE_ID, CREATOR)).willReturn(
-        Optional.of(givenAnnotationProcessedAlt()));
-    var indexResponse = mock(IndexResponse.class);
-    given(indexResponse.result()).willReturn(Result.Updated);
-    given(elasticRepository.indexAnnotation(any())).willReturn(indexResponse);
-    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService)
-        .publishUpdateEvent(givenAnnotationProcessedAlt(),
-            givenAnnotationProcessedWeb().withOdsVersion(2));
-    given(fdoProperties.getType()).willReturn(FDO_TYPE);
-
-    // When
-    assertThrows(FailedProcessingException.class,
-        () -> service.updateAnnotation(annotationRequest));
-
-    // Then
-    then(rollbackService).should().rollbackUpdatedAnnotation(any(), any(), eq(true), eq(true));
 
   }
 

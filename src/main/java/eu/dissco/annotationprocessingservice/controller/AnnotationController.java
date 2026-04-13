@@ -80,7 +80,7 @@ public class AnnotationController {
       @RequestBody AnnotationProcessingEvent event)
       throws DataBaseException, FailedProcessingException, AnnotationValidationException {
     log.info("Received batch hashedAnnotation creation request");
-    var result = processingService.persistNewAnnotation(event.getAnnotations().get(0), true);
+    var result = processingService.persistNewAnnotation(event.getAnnotations().getFirst(), true);
     processingService.batchWebAnnotations(event, result);
     return ResponseEntity.ok(result);
   }

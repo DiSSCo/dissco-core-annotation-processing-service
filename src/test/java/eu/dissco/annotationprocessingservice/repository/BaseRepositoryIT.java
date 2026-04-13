@@ -4,7 +4,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.CREATED;
 import static eu.dissco.annotationprocessingservice.TestUtils.ID;
 import static eu.dissco.annotationprocessingservice.TestUtils.TARGET_ID;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.MAS_JOB_RECORD;
-import static org.testcontainers.containers.PostgreSQLContainer.IMAGE;
+import static org.testcontainers.postgresql.PostgreSQLContainer.IMAGE;
 
 import com.zaxxer.hikari.HikariDataSource;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.JobState;
@@ -15,19 +15,19 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DefaultDSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 class BaseRepositoryIT {
 
   private static final DockerImageName POSTGIS =
-      DockerImageName.parse("postgres:15.5").asCompatibleSubstituteFor(IMAGE);
+      DockerImageName.parse("postgres:18.3").asCompatibleSubstituteFor(IMAGE);
 
   @Container
-  private static final PostgreSQLContainer<?> CONTAINER = new PostgreSQLContainer<>(POSTGIS);
+  private static final PostgreSQLContainer CONTAINER = new PostgreSQLContainer(POSTGIS);
   protected DSLContext context;
   private HikariDataSource dataSource;
 

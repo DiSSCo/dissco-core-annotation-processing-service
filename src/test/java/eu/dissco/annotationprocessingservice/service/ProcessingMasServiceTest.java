@@ -48,7 +48,6 @@ import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.dissco.annotationprocessingservice.component.AnnotationHasher;
 import eu.dissco.annotationprocessingservice.database.jooq.enums.ErrorCode;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
@@ -58,7 +57,7 @@ import eu.dissco.annotationprocessingservice.domain.ProcessedAnnotationBatch;
 import eu.dissco.annotationprocessingservice.exception.AnnotationValidationException;
 import eu.dissco.annotationprocessingservice.exception.FailedProcessingException;
 import eu.dissco.annotationprocessingservice.exception.MethodNotAllowedException;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.ApplicationProperties;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
@@ -301,75 +300,13 @@ class ProcessingMasServiceTest {
     given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
     given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
         new ArrayList<>());
-    given(handleComponent.postHandlesHashed(any())).willThrow(PidCreationException.class);
+    given(handleComponent.postHandlesHashed(any())).willThrow(PidException.class);
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 
     // Then
     assertThrows(FailedProcessingException.class,
         () -> service.handleMessage(givenAnnotationEvent()));
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
-        eq(ErrorCode.DISSCO_EXCEPTION), any());
-  }
-
-  @Test
-  void testHandleNewMessageKafkaException()
-      throws Exception {
-    // Given
-    boolean batchingRequested = false;
-    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
-        new ArrayList<>());
-    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
-    given(bulkResponse.errors()).willReturn(false);
-    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishCreateEvent(any(
-        Annotation.class));
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
-        new MasJobRecord(JOB_ID, batchingRequested, null));
-
-    // When
-    assertThatThrownBy(() -> service.handleMessage(givenAnnotationEvent())).isInstanceOf(
-        FailedProcessingException.class);
-
-    // Then
-    then(rollbackService).should().rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(masJobRecordService).should()
-        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-    then(rollbackService).should().rollbackBatchIds(Optional.empty());
-    then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
-        eq(ErrorCode.DISSCO_EXCEPTION), any());
-  }
-
-  @Test
-  void testHandleNewMessageKafkaExceptionBatchingRequested() throws Exception {
-    // Given
-    boolean batchingRequested = true;
-    var mjr = new MasJobRecord(JOB_ID, batchingRequested, null);
-    var event = givenAnnotationEvent();
-    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(Set.of(ANNOTATION_HASH))).willReturn(
-        new ArrayList<>());
-    given(handleComponent.postHandlesHashed(any())).willReturn(Map.of(ANNOTATION_HASH, BARE_ID));
-    given(bulkResponse.errors()).willReturn(false);
-    given(elasticRepository.indexAnnotations(anyList())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishCreateEvent(any(
-        Annotation.class));
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(mjr);
-    given(annotationBatchRecordService.mintBatchIds(anyList(), eq(batchingRequested),
-        eq(event))).willReturn(
-        Optional.of(givenBatchIdMap()));
-
-    // When
-    assertThatThrownBy(() -> service.handleMessage(event)).isInstanceOf(
-        FailedProcessingException.class);
-
-    // Then
-    then(rollbackService).should()
-        .rollbackNewAnnotations(anyList(), eq(true), eq(true));
-    then(rollbackService).should().rollbackBatchIds(Optional.of(givenBatchIdMap()));
-    then(masJobRecordService).should()
-        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
     then(masJobRecordService).should().markMasJobRecordAsFailed(eq(JOB_ID), eq(false),
         eq(ErrorCode.DISSCO_EXCEPTION), any());
   }
@@ -447,7 +384,7 @@ class ProcessingMasServiceTest {
     // Then
     then(fdoRecordService).should()
         .buildPatchHandleRequest(anyList());
-    then(handleComponent).should().updateHandle(any());
+    then(handleComponent).should().updateHandles(any());
     then(rabbitMqPublisherService).should()
         .publishUpdateEvent(any(Annotation.class), any(Annotation.class));
     then(masJobRecordService).should().markMasJobRecordAsComplete(JOB_ID, List.of(ID), false);
@@ -466,7 +403,7 @@ class ProcessingMasServiceTest {
     given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
     given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
         List.of(givenRollbackCreationRequest()));
-    doThrow(PidCreationException.class).when(handleComponent).updateHandle(any());
+    doThrow(PidException.class).when(handleComponent).updateHandles(any());
     given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
         new MasJobRecord(JOB_ID, batchingRequested, null));
 
@@ -526,7 +463,7 @@ class ProcessingMasServiceTest {
     service.handleMessage(event);
 
     // Then
-    then(handleComponent).should().updateHandle(givenPatchRequest());
+    then(handleComponent).should().updateHandles(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
     then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
     then(rabbitMqPublisherService).should()
@@ -591,7 +528,7 @@ class ProcessingMasServiceTest {
     service.handleMessage(event);
 
     // Then
-    then(handleComponent).should().updateHandle(givenPatchRequest());
+    then(handleComponent).should().updateHandles(givenPatchRequest());
     then(repository).should().updateLastChecked(List.of(equalId));
     then(repository).should(times(2)).createAnnotationRecordsHashed(anyList());
     then(rabbitMqPublisherService).should()
@@ -723,66 +660,6 @@ class ProcessingMasServiceTest {
   }
 
   @Test
-  void testHandleUpdateMessageKafkaException() throws Exception {
-    // Given
-    boolean batchingRequested = false;
-    var annotation = givenAnnotationRequest().withId(ID);
-    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(
-        List.of(givenHashedAnnotationAlt()));
-    given(bulkResponse.errors()).willReturn(false);
-    given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
-        Annotation.class), any(Annotation.class));
-    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
-        List.of(givenRollbackCreationRequest()));
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
-        new MasJobRecord(JOB_ID, batchingRequested, null));
-
-    // When
-    assertThatThrownBy(
-        () -> service.handleMessage(givenAnnotationEvent(annotation))).isInstanceOf(
-        FailedProcessingException.class);
-
-    // Then
-    then(handleComponent).should().updateHandle(anyList());
-    then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
-    then(masJobRecordService).should()
-        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-  }
-
-  @Test
-  void testUpdateMessageKafkaExceptionHandleRollbackFailed() throws Exception {
-
-    // Given
-    boolean batchingRequested = false;
-    var annotationRequest = givenAnnotationRequest().withId(ID);
-    given(annotationHasher.getAnnotationHash(any(), eq(false))).willReturn(ANNOTATION_HASH);
-    given(repository.getAnnotationFromHash(any())).willReturn(
-        List.of(givenHashedAnnotationAlt()));
-    given(bulkResponse.errors()).willReturn(false);
-    given(elasticRepository.indexAnnotations(any())).willReturn(bulkResponse);
-    doThrow(JsonProcessingException.class).when(rabbitMqPublisherService).publishUpdateEvent(any(
-        Annotation.class), any(Annotation.class));
-    given(fdoRecordService.handleNeedsUpdate(any(), any())).willReturn(true);
-    given(fdoRecordService.buildPatchHandleRequest(anyList())).willReturn(
-        List.of(givenRollbackCreationRequest()));
-    given(masJobRecordService.getMasJobRecord(JOB_ID)).willReturn(
-        new MasJobRecord(JOB_ID, batchingRequested, null));
-
-    // When
-    assertThatThrownBy(
-        () -> service.handleMessage(givenAnnotationEvent(annotationRequest))).isInstanceOf(
-        FailedProcessingException.class);
-
-    // Then
-    then(masJobRecordService).should()
-        .markMasJobRecordAsFailed(eq(JOB_ID), eq(false), eq(ErrorCode.DISSCO_EXCEPTION), any());
-    then(rollbackService).should().rollbackUpdatedAnnotations(anySet(), eq(true), eq(true));
-  }
-
-  @Test
   void testArchiveAnnotation() throws Exception {
     // Given
     var deleteResponse = mock(DeleteResponse.class);
@@ -805,7 +682,7 @@ class ProcessingMasServiceTest {
   @Test
   void testArchiveAnnotationHandleFailed() throws Exception {
     // Given
-    doThrow(PidCreationException.class).when(handleComponent).archiveHandle(any(), eq(BARE_ID));
+    doThrow(PidException.class).when(handleComponent).archiveHandle(any(), eq(BARE_ID));
 
     // When
     assertThrows(FailedProcessingException.class,
@@ -935,7 +812,7 @@ class ProcessingMasServiceTest {
   }
 
   @Test
-  void testUpdateMessageDataAccessException() throws Exception {
+  void testUpdateMessageDataAccessException() {
     // Given
     boolean batchingRequested = false;
     var annotationRequest = givenAnnotationRequest();

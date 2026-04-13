@@ -3,7 +3,7 @@ package eu.dissco.annotationprocessingservice.service;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import eu.dissco.annotationprocessingservice.domain.HashedAnnotation;
 import eu.dissco.annotationprocessingservice.domain.UpdatedAnnotation;
-import eu.dissco.annotationprocessingservice.exception.PidCreationException;
+import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.repository.AnnotationBatchRecordRepository;
 import eu.dissco.annotationprocessingservice.repository.AnnotationRepository;
 import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
@@ -66,7 +66,7 @@ public class RollbackService {
   private void rollbackHandleCreation(List<String> idList) {
     try {
       handleComponent.rollbackHandleCreation(idList);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to rollback PID creation for annotations {}", idList, e);
     }
   }
@@ -90,7 +90,7 @@ public class RollbackService {
       try {
         repository.createAnnotationRecordsHashed(currentAnnotationsHashed);
       } catch (DataAccessException e) {
-        log.error("Fatal database exception. Unable to rollback annotations to original state");
+        log.error("Fatal database exception. Unable to rollback annotations to original state", e);
       }
     }
   }
@@ -116,7 +116,7 @@ public class RollbackService {
       try {
         repository.createAnnotationRecord(currentAnnotation);
       } catch (DataAccessException e) {
-        log.error("Fatal database exception. Unable to rollback annotation to original state");
+        log.error("Fatal database exception. Unable to rollback annotation to original state", e);
       }
     }
   }
@@ -134,10 +134,10 @@ public class RollbackService {
     var requestBody = fdoRecordService.buildPatchHandleRequest(handleNeedsUpdate);
     try {
       handleComponent.rollbackHandleUpdate(requestBody);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to rollback handle update for annotations {}",
           updatedAnnotations.stream().map(p -> p.hashedCurrentAnnotation().annotation().getId())
-              .toList());
+              .toList(), e);
     }
   }
 
@@ -150,7 +150,7 @@ public class RollbackService {
     );
     try {
       handleComponent.rollbackHandleUpdate(requestBody);
-    } catch (PidCreationException e) {
+    } catch (PidException e) {
       log.error("Unable to rollback handle update for annotations {}", currentAnnotation.getId(),
           e);
     }

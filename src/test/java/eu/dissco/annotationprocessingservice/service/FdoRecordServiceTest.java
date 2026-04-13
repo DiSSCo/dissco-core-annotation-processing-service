@@ -12,7 +12,6 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenPatchRequest;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenPostRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import eu.dissco.annotationprocessingservice.properties.FdoProperties;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.node.ObjectNode;
 
 class FdoRecordServiceTest {
 
@@ -41,27 +41,28 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testBuildPostRequest() throws Exception {
+  void testBuildPostRequest() {
     assertThat(fdoRecordService.buildPostHandleRequest(List.of(givenAnnotationRequest())))
         .isEqualTo(givenPostRequest());
   }
 
   @Test
-  void testBuildPostRequestBatch() throws Exception {
+  void testBuildPostRequestBatch() {
     // Given
-    var expected = givenPostRequest().get(0);
+    var expected = givenPostRequest().getFirst();
     ((ObjectNode) expected.get("data").get("attributes"))
         .put("annotationHash", ANNOTATION_HASH.toString());
 
     // When
-    var result = fdoRecordService.buildPostHandleRequestHash(List.of(givenHashedAnnotationRequest()));
+    var result = fdoRecordService.buildPostHandleRequestHash(
+        List.of(givenHashedAnnotationRequest()));
 
     // Then
     assertThat(result).isEqualTo(List.of(expected));
   }
 
   @Test
-  void testPatchRequest() throws Exception {
+  void testPatchRequest() {
     // When
     var result = fdoRecordService.buildPatchHandleRequest(givenAnnotationProcessed());
 
@@ -70,9 +71,9 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testPatchRequestBatch() throws Exception {
+  void testPatchRequestBatch() {
     // Given
-    var expected = givenPatchRequest().get(0);
+    var expected = givenPatchRequest().getFirst();
     ((ObjectNode) expected.get("data").get("attributes"))
         .put("annotationHash", ANNOTATION_HASH.toString());
     // When
@@ -83,7 +84,7 @@ class FdoRecordServiceTest {
   }
 
   @Test
-  void testArchiveAnnotation() throws Exception {
+  void testArchiveAnnotation() {
     // Given
     var expected = MAPPER.readTree("""
         {

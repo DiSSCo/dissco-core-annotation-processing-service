@@ -2,13 +2,10 @@ package eu.dissco.annotationprocessingservice.repository;
 
 import static eu.dissco.annotationprocessingservice.TestUtils.DOI_PROXY;
 import static eu.dissco.annotationprocessingservice.TestUtils.MAPPER;
-import static eu.dissco.annotationprocessingservice.TestUtils.givenAnnotationProcessed;
 import static eu.dissco.annotationprocessingservice.TestUtils.givenDigitalSpecimen;
 import static eu.dissco.annotationprocessingservice.database.jooq.Tables.DIGITAL_SPECIMEN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import eu.dissco.annotationprocessingservice.exception.DataBaseException;
 import io.github.dissco.core.annotationlogic.schema.DigitalSpecimen;
 import java.util.List;
 import java.util.Set;
@@ -43,18 +40,6 @@ class DigitalSpecimenRepositoryIT extends BaseRepositoryIT {
 
     // Then
     assertThat(result).isEqualTo(List.of(specimen));
-  }
-
-  @Test
-  void testGetSpecimenJsonException() throws Exception {
-    // Given
-    var specimen = givenDigitalSpecimen();
-    insertIntoDb(specimen, MAPPER.writeValueAsString(givenAnnotationProcessed()));
-    var id = specimen.getDctermsIdentifier().replace(DOI_PROXY, "");
-
-    // When / Then
-    assertThrowsExactly(DataBaseException.class,
-        () -> digitalSpecimenRepository.getDigitalSpecimenTargets(Set.of(id)));
   }
 
   private void insertIntoDb(DigitalSpecimen specimen, String specimenStr) {
