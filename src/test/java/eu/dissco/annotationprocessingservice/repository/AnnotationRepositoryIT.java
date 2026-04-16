@@ -20,6 +20,7 @@ import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OaMotivation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.jooq.Record;
@@ -75,7 +76,7 @@ class AnnotationRepositoryIT extends BaseRepositoryIT {
     var annotation = givenAnnotationProcessed(ID);
 
     // When
-    repository.createMergedAnnotationRecords(List.of(annotation));
+    repository.createMergedAnnotationRecords(Map.of(annotation, Boolean.TRUE));
     var result = context.select(ANNOTATION.ANNOTATION_STATUS).from(ANNOTATION)
         .where(ANNOTATION.ID.eq(ID.replace(HANDLE_PROXY, ""))).fetchOneInto(AnnotationStatusEnum.class);
 

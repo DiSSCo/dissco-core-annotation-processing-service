@@ -394,7 +394,7 @@ public class TestUtils {
   }
 
   public static AutoAcceptedAnnotation givenAutoAcceptedRequest() {
-    return new AutoAcceptedAnnotation(givenProcessingAgent(), givenAnnotationRequest());
+    return new AutoAcceptedAnnotation(givenProcessingAgent(), givenAnnotationRequest(), Boolean.TRUE);
   }
 
   public static Agent givenProcessingAgent() {

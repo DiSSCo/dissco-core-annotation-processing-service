@@ -56,9 +56,10 @@ public class RestClientConfiguration {
         .requestInterceptor(interceptor)
         // On status error, log the response and throw a PidException
         .defaultStatusHandler(HttpStatusCode::isError, (request, response) -> {
-            var body = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
-            log.error("Unable to communicate with the Handle API. Body: {}", body);
-            throw sneakyThrow(new PidException("An error has occurred creating the PID"));
+          var body = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
+          log.error("Unable to communicate with the Handle API. Status: {}, Body: {}",
+              response.getStatusCode(), body);
+          throw sneakyThrow(new PidException("An error has occurred creating the PID"));
         })
         .baseUrl(properties.getHandleEndpoint())
         .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
