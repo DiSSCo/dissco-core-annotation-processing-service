@@ -5,6 +5,7 @@ import static eu.dissco.annotationprocessingservice.TestUtils.givenAutoAcceptedR
 import static org.mockito.BDDMockito.then;
 
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +34,7 @@ class RabbitMqAutoConsumerServiceTest {
     service.getAutoAcceptedMessages(message);
 
     // Then
-    then(autoAcceptedService).should().handleMessage(List.of(givenAutoAcceptedRequest()));
+    then(autoAcceptedService).should().handleMessage(Set.of(givenAutoAcceptedRequest()));
   }
 
   private String givenAutoAcceptedMessage() {

@@ -15,8 +15,9 @@ import eu.dissco.annotationprocessingservice.repository.ElasticSearchRepository;
 import eu.dissco.annotationprocessingservice.schema.Annotation;
 import eu.dissco.annotationprocessingservice.schema.Annotation.OdsMergingDecisionStatus;
 import eu.dissco.annotationprocessingservice.web.HandleComponent;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,7 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
         annotationHasher);
   }
 
-  public void handleMessage(List<AutoAcceptedAnnotation> autoAcceptedAnnotations)
+  public void handleMessage(Set<AutoAcceptedAnnotation> autoAcceptedAnnotations)
       throws FailedProcessingException {
     log.debug("Processing auto-accepted annotation: {}", autoAcceptedAnnotations);
     var hashedAnnotations = autoAcceptedAnnotations.stream()
@@ -59,19 +60,22 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
     var ids = postHandles(
         hashedAnnotations.stream().map(HashedAutoAcceptedAnnotationRequest::hashedRequest).toList(),
         null, false);
-    var annotations = autoAcceptedAnnotations.stream().map(autoAcceptedAnnotation ->
-            buildAutoAcceptedAnnotation(autoAcceptedAnnotation, ids))
-        .toList();
+    var annotationMap = autoAcceptedAnnotations.stream()
+        .collect(Collectors.toMap(
+            autoAcceptedAnnotation ->
+                buildAutoAcceptedAnnotation(autoAcceptedAnnotation, ids),
+            AutoAcceptedAnnotation::isDataFromSourceSystem
+        ));
     log.info("New ids have been generated for {} Annotations", ids.size());
     try {
-      repository.createMergedAnnotationRecords(annotations);
+      repository.createMergedAnnotationRecords(annotationMap);
     } catch (DataAccessException e) {
       log.error("Unable to post new Annotation to DB", e);
-      rollbackService.rollbackNewAnnotations(annotations, false, false);
+      rollbackService.rollbackNewAnnotations(new ArrayList<>(annotationMap.keySet()), false, false);
       throw new FailedProcessingException();
     }
     log.info("Annotations have been successfully committed to database");
-    indexElasticNewAnnotations(annotations);
+    indexElasticNewAnnotations(new ArrayList<>(annotationMap.keySet()));
     log.info("Annotations have been successfully indexed in elastic");
   }
 
@@ -79,7 +83,8 @@ public class ProcessingAutoAcceptedService extends AbstractProcessingService {
       Map<UUID, String> ids) {
     var id = HANDLE_PROXY + ids.get(hashAnnotation(autoAcceptedAnnotation.annotation(), true));
     var annotation = buildAnnotation(autoAcceptedAnnotation.annotation(), id, 1, null, true);
-    addMergingDecisionStatus(annotation, autoAcceptedAnnotation.acceptingAgent(), OdsMergingDecisionStatus.APPROVED, false);
+    addMergingDecisionStatus(annotation, autoAcceptedAnnotation.acceptingAgent(),
+        OdsMergingDecisionStatus.APPROVED, false);
     return annotation;
   }
 
