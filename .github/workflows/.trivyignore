@@ -1,3 +1,15 @@
-# Mar 31
-# Upgrade to spring 4.0.5
-CVE-2026-29062
+# April 15, 2026
+# Issue with libpng, alpine image
+CVE-2026-25646
+
+# April 15, 2026
+# Issue with libpng, alpine image
+CVE-2026-33416
+
+# April 15, 2026
+# Issue with libpng, alpine image
+CVE-2026-33636
+
+# April 15, 2026
+# zlib, alpine image
+CVE-2026-22184
