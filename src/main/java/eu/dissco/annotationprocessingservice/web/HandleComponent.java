@@ -1,6 +1,6 @@
 package eu.dissco.annotationprocessingservice.web;
 
-import client.HandleClient;
+import eu.dissco.annotationprocessingservice.client.HandleClient;
 import eu.dissco.annotationprocessingservice.exception.PidException;
 import java.util.HashMap;
 import java.util.List;

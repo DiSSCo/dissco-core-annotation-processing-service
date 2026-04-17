@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import client.HandleClient;
+import eu.dissco.annotationprocessingservice.client.HandleClient;
 import eu.dissco.annotationprocessingservice.exception.PidException;
 import java.util.List;
 import java.util.Map;

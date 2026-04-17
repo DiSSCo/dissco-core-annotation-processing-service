@@ -1,4 +1,4 @@
-package client;
+package eu.dissco.annotationprocessingservice.client;
 
 import eu.dissco.annotationprocessingservice.exception.PidException;
 import java.util.List;
