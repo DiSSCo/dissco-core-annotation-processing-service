@@ -2,7 +2,7 @@ package eu.dissco.annotationprocessingservice.configuration;
 
 import static lombok.Lombok.sneakyThrow;
 
-import client.HandleClient;
+import eu.dissco.annotationprocessingservice.client.HandleClient;
 import eu.dissco.annotationprocessingservice.exception.PidException;
 import eu.dissco.annotationprocessingservice.properties.WebConnectionProperties;
 import java.nio.charset.StandardCharsets;
